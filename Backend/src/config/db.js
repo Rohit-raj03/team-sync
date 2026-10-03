@@ -1,17 +1,17 @@
-import mongoose from 'mongoose';
+import dns from "node:dns";
+import mongoose from "mongoose";
+import config from "./config.js";
 
-export const connectDB = async () => {
-  const mongoURI = process.env.MONGO_URI;
-  if (!mongoURI) {
-    console.warn('⚠️  MONGO_URI not specified in environment. Running in mock/standalone mode.');
-    return;
-  }
+dns.setServers(["8.8.8.8", "1.1.1.1"]);
 
+const connectDB = async () => {
   try {
-    const conn = await mongoose.connect(mongoURI);
-    console.log(`MongoDB Connected: ${conn.connection.host}`);
+    const connection = await mongoose.connect(config.MONGO_URI);
+    console.log(`MongoDB connected: ${connection.connection.host}`);
   } catch (error) {
-    console.error(`MongoDB connection error: ${error.message}`);
-    // Don't kill process immediately in dev so app can still boot
+    console.error("MongoDB connection failed:", error.message);
+    throw error;
   }
 };
+
+export default connectDB;
