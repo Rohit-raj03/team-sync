@@ -1,7 +1,13 @@
+import crypto from "node:crypto";
 import UserModel from "../models/user.model.js";
 import jwt from "jsonwebtoken";
 import config from "../config/config.js";
 
+/**
+ * @desc    Register a new user
+ * @route   POST /api/auth/register
+ * @access  Public
+ */
 export const registerUser = async (req, res) => {
   try {
     const { name, email, password } = req.body;
@@ -12,7 +18,8 @@ export const registerUser = async (req, res) => {
       });
     }
 
-    const existingUser = await UserModel.findOne({ email });
+    const cleanEmail = email.toLowerCase().trim();
+    const existingUser = await UserModel.findOne({ email: cleanEmail });
 
     if (existingUser) {
       return res.status(409).json({
@@ -22,7 +29,7 @@ export const registerUser = async (req, res) => {
 
     const user = await UserModel.create({
       name,
-      email,
+      email: cleanEmail,
       password,
     });
 
@@ -44,6 +51,11 @@ export const registerUser = async (req, res) => {
   }
 };
 
+/**
+ * @desc    Login user & get access token
+ * @route   POST /api/auth/login
+ * @access  Public
+ */
 export const loginUser = async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -54,7 +66,8 @@ export const loginUser = async (req, res) => {
       });
     }
 
-    const user = await UserModel.findOne({ email });
+    const cleanEmail = email.toLowerCase().trim();
+    const user = await UserModel.findOne({ email: cleanEmail });
 
     if (!user) {
       return res.status(401).json({
@@ -102,6 +115,126 @@ export const loginUser = async (req, res) => {
 
     res.status(500).json({
       message: "Server error",
+    });
+  }
+};
+
+/**
+ * @desc    Forgot Password - Request reset link
+ * @route   POST /api/auth/forgot-password
+ * @access  Public
+ */
+export const forgotPassword = async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({
+        message: "Please enter your email address",
+      });
+    }
+
+    const cleanEmail = email.toLowerCase().trim();
+    const user = await UserModel.findOne({ email: cleanEmail });
+
+    // Security practice: Always return generic success message to prevent user enumeration
+    if (!user) {
+      return res.status(200).json({
+        success: true,
+        message: "If that email exists in our system, we've sent a password reset link.",
+      });
+    }
+
+    // 1. Generate secure random token
+    const resetToken = crypto.randomBytes(32).toString("hex");
+
+    // 2. Hash token and save to DB with 15-minute expiry
+    user.resetPasswordToken = crypto
+      .createHash("sha256")
+      .update(resetToken)
+      .digest("hex");
+    user.resetPasswordExpires = Date.now() + 15 * 60 * 1000; // 15 minutes
+
+    await user.save({ validateBeforeSave: false });
+
+    // 3. Create Reset URL
+    const clientUrl = config.CLIENT_URL || "http://localhost:5173";
+    const resetUrl = `${clientUrl}/reset-password?token=${resetToken}`;
+
+    // Log to console for development & local testing
+    console.log("==========================================");
+    console.log(`🔐 PASSWORD RESET LINK FOR [${user.email}]:`);
+    console.log(resetUrl);
+    console.log("==========================================");
+
+    return res.status(200).json({
+      success: true,
+      message: "If that email exists in our system, we've sent a password reset link.",
+      // Development mode helper
+      ...(config.NODE_ENV !== "production" && { resetUrl, resetToken }),
+    });
+  } catch (error) {
+    console.error("Forgot password error:", error.message);
+    return res.status(500).json({
+      message: "Server error processing password reset request",
+    });
+  }
+};
+
+/**
+ * @desc    Reset Password using token
+ * @route   POST /api/auth/reset-password
+ * @access  Public
+ */
+export const resetPassword = async (req, res) => {
+  try {
+    const { token, newPassword } = req.body;
+
+    if (!token || !newPassword) {
+      return res.status(400).json({
+        message: "Reset token and new password are required",
+      });
+    }
+
+    if (newPassword.length < 6) {
+      return res.status(400).json({
+        message: "Password must be at least 6 characters long",
+      });
+    }
+
+    // Hash the token received to compare with stored hash
+    const hashedToken = crypto
+      .createHash("sha256")
+      .update(token)
+      .digest("hex");
+
+    // Find user with valid matching unexpired token
+    const user = await UserModel.findOne({
+      resetPasswordToken: hashedToken,
+      resetPasswordExpires: { $gt: Date.now() },
+    });
+
+    if (!user) {
+      return res.status(400).json({
+        message: "Password reset link is invalid or has expired",
+      });
+    }
+
+    // Update password (pre-save hook will hash it automatically)
+    user.password = newPassword;
+    user.resetPasswordToken = undefined;
+    user.resetPasswordExpires = undefined;
+
+    await user.save();
+
+    return res.status(200).json({
+      success: true,
+      message: "Password has been successfully reset. You can now log in.",
+    });
+  } catch (error) {
+    console.error("Reset password error:", error.message);
+    return res.status(500).json({
+      message: "Server error resetting password",
     });
   }
 };
