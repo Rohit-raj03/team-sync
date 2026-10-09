@@ -4,13 +4,13 @@ import jwt from "jsonwebtoken";
 import config from "../config/config.js";
 
 /**
- * @desc    Register a new user
+ * @desc    Register a new user (with role: admin / user / member)
  * @route   POST /api/auth/register
  * @access  Public
  */
 export const registerUser = async (req, res) => {
   try {
-    const { name, email, password } = req.body;
+    const { name, email, password, role, jobTitle } = req.body;
 
     if (!name || !email || !password) {
       return res.status(400).json({
@@ -27,19 +27,47 @@ export const registerUser = async (req, res) => {
       });
     }
 
+    // Role validation: support 'admin' and 'user' / 'member' / 'manager'
+    let userRole = "user";
+    if (role) {
+      const normalizedRole = role.toLowerCase().trim();
+      const validRoles = ["admin", "user", "member", "manager"];
+      if (!validRoles.includes(normalizedRole)) {
+        return res.status(400).json({
+          message: "Invalid role. Role must be 'admin' or 'user'",
+        });
+      }
+      userRole = normalizedRole;
+    }
+
     const user = await UserModel.create({
-      name,
+      name: name.trim(),
       email: cleanEmail,
       password,
+      role: userRole,
+      jobTitle: jobTitle || (userRole === "admin" ? "Administrator" : "Team Member"),
     });
+
+    const accessToken = jwt.sign(
+      {
+        userId: user._id.toString(),
+        role: user.role,
+      },
+      config.ACCESS_TOKEN_SECRET,
+      {
+        expiresIn: "15m",
+      },
+    );
 
     res.status(201).json({
       message: "User registered successfully",
+      accessToken,
       user: {
         id: user._id,
         name: user.name,
         email: user.email,
         role: user.role,
+        jobTitle: user.jobTitle,
       },
     });
   } catch (error) {
@@ -108,11 +136,36 @@ export const loginUser = async (req, res) => {
         name: user.name,
         email: user.email,
         role: user.role,
+        jobTitle: user.jobTitle,
       },
     });
   } catch (error) {
     console.error("Login error:", error.message);
 
+    res.status(500).json({
+      message: "Server error",
+    });
+  }
+};
+
+/**
+ * @desc    Get currently logged in user session
+ * @route   GET /api/auth/me
+ * @access  Private (Bearer token)
+ */
+export const getMe = async (req, res) => {
+  try {
+    const user = await UserModel.findById(req.user._id).select("-password");
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    res.status(200).json({
+      success: true,
+      user,
+    });
+  } catch (error) {
+    console.error("GetMe error:", error.message);
     res.status(500).json({
       message: "Server error",
     });
