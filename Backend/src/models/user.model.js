@@ -32,8 +32,8 @@ const userSchema = new mongoose.Schema(
 
     role: {
       type: String,
-      enum: ["admin", "manager", "member"],
-      default: "member",
+      enum: ["admin", "user", "member", "manager"],
+      default: "user",
     },
 
     jobTitle: {
@@ -104,7 +104,7 @@ userSchema.pre("save", async function (next) {
   next();
 });
 
-// Login 
+// Login
 userSchema.methods.comparePassword = function (plainPassword) {
   return bcrypt.compare(plainPassword, this.password);
 };
