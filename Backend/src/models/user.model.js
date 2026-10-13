@@ -88,6 +88,11 @@ const userSchema = new mongoose.Schema(
     resetPasswordExpires: {
       type: Date,
     },
+
+    refreshToken: {
+      type: String,
+      default: "",
+    },
   },
   {
     timestamps: true,
@@ -104,9 +109,19 @@ userSchema.pre("save", async function (next) {
   next();
 });
 
-// Login
+// Compare password for login verification
 userSchema.methods.comparePassword = function (plainPassword) {
   return bcrypt.compare(plainPassword, this.password);
+};
+
+// Automatically omit sensitive credentials when serializing to JSON
+userSchema.methods.toJSON = function () {
+  const userObject = this.toObject();
+  delete userObject.password;
+  delete userObject.refreshToken;
+  delete userObject.resetPasswordToken;
+  delete userObject.resetPasswordExpires;
+  return userObject;
 };
 
 const UserModel = mongoose.model("User", userSchema);
