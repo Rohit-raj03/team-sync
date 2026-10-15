@@ -1,4 +1,9 @@
 import UserModel from "../models/user.model.js";
+import {
+  uploadImage,
+  safeCleanupFile,
+  MEDIA_FOLDERS,
+} from "../services/imagekit.service.js";
 
 /**
  * @desc    Get current user profile
@@ -30,11 +35,13 @@ export const getUserProfile = async (req, res) => {
 };
 
 /**
- * @desc    Update current user profile
+ * @desc    Update current user profile (Supports both JSON & multipart image upload)
  * @route   PUT /api/users/profile
  * @access  Private
  */
 export const updateUserProfile = async (req, res) => {
+  let uploadedMedia = null;
+
   try {
     const user = await UserModel.findById(req.user._id);
 
@@ -62,10 +69,37 @@ export const updateUserProfile = async (req, res) => {
     if (jobTitle !== undefined) user.jobTitle = jobTitle.trim();
     if (location !== undefined) user.location = location.trim();
     if (timezone !== undefined) user.timezone = timezone.trim();
-    if (avatar !== undefined) user.avatar = avatar;
-    if (twoFactorEnabled !== undefined) user.twoFactorEnabled = twoFactorEnabled;
+    if (twoFactorEnabled !== undefined) {
+      user.twoFactorEnabled =
+        typeof twoFactorEnabled === "string"
+          ? twoFactorEnabled === "true"
+          : Boolean(twoFactorEnabled);
+    }
+
+    const oldFileId = user.avatarFileId;
+
+    // Handle image file if uploaded in multipart/form-data
+    if (req.file) {
+      uploadedMedia = await uploadImage({
+        buffer: req.file.buffer,
+        originalName: req.file.originalname,
+        mimeType: req.file.verifiedMimeType || req.file.mimetype,
+        folder: MEDIA_FOLDERS.PROFILES,
+        tags: ["avatar", "user", user._id.toString()],
+      });
+
+      user.avatar = uploadedMedia.url;
+      user.avatarFileId = uploadedMedia.fileId;
+    } else if (avatar !== undefined) {
+      user.avatar = avatar;
+    }
 
     const updatedUser = await user.save();
+
+    // Clean up replaced old file if a new file was uploaded
+    if (uploadedMedia?.fileId && oldFileId && oldFileId !== uploadedMedia.fileId) {
+      safeCleanupFile(oldFileId);
+    }
 
     res.status(200).json({
       success: true,
@@ -82,17 +116,23 @@ export const updateUserProfile = async (req, res) => {
         location: updatedUser.location,
         timezone: updatedUser.timezone,
         avatar: updatedUser.avatar,
+        avatarFileId: updatedUser.avatarFileId,
         twoFactorEnabled: updatedUser.twoFactorEnabled,
       },
     });
   } catch (error) {
+    if (uploadedMedia?.fileId) {
+      await safeCleanupFile(uploadedMedia.fileId);
+    }
+
     console.error("updateUserProfile error:", error.message);
     res.status(500).json({
       success: false,
-      message: "Server error updating user profile",
+      message: error.message || "Server error updating user profile",
     });
   }
 };
+
 
 /**
  * @desc    Get all active users (for team directory & task assignees)

@@ -5,6 +5,9 @@ import config from "../config/config.js";
 import authRoutes from "../routes/auth.routes.js";
 import userRoutes from "../routes/user.routes.js";
 import adminRoutes from "../routes/admin.routes.js";
+import teamRoutes from "../routes/team.routes.js";
+import projectRoutes from "../routes/project.routes.js";
+import mediaRoutes from "../routes/media.routes.js";
 import {
   notFoundHandler,
   errorHandler,
@@ -16,7 +19,7 @@ const app = express();
 // 2. Middlewares
 app.use(
   cors({
-    origin: config.CLIENT_URL || "http://localhost:5173",
+    origin: config.CLIENT_URL,
     credentials: true,
   }),
 );
@@ -28,6 +31,10 @@ app.use(cookieParser());
 app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/admin", adminRoutes);
+app.use("/api/teams", teamRoutes);
+app.use("/api/projects", projectRoutes);
+app.use("/api/media", mediaRoutes);
+
 
 // 4. Test & Health Check Routes
 app.get("/", (req, res) => {
