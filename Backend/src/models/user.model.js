@@ -44,6 +44,8 @@ const userSchema = new mongoose.Schema(
     phone: {
       type: String,
       default: "",
+      minlength: [10, "minimum 10 char required"],
+      maxlength: [10, "maximum 10 char required"],
     },
 
     bio: {
@@ -65,6 +67,12 @@ const userSchema = new mongoose.Schema(
       type: String,
       default: "",
     },
+
+    avatarFileId: {
+      type: String,
+      default: "",
+    },
+
 
     twoFactorEnabled: {
       type: Boolean,
