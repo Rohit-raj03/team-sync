@@ -83,8 +83,8 @@ export const Navbar = ({ onToggleSidebar }) => {
             className="flex items-center gap-2 p-1 rounded-full hover:bg-slate-50 transition-colors focus:outline-none"
           >
             <img
-              src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&h=100&fit=crop&crop=faces"
-              alt="Angelina"
+              src={user?.avatar || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(user?.name || "User")}`}
+              alt={user?.name || "User"}
               className="w-9 h-9 rounded-full object-cover ring-2 ring-slate-100"
             />
             <ChevronDown size={15} className="text-slate-400" />
@@ -94,9 +94,9 @@ export const Navbar = ({ onToggleSidebar }) => {
           {isProfileOpen && (
             <div className="absolute right-0 mt-2 w-48 bg-white rounded-2xl shadow-xl border border-slate-100 py-2 z-50">
               <div className="px-4 py-2 border-b border-slate-100">
-                <p className="text-xs font-bold text-slate-800">Angelina</p>
-                <p className="text-[10px] text-slate-400">
-                  angelina@teamsync.io
+                <p className="text-xs font-bold text-slate-800 truncate">{user?.name || "Team Member"}</p>
+                <p className="text-[10px] text-slate-400 truncate">
+                  {user?.email || ""}
                 </p>
               </div>
               <button
@@ -117,21 +117,24 @@ export const Navbar = ({ onToggleSidebar }) => {
               >
                 Settings
               </button>
-              <button
-                onClick={() => {
-                  setIsProfileOpen(false);
-                  navigate(ROUTES.ADMIN);
-                }}
-                className="w-full text-left px-4 py-2 text-xs font-semibold text-purple-700 hover:bg-purple-50 flex items-center justify-between"
-              >
-                <span>Admin Console</span>
-                <span className="text-[9px] font-bold px-1.5 py-0.2 rounded-full bg-purple-100 text-purple-800">Root</span>
-              </button>
+              {user?.role === "admin" && (
+                <button
+                  onClick={() => {
+                    setIsProfileOpen(false);
+                    navigate(ROUTES.ADMIN);
+                  }}
+                  className="w-full text-left px-4 py-2 text-xs font-semibold text-purple-700 hover:bg-purple-50 flex items-center justify-between"
+                >
+                  <span>Admin Console</span>
+                  <span className="text-[9px] font-bold px-1.5 py-0.2 rounded-full bg-purple-100 text-purple-800">Root</span>
+                </button>
+              )}
               <div className="border-t border-slate-100 pt-1 hover:pointer">
                 <button
                   onClick={() => {
                     setIsProfileOpen(false);
                     logout();
+                    navigate(ROUTES.LOGIN);
                   }}
                   className="w-full text-left px-4 py-2 text-xs font-medium text-rose-600 hover:bg-rose-50"
                 >

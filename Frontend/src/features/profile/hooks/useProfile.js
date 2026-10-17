@@ -1,33 +1,73 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useAuth } from '../../auth/hooks/useAuth.js';
+import { profileService } from '../services/profile.service.js';
 
 /**
  * Feature Hook: useProfile
  * Layer: features/profile/hooks/
- * Responsibility: Manages profile form state, dirty tracking, image uploads, validation, and synchronizes with Redux.
+ * Responsibility: Manages profile form state, dirty tracking, image uploads, validation,
+ * communicates with the real backend API, and synchronizes with Redux.
  */
 export function useProfile() {
   const { user, updateProfile } = useAuth();
 
-  const initialProfile = {
-    avatar: user?.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300&h=300&fit=crop&crop=faces',
-    fullName: user?.name || 'Angelina Davis',
-    username: user?.username || 'angelina',
-    email: user?.email || 'angelina.davis@teamsync.io',
-    phoneNumber: user?.phone || '+1 (555) 234-5678',
-    jobTitle: user?.jobTitle || 'Lead Product Designer',
-    bio: user?.bio || 'Passionate about building intuitive developer platforms and collaborative team systems. Design systems enthusiast and occasional front-end builder.',
-    location: user?.location || 'San Francisco, CA',
-    timeZone: user?.timezone || 'America/Los_Angeles (GMT-7:00)',
+  const mapUserToProfile = (u) => ({
+    avatar: u?.avatar || '',
+    fullName: u?.name || '',
+    username: u?.username || (u?.email ? u.email.split('@')[0] : ''),
+    email: u?.email || '',
+    phoneNumber: u?.phone || '',
+    jobTitle: u?.jobTitle || '',
+    bio: u?.bio || '',
+    location: u?.location || 'Remote',
+    timeZone: u?.timezone || 'UTC (GMT+0:00)',
     emailVerified: true,
-    twoFactorEnabled: user?.twoFactorEnabled ?? true,
-  };
+    twoFactorEnabled: Boolean(u?.twoFactorEnabled),
+  });
 
-  const [savedData, setSavedData] = useState(initialProfile);
-  const [formData, setFormData] = useState(initialProfile);
+  const [savedData, setSavedData] = useState(() => mapUserToProfile(user));
+  const [formData, setFormData] = useState(() => mapUserToProfile(user));
   const [errors, setErrors] = useState({});
   const [isSaving, setIsSaving] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const [serverError, setServerError] = useState(null);
+
+  // Sync profile data from server on mount
+  useEffect(() => {
+    let isMounted = true;
+    const loadProfile = async () => {
+      try {
+        setIsLoading(true);
+        const res = await profileService.getProfile();
+        const freshUser = res?.user;
+        if (freshUser && isMounted) {
+          updateProfile(freshUser);
+          const mapped = mapUserToProfile(freshUser);
+          setFormData(mapped);
+          setSavedData(mapped);
+        }
+      } catch (err) {
+        console.warn('Could not refresh profile from server:', err.message);
+      } finally {
+        if (isMounted) setIsLoading(false);
+      }
+    };
+
+    loadProfile();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  // Sync when user prop in Redux changes if form is not dirty
+  useEffect(() => {
+    if (user && JSON.stringify(formData) === JSON.stringify(savedData)) {
+      const mapped = mapUserToProfile(user);
+      setFormData(mapped);
+      setSavedData(mapped);
+    }
+  }, [user]);
 
   // Check if form has unsaved modifications
   const isDirty = useMemo(() => {
@@ -38,6 +78,9 @@ export function useProfile() {
     setFormData((prev) => ({ ...prev, [field]: value }));
     if (errors[field]) {
       setErrors((prev) => ({ ...prev, [field]: null }));
+    }
+    if (serverError) {
+      setServerError(null);
     }
   };
 
@@ -51,16 +94,13 @@ export function useProfile() {
   };
 
   const handlePhotoRemove = () => {
-    handleChange('avatar', null);
+    handleChange('avatar', '');
   };
 
   const validate = () => {
     const errs = {};
     if (!formData.fullName?.trim()) {
       errs.fullName = 'Full name is required';
-    }
-    if (!formData.username?.trim()) {
-      errs.username = 'Username is required';
     }
     setErrors(errs);
     return Object.keys(errs).length === 0;
@@ -70,32 +110,43 @@ export function useProfile() {
     if (!validate()) return false;
 
     setIsSaving(true);
-    // Simulate API delay
-    await new Promise((resolve) => setTimeout(resolve, 500));
-    setSavedData(formData);
+    setServerError(null);
 
-    // Sync with Redux Auth State
-    updateProfile({
-      name: formData.fullName,
-      username: formData.username,
-      avatar: formData.avatar,
-      jobTitle: formData.jobTitle,
-      bio: formData.bio,
-      phone: formData.phoneNumber,
-      location: formData.location,
-      timezone: formData.timeZone,
-      twoFactorEnabled: formData.twoFactorEnabled,
-    });
+    try {
+      const payload = {
+        name: formData.fullName.trim(),
+        username: formData.username.trim(),
+        avatar: formData.avatar,
+        jobTitle: formData.jobTitle.trim(),
+        bio: formData.bio.trim(),
+        phone: formData.phoneNumber.trim(),
+        location: formData.location.trim(),
+        timezone: formData.timeZone,
+        twoFactorEnabled: formData.twoFactorEnabled,
+      };
 
-    setIsSaving(false);
-    setSaveSuccess(true);
-    setTimeout(() => setSaveSuccess(false), 3000);
-    return true;
+      const response = await profileService.updateProfile(payload);
+      const updatedUser = response?.user || payload;
+
+      // Sync with Redux Auth State & localStorage
+      updateProfile(updatedUser);
+
+      setSavedData(formData);
+      setIsSaving(false);
+      setSaveSuccess(true);
+      setTimeout(() => setSaveSuccess(false), 3500);
+      return true;
+    } catch (err) {
+      setIsSaving(false);
+      setServerError(err.message || 'Failed to update profile. Please try again.');
+      return false;
+    }
   };
 
   const cancelChanges = () => {
     setFormData(savedData);
     setErrors({});
+    setServerError(null);
   };
 
   const toggle2FA = () => {
@@ -106,8 +157,10 @@ export function useProfile() {
     formData,
     savedData,
     errors,
+    serverError,
     isDirty,
     isSaving,
+    isLoading,
     saveSuccess,
     handleChange,
     handlePhotoUpload,

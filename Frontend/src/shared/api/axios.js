@@ -23,10 +23,23 @@ axiosInstance.interceptors.request.use(
 axiosInstance.interceptors.response.use(
   (response) => response.data,
   (error) => {
-    if (error.response?.status === 401) {
+    const isLoginRequest = error.config?.url?.includes('/auth/login');
+    if (error.response?.status === 401 && !isLoginRequest) {
       storage.remove('auth_token');
+      storage.remove('auth_user');
     }
-    return Promise.reject(error.response?.data || error.message);
+
+    const message =
+      error.response?.data?.message ||
+      error.response?.data?.error ||
+      error.message ||
+      'An unexpected error occurred. Please try again.';
+
+    const customError = new Error(message);
+    customError.status = error.response?.status;
+    customError.data = error.response?.data;
+
+    return Promise.reject(customError);
   }
 );
 

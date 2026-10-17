@@ -11,6 +11,7 @@ import { MainLayout } from "../../shared/components/layout/MainLayout.jsx";
 import { LoginPage } from "../../pages/auth/LoginPage.jsx";
 import { RegisterPage } from "../../pages/auth/RegisterPage.jsx";
 import { ForgotPasswordPage } from "../../pages/auth/ForgotPasswordPage.jsx";
+import { ResetPasswordPage } from "../../pages/auth/ResetPasswordPage.jsx";
 import { DashboardPage } from "../../pages/dashboard/DashboardPage.jsx";
 import { TasksPage } from "../../pages/tasks/TasksPage.jsx";
 import { CreateTaskPage } from "../../pages/tasks/CreateTaskPage.jsx";
@@ -37,6 +38,10 @@ const router = createBrowserRouter([
   {
     path: ROUTES.FORGOT_PASSWORD,
     element: <ForgotPasswordPage />,
+  },
+  {
+    path: ROUTES.RESET_PASSWORD,
+    element: <ResetPasswordPage />,
   },
   {
     path: ROUTES.HOME,
