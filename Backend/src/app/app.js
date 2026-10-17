@@ -1,10 +1,17 @@
 import express from "express";
 import cors from "cors";
+import cookieParser from "cookie-parser";
 import config from "../config/config.js";
 import authRoutes from "../routes/auth.routes.js";
 import userRoutes from "../routes/user.routes.js";
 import adminRoutes from "../routes/admin.routes.js";
-import { notFoundHandler, errorHandler } from "../middlewares/error.middleware.js";
+import teamRoutes from "../routes/team.routes.js";
+import projectRoutes from "../routes/project.routes.js";
+import mediaRoutes from "../routes/media.routes.js";
+import {
+  notFoundHandler,
+  errorHandler,
+} from "../middlewares/error.middleware.js";
 
 // 1. Initialize Express App
 const app = express();
@@ -14,19 +21,24 @@ app.use(
   cors({
     origin: config.CLIENT_URL,
     credentials: true,
-  })
+  }),
 );
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: "10mb" }));
+app.use(express.urlencoded({ extended: true, limit: "10mb" }));
+app.use(cookieParser());
 
 // 3. API Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/admin", adminRoutes);
+app.use("/api/teams", teamRoutes);
+app.use("/api/projects", projectRoutes);
+app.use("/api/media", mediaRoutes);
+
 
 // 4. Test & Health Check Routes
 app.get("/", (req, res) => {
-  res.send("🚀 TeamSync Backend API is running!");
+  res.send("TeamSync Backend API is running!");
 });
 
 app.get("/api/health", (req, res) => {

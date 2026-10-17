@@ -2,6 +2,8 @@ import express from "express";
 import {
   registerUser,
   loginUser,
+  refreshAccessToken,
+  logoutUser,
   getMe,
   forgotPassword,
   resetPassword,
@@ -13,6 +15,9 @@ const router = express.Router();
 // Public routes
 router.post("/register", registerUser);
 router.post("/login", loginUser);
+router.post("/refresh-token", refreshAccessToken);
+router.post("/refresh", refreshAccessToken); // Convenient alias
+router.post("/logout", logoutUser);
 router.post("/forgot-password", forgotPassword);
 router.post("/reset-password", resetPassword);
 
