@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Modal } from "../../../shared/components/ui/Modal.jsx";
 import { Button } from "../../../shared/components/ui/Button.jsx";
 import { Eye, EyeOff, Lock, CheckCircle2, AlertCircle } from "lucide-react";
+import { profileService } from "../services/profile.service.js";
 
 /**
  * Feature Component: PasswordChangeModal
@@ -39,11 +40,15 @@ export const PasswordChangeModal = ({ isOpen, onClose, onPasswordUpdated }) => {
 
     setError("");
     setIsSubmitting(true);
-    // Simulate API call
-    await new Promise((r) => setTimeout(r, 600));
-    setIsSubmitting(false);
-    onPasswordUpdated?.();
-    handleClose();
+    try {
+      await profileService.changePassword({ currentPassword, newPassword });
+      setIsSubmitting(false);
+      onPasswordUpdated?.();
+      handleClose();
+    } catch (err) {
+      setIsSubmitting(false);
+      setError(err.message || "Failed to change password. Please check your current password.");
+    }
   };
 
   const handleClose = () => {

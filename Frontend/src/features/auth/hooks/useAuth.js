@@ -38,6 +38,24 @@ export function useAuth() {
     }
   };
 
+  const checkAuth = async () => {
+    if (!token) return null;
+    try {
+      const response = await authService.getCurrentUser();
+      const freshUser = response?.user;
+      if (freshUser) {
+        dispatch(updateUserProfile(freshUser));
+        return freshUser;
+      }
+      return null;
+    } catch (err) {
+      if (err?.status === 401) {
+        dispatch(logoutAction());
+      }
+      return null;
+    }
+  };
+
   const updateProfile = (updatedFields) => {
     dispatch(updateUserProfile(updatedFields));
   };
@@ -58,6 +76,7 @@ export function useAuth() {
     error,
     login,
     register,
+    checkAuth,
     updateProfile,
     clearAuthError,
     logout,

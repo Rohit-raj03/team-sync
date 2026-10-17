@@ -15,6 +15,7 @@ export const ProfilePage = () => {
   const {
     formData,
     errors,
+    serverError,
     isDirty,
     isSaving,
     saveSuccess,
@@ -88,6 +89,14 @@ export const ProfilePage = () => {
         <div className="p-4 rounded-3xl bg-emerald-50 border border-emerald-100 text-emerald-800 text-xs font-semibold flex items-center gap-3 shadow-xs animate-in fade-in duration-200">
           <CheckCircle2 size={18} className="text-emerald-500 shrink-0" />
           <span>Your profile information has been successfully updated.</span>
+        </div>
+      )}
+
+      {/* Error Notification Banner */}
+      {serverError && (
+        <div className="p-4 rounded-3xl bg-rose-50 border border-rose-200 text-rose-800 text-xs font-semibold flex items-center gap-3 shadow-xs animate-in fade-in duration-200">
+          <AlertCircle size={18} className="text-rose-500 shrink-0" />
+          <span>{serverError}</span>
         </div>
       )}
 

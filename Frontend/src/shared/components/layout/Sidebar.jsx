@@ -21,7 +21,7 @@ import { useAuth } from "../../../features/auth/hooks/useAuth.js";
  * Responsibility: Icon rail navigation matching the exact Figma design screenshot.
  */
 export const Sidebar = ({ isOpen, onClose }) => {
-  const { logout } = useAuth();
+  const { user, logout } = useAuth();
 
   const navItems = [
     { label: "Dashboard", icon: LayoutGrid, to: ROUTES.DASHBOARD },
@@ -31,7 +31,9 @@ export const Sidebar = ({ isOpen, onClose }) => {
     { label: "Messages", icon: Send, to: ROUTES.MESSAGES },
     { label: "Files", icon: FolderPlus, to: ROUTES.FILES },
     { label: "Settings", icon: Settings, to: ROUTES.SETTINGS },
-    { label: "Admin", icon: Shield, to: ROUTES.ADMIN },
+    ...(user?.role === "admin"
+      ? [{ label: "Admin", icon: Shield, to: ROUTES.ADMIN }]
+      : []),
   ];
 
   return (

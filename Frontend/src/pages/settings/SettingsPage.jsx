@@ -5,6 +5,7 @@ import { Card } from "../../shared/components/ui/Card.jsx";
 import { Button } from "../../shared/components/ui/Button.jsx";
 import { Avatar } from "../../shared/components/ui/Avatar.jsx";
 import { ROUTES } from "../../shared/constants/routes.js";
+import { useAuth } from "../../features/auth/hooks/useAuth.js";
 import {
   User,
   Shield,
@@ -25,6 +26,7 @@ import {
  */
 export const SettingsPage = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
 
   const [notifications, setNotifications] = useState({
     assignedTasks: true,
@@ -44,6 +46,12 @@ export const SettingsPage = () => {
     setSavedNotice(true);
     setTimeout(() => setSavedNotice(false), 3000);
   };
+
+  const displayName = user?.name || "Team Member";
+  const displayUsername = user?.username || (user?.email ? user.email.split("@")[0] : "user");
+  const displayJob = user?.jobTitle || "Contributor";
+  const displayEmail = user?.email || "";
+  const displayAvatar = user?.avatar || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(displayName)}`;
 
   return (
     <div className="max-w-4xl mx-auto space-y-8 pb-16">
@@ -66,8 +74,8 @@ export const SettingsPage = () => {
           <div className="flex items-center gap-4">
             <div className="relative">
               <img
-                src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&h=150&fit=crop&crop=faces"
-                alt="Angelina Davis"
+                src={displayAvatar}
+                alt={displayName}
                 className="w-16 h-16 rounded-2xl object-cover ring-4 ring-indigo-50 shadow-sm"
               />
               <span className="absolute bottom-0 right-0 w-3 h-3 bg-emerald-500 rounded-full ring-2 ring-white" />
@@ -76,17 +84,17 @@ export const SettingsPage = () => {
             <div>
               <div className="flex items-center gap-2">
                 <h3 className="text-base font-bold text-slate-900">
-                  Angelina Davis
+                  {displayName}
                 </h3>
                 <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-50 text-[#4361EE] border border-indigo-100">
-                  @angelina
+                  @{displayUsername}
                 </span>
               </div>
               <p className="text-xs text-slate-500 font-medium">
-                Lead Product Designer
+                {displayJob}
               </p>
               <p className="text-[11px] text-slate-400 mt-0.5">
-                angelina.davis@teamsync.io
+                {displayEmail}
               </p>
             </div>
           </div>
