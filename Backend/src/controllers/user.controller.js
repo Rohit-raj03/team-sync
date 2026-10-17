@@ -54,6 +54,7 @@ export const updateUserProfile = async (req, res) => {
 
     const {
       name,
+      username,
       phone,
       bio,
       jobTitle,
@@ -64,6 +65,22 @@ export const updateUserProfile = async (req, res) => {
     } = req.body;
 
     if (name) user.name = name.trim();
+    if (username !== undefined) {
+      const cleanUsername = username.trim().toLowerCase();
+      if (cleanUsername && cleanUsername !== user.username) {
+        const existingUsername = await UserModel.findOne({
+          username: cleanUsername,
+          _id: { $ne: user._id },
+        });
+        if (existingUsername) {
+          return res.status(409).json({
+            success: false,
+            message: "Username is already taken by another team member",
+          });
+        }
+        user.username = cleanUsername;
+      }
+    }
     if (phone !== undefined) user.phone = phone.trim();
     if (bio !== undefined) user.bio = bio.trim();
     if (jobTitle !== undefined) user.jobTitle = jobTitle.trim();
@@ -184,6 +201,61 @@ export const getUserById = async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Server error fetching user",
+    });
+  }
+};
+
+/**
+ * @desc    Change logged-in user password
+ * @route   PUT /api/users/change-password
+ * @access  Private
+ */
+export const changePassword = async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({
+        success: false,
+        message: "Current password and new password are required",
+      });
+    }
+
+    if (newPassword.length < 6) {
+      return res.status(400).json({
+        success: false,
+        message: "New password must be at least 6 characters long",
+      });
+    }
+
+    const user = await UserModel.findById(req.user._id);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    const isMatch = await user.comparePassword(currentPassword);
+    if (!isMatch) {
+      return res.status(400).json({
+        success: false,
+        message: "Current password does not match",
+      });
+    }
+
+    user.password = newPassword;
+    await user.save();
+
+    res.status(200).json({
+      success: true,
+      message: "Password changed successfully",
+    });
+  } catch (error) {
+    console.error("changePassword error:", error.message);
+    res.status(500).json({
+      success: false,
+      message: "Server error changing password",
     });
   }
 };
