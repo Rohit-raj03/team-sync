@@ -1,23 +1,26 @@
 import { useState, useMemo } from 'react';
+import { useAuth } from '../../auth/hooks/useAuth.js';
 
 /**
  * Feature Hook: useProfile
  * Layer: features/profile/hooks/
- * Responsibility: Manages profile form state, dirty tracking, image uploads, validation, and security preferences.
+ * Responsibility: Manages profile form state, dirty tracking, image uploads, validation, and synchronizes with Redux.
  */
 export function useProfile() {
+  const { user, updateProfile } = useAuth();
+
   const initialProfile = {
-    avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300&h=300&fit=crop&crop=faces',
-    fullName: 'Angelina Davis',
-    username: 'angelina',
-    email: 'angelina.davis@teamsync.io',
-    phoneNumber: '+1 (555) 234-5678',
-    jobTitle: 'Lead Product Designer',
-    bio: 'Passionate about building intuitive developer platforms and collaborative team systems. Design systems enthusiast and occasional front-end builder.',
-    location: 'San Francisco, CA',
-    timeZone: 'America/Los_Angeles (GMT-7:00)',
+    avatar: user?.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300&h=300&fit=crop&crop=faces',
+    fullName: user?.name || 'Angelina Davis',
+    username: user?.username || 'angelina',
+    email: user?.email || 'angelina.davis@teamsync.io',
+    phoneNumber: user?.phone || '+1 (555) 234-5678',
+    jobTitle: user?.jobTitle || 'Lead Product Designer',
+    bio: user?.bio || 'Passionate about building intuitive developer platforms and collaborative team systems. Design systems enthusiast and occasional front-end builder.',
+    location: user?.location || 'San Francisco, CA',
+    timeZone: user?.timezone || 'America/Los_Angeles (GMT-7:00)',
     emailVerified: true,
-    twoFactorEnabled: true,
+    twoFactorEnabled: user?.twoFactorEnabled ?? true,
   };
 
   const [savedData, setSavedData] = useState(initialProfile);
@@ -58,13 +61,6 @@ export function useProfile() {
     }
     if (!formData.username?.trim()) {
       errs.username = 'Username is required';
-    } else if (!/^[a-zA-Z0-9_.-]+$/.test(formData.username)) {
-      errs.username = 'Username can only contain letters, numbers, dashes, and underscores';
-    }
-    if (!formData.email?.trim()) {
-      errs.email = 'Email address is required';
-    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      errs.email = 'Please provide a valid email address';
     }
     setErrors(errs);
     return Object.keys(errs).length === 0;
@@ -75,8 +71,22 @@ export function useProfile() {
 
     setIsSaving(true);
     // Simulate API delay
-    await new Promise((resolve) => setTimeout(resolve, 600));
+    await new Promise((resolve) => setTimeout(resolve, 500));
     setSavedData(formData);
+
+    // Sync with Redux Auth State
+    updateProfile({
+      name: formData.fullName,
+      username: formData.username,
+      avatar: formData.avatar,
+      jobTitle: formData.jobTitle,
+      bio: formData.bio,
+      phone: formData.phoneNumber,
+      location: formData.location,
+      timezone: formData.timeZone,
+      twoFactorEnabled: formData.twoFactorEnabled,
+    });
+
     setIsSaving(false);
     setSaveSuccess(true);
     setTimeout(() => setSaveSuccess(false), 3000);
@@ -109,4 +119,3 @@ export function useProfile() {
 }
 
 export default useProfile;
-
