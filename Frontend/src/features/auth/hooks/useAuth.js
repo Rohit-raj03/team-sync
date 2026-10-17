@@ -1,5 +1,13 @@
 import { useSelector, useDispatch } from 'react-redux';
-import { loginStart, loginSuccess, loginFailure, logout as logoutAction } from '../store/authSlice.js';
+import {
+  loginStart,
+  loginSuccess,
+  loginFailure,
+  registerSuccess,
+  updateUserProfile,
+  clearError,
+  logout as logoutAction,
+} from '../store/authSlice.js';
 import { authService } from '../services/auth.service.js';
 
 export function useAuth() {
@@ -22,12 +30,20 @@ export function useAuth() {
     try {
       dispatch(loginStart());
       const data = await authService.register(userData);
-      dispatch(loginSuccess(data));
+      dispatch(registerSuccess(data));
       return data;
     } catch (err) {
       dispatch(loginFailure(err.message || 'Registration failed'));
       throw err;
     }
+  };
+
+  const updateProfile = (updatedFields) => {
+    dispatch(updateUserProfile(updatedFields));
+  };
+
+  const clearAuthError = () => {
+    dispatch(clearError());
   };
 
   const logout = () => {
@@ -42,6 +58,8 @@ export function useAuth() {
     error,
     login,
     register,
+    updateProfile,
+    clearAuthError,
     logout,
   };
 }
