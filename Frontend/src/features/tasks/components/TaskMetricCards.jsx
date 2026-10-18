@@ -1,20 +1,37 @@
 import React from "react";
 import { Star, FileText, ClipboardCheck } from "lucide-react";
 import { Card } from "../../../shared/components/ui/Card.jsx";
+import { useTasks } from "../hooks/useTasks.js";
+import { useProjects } from "../../projects/hooks/useProjects.js";
 
 /**
  * Feature Component: TaskMetricCards
- * Layer: features/tasks/components/
- * Responsibility: Exact 3 KPI summary cards (Task Completed, New Task, Project Done) with SVG sparklines and growth text matching Figma.
+ * Computes live KPI summary metrics from backend tasks and projects.
+ * Zero dummy data.
  */
 export const TaskMetricCards = () => {
+  const { tasks = [] } = useTasks();
+  const { allProjects = [] } = useProjects();
+
+  const completedTasksCount = tasks.filter(
+    (t) => t.status === "COMPLETED" || t.status === "Done"
+  ).length;
+
+  const inProgressTasksCount = tasks.filter(
+    (t) => t.status === "IN_PROGRESS" || t.status === "In Progress" || t.status === "TODO"
+  ).length;
+
+  const completedProjectsCount = allProjects.filter(
+    (p) => p.status === "COMPLETED" || p.status === "Done"
+  ).length;
+
   const metrics = [
     {
       id: "task-completed",
       title: "Task Completed",
-      value: "08",
-      growth: "10+ more",
-      subtext: "from last week",
+      value: String(completedTasksCount).padStart(2, "0"),
+      growth: `${completedTasksCount} of ${tasks.length}`,
+      subtext: "completed",
       icon: Star,
       strokeColor: "#7064F6",
       fillColor: "rgba(112, 100, 246, 0.08)",
@@ -25,10 +42,10 @@ export const TaskMetricCards = () => {
     },
     {
       id: "new-task",
-      title: "New Task",
-      value: "10",
-      growth: "10+ more",
-      subtext: "from last week",
+      title: "Active Tasks",
+      value: String(inProgressTasksCount).padStart(2, "0"),
+      growth: `${inProgressTasksCount} pending`,
+      subtext: "in progress",
       icon: FileText,
       strokeColor: "#00C2FF",
       fillColor: "rgba(0, 194, 255, 0.08)",
@@ -39,10 +56,10 @@ export const TaskMetricCards = () => {
     },
     {
       id: "project-done",
-      title: "Project Done",
-      value: "10",
-      growth: "08+ more",
-      subtext: "from last week",
+      title: "Projects",
+      value: String(allProjects.length).padStart(2, "0"),
+      growth: `${completedProjectsCount} completed`,
+      subtext: "total active",
       icon: ClipboardCheck,
       strokeColor: "#FF7675",
       fillColor: "rgba(255, 118, 117, 0.08)",
@@ -98,10 +115,10 @@ export const TaskMetricCards = () => {
 
               {/* Text on right */}
               <div className="text-right">
-                <span className="text-xs font-bold text-[#10B981] block">
+                <span className="text-xs font-bold text-slate-900 block">
                   {m.growth}
                 </span>
-                <span className="text-[11px] font-medium text-slate-400">
+                <span className="text-[11px] text-slate-400 mt-0.5 block">
                   {m.subtext}
                 </span>
               </div>
@@ -112,5 +129,3 @@ export const TaskMetricCards = () => {
     </div>
   );
 };
-
-export default TaskMetricCards;

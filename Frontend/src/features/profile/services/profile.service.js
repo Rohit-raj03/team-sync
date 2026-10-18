@@ -25,6 +25,20 @@ export const profileService = {
     });
     return response;
   },
+
+  uploadAvatar: async (file) => {
+    const formData = new FormData();
+    formData.append('image', file);
+    const response = await apiClient.patch('/users/profile/image', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return response;
+  },
+
+  deleteAvatar: async () => {
+    const response = await apiClient.delete('/users/profile/image');
+    return response;
+  },
 };
 
 export default profileService;

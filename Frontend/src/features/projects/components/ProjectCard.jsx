@@ -9,6 +9,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import { Badge } from "../../../shared/components/ui/Badge.jsx";
+import { Avatar } from "../../../shared/components/ui/Avatar.jsx";
 import { ROUTES } from "../../../shared/constants/routes.js";
 import { formatDate } from "../../../shared/utils/formatDate.js";
 
@@ -38,7 +39,7 @@ export const ProjectCard = ({ project, onClick }) => {
     if (onClick) {
       onClick(project);
     } else {
-      navigate(ROUTES.PROJECT_DETAILS(project.id));
+      navigate(ROUTES.PROJECT_DETAILS(project.id || project._id));
     }
   };
 
@@ -124,15 +125,12 @@ export const ProjectCard = ({ project, onClick }) => {
             <div className="flex items-center">
               <div className="flex -space-x-2 overflow-hidden">
                 {members.slice(0, 4).map((m) => (
-                  <img
-                    key={m.id}
+                  <Avatar
+                    key={m.id || m._id}
                     src={m.avatar}
-                    alt={m.name}
-                    title={`${m.name} (${m.projectRole || m.role || "Member"})`}
-                    className="inline-block h-7 w-7 rounded-full ring-2 ring-white object-cover"
-                    onError={(e) => {
-                      e.target.src = `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(m.name)}`;
-                    }}
+                    name={m.name}
+                    size="xs"
+                    className="inline-block ring-2 ring-white"
                   />
                 ))}
               </div>

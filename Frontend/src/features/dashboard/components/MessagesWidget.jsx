@@ -1,74 +1,79 @@
 import React from "react";
-import { Card } from "../../../shared/components/ui/Card.jsx";
+import { MessageSquare, Bell, User } from "lucide-react";
+import { useNotifications } from "../../notifications/hooks/useNotifications.js";
+import { useTeam } from "../../team/hooks/useTeam.js";
+import { Avatar } from "../../../shared/components/ui/Avatar.jsx";
 
 /**
  * Feature Component: MessagesWidget
- * Layer: features/dashboard/components/
- * Responsibility: Exact reproduction of the Messages thread list on the dashboard matching Figma.
+ * Connects to live backend notifications and registered team activity.
+ * Zero dummy data.
  */
 export const MessagesWidget = () => {
-  const threads = [
-    {
-      id: "1",
-      name: "Cris Morich",
-      message: "Hi Angelina! How are You?",
-      avatar:
-        "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=100&h=100&fit=crop&crop=faces",
-      avatarBorder: "ring-amber-400",
-    },
-    {
-      id: "2",
-      name: "Charmie",
-      message: "Do you need that design?",
-      avatar:
-        "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop&crop=faces",
-      avatarBorder: "ring-rose-400",
-    },
-    {
-      id: "3",
-      name: "Jason Mandala",
-      message: "What is the price of hourly...",
-      avatar:
-        "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100&h=100&fit=crop&crop=faces",
-      avatarBorder: "ring-sky-400",
-    },
-    {
-      id: "4",
-      name: "Charlie Chu",
-      message: "Awsome design!!",
-      avatar:
-        "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=100&h=100&fit=crop&crop=faces",
-      avatarBorder: "ring-orange-400",
-    },
-  ];
+  const { notifications = [] } = useNotifications();
+  const { members = [] } = useTeam();
+
+  // If notifications exist, display them; otherwise display active registered teammates
+  const hasNotifications = notifications.length > 0;
 
   return (
     <div className="space-y-3">
-      <h3 className="text-lg font-bold text-slate-900 tracking-tight">
-        Messages
-      </h3>
+      <div className="flex items-center justify-between">
+        <h3 className="text-lg font-bold text-slate-900 tracking-tight">
+          {hasNotifications ? "Recent Notifications" : "Team Members"}
+        </h3>
+        <span className="text-xs font-semibold text-slate-400">
+          {hasNotifications ? `${notifications.length} alerts` : `${members.length} members`}
+        </span>
+      </div>
 
-      <div className="space-y-3">
-        {threads.map((t) => (
-          <div
-            key={t.id}
-            className="flex items-center gap-3.5 p-2 rounded-2xl hover:bg-white transition-all cursor-pointer group"
-          >
-            <img
-              src={t.avatar}
-              alt={t.name}
-              className={`w-10 h-10 rounded-full object-cover ring-2 ${t.avatarBorder}`}
-            />
-            <div className="flex-1 min-w-0">
-              <h4 className="text-xs font-bold text-slate-900 leading-tight group-hover:text-[#4361EE] transition-colors">
-                {t.name}
-              </h4>
-              <p className="text-[11px] font-medium text-slate-400 truncate mt-0.5">
-                {t.message}
-              </p>
+      <div className="space-y-2.5">
+        {hasNotifications ? (
+          notifications.slice(0, 4).map((n) => (
+            <div
+              key={n._id || n.id}
+              className="flex items-start gap-3 p-2.5 rounded-2xl hover:bg-white bg-slate-50/70 border border-slate-100/80 transition-all cursor-pointer group"
+            >
+              <div className="w-8 h-8 rounded-full bg-indigo-50 text-[#4361EE] flex items-center justify-center shrink-0 mt-0.5">
+                <Bell size={14} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <h4 className="text-xs font-bold text-slate-900 leading-tight group-hover:text-[#4361EE] transition-colors truncate">
+                  {n.title || (n.sender?.name ? `From ${n.sender.name}` : "Notification")}
+                </h4>
+                <p className="text-[11px] font-medium text-slate-500 line-clamp-2 mt-0.5 leading-relaxed">
+                  {n.message}
+                </p>
+              </div>
             </div>
+          ))
+        ) : members.length > 0 ? (
+          members.slice(0, 4).map((m) => (
+            <div
+              key={m.id || m._id}
+              className="flex items-center gap-3 p-2 rounded-2xl hover:bg-white transition-all cursor-pointer group"
+            >
+              <Avatar
+                src={m.avatar}
+                name={m.name}
+                size="sm"
+                className="ring-2 ring-indigo-50"
+              />
+              <div className="flex-1 min-w-0">
+                <h4 className="text-xs font-bold text-slate-900 leading-tight group-hover:text-[#4361EE] transition-colors truncate">
+                  {m.name}
+                </h4>
+                <p className="text-[11px] font-medium text-slate-400 truncate mt-0.5">
+                  {m.email || m.role}
+                </p>
+              </div>
+            </div>
+          ))
+        ) : (
+          <div className="p-4 text-center text-xs text-slate-400 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
+            No messages or team activity yet.
           </div>
-        ))}
+        )}
       </div>
     </div>
   );

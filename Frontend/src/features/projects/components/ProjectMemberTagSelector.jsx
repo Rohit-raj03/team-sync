@@ -9,6 +9,7 @@ import {
   UserCheck,
 } from "lucide-react";
 import { useTeam } from "../../team/hooks/useTeam.js";
+import { Avatar } from "../../../shared/components/ui/Avatar.jsx";
 
 const PROJECT_ROLES = [
   "Project Lead",
@@ -31,6 +32,7 @@ export const ProjectMemberTagSelector = ({
 }) => {
   const { members } = useTeam();
   const [searchQuery, setSearchQuery] = useState("");
+  const [selectedAccessRole, setSelectedAccessRole] = useState("Member");
   const [selectedRole, setSelectedRole] = useState("Contributor");
 
   const filteredMembers = useMemo(() => {
@@ -56,6 +58,7 @@ export const ProjectMemberTagSelector = ({
         ...taggedMembers,
         {
           ...member,
+          role: selectedAccessRole,
           projectRole: selectedRole,
         },
       ]);
@@ -128,9 +131,9 @@ export const ProjectMemberTagSelector = ({
         </div>
       )}
 
-      {/* Search Bar + Default Role Picker */}
+      {/* Search Bar + Access Role + Project Role Pickers */}
       <div className="grid grid-cols-1 sm:grid-cols-12 gap-2">
-        <div className="sm:col-span-8 relative">
+        <div className="sm:col-span-6 relative">
           <Search
             size={15}
             className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"
@@ -153,16 +156,29 @@ export const ProjectMemberTagSelector = ({
           )}
         </div>
 
-        <div className="sm:col-span-4">
+        <div className="sm:col-span-3">
+          <select
+            value={selectedAccessRole}
+            onChange={(e) => setSelectedAccessRole(e.target.value)}
+            className="w-full px-2.5 py-2 rounded-xl border border-slate-200 text-xs bg-white text-slate-700 font-semibold focus:outline-none focus:ring-2 focus:ring-[#4361EE]"
+            title="Access role for newly tagged member"
+          >
+            <option value="Admin">Access: Admin</option>
+            <option value="Member">Access: Member</option>
+            <option value="Viewer">Access: Viewer</option>
+          </select>
+        </div>
+
+        <div className="sm:col-span-3">
           <select
             value={selectedRole}
             onChange={(e) => setSelectedRole(e.target.value)}
             className="w-full px-2.5 py-2 rounded-xl border border-slate-200 text-xs bg-white text-slate-700 font-medium focus:outline-none focus:ring-2 focus:ring-[#4361EE]"
-            title="Default role for newly tagged member"
+            title="Specialty role for newly tagged member"
           >
             {PROJECT_ROLES.map((role) => (
               <option key={role} value={role}>
-                Role: {role}
+                {role}
               </option>
             ))}
           </select>
@@ -198,13 +214,11 @@ export const ProjectMemberTagSelector = ({
                       {active && <Check size={12} strokeWidth={3} />}
                     </div>
 
-                    <img
+                    <Avatar
                       src={member.avatar}
-                      alt={member.name}
-                      className="w-8 h-8 rounded-full object-cover ring-1 ring-slate-100 shrink-0"
-                      onError={(e) => {
-                        e.target.src = `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(member.name)}`;
-                      }}
+                      name={member.name}
+                      size="sm"
+                      className="ring-1 ring-slate-100 shrink-0"
                     />
 
                     <div className="min-w-0">

@@ -2,6 +2,7 @@ import React from "react";
 import { TaskMetricCards } from "../../features/tasks/components/TaskMetricCards.jsx";
 import { TaskActivityChart } from "../../features/tasks/components/TaskActivityChart.jsx";
 import { TaskRecentList } from "../../features/tasks/components/TaskRecentList.jsx";
+import { DashboardProjectsWidget } from "../../features/dashboard/components/DashboardProjectsWidget.jsx";
 import { TodayScheduleWidget } from "../../features/dashboard/components/TodayScheduleWidget.jsx";
 import { MessagesWidget } from "../../features/dashboard/components/MessagesWidget.jsx";
 
@@ -18,10 +19,13 @@ export const DashboardPage = () => {
         {/* 1. Top 3 KPI Cards */}
         <TaskMetricCards />
 
-        {/* 2. "Task Done" Spline Area Chart */}
+        {/* 2. Projects Overview Widget */}
+        <DashboardProjectsWidget />
+
+        {/* 3. "Task Done" Spline Area Chart */}
         <TaskActivityChart />
 
-        {/* 3. "Task" Recent List Feed */}
+        {/* 4. "Task" Recent List Feed */}
         <TaskRecentList />
       </div>
 

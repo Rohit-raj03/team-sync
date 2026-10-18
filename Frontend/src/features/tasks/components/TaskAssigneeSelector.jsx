@@ -20,8 +20,13 @@ export const TaskAssigneeSelector = ({
   selectedAssignees = [],
   onChange,
   error,
+  availableMembers,
 }) => {
-  const { members, inviteMember } = useTeam();
+  const { members: allTeamMembers, inviteMember } = useTeam();
+  const members =
+    availableMembers && availableMembers.length > 0
+      ? availableMembers
+      : allTeamMembers;
   const [searchQuery, setSearchQuery] = useState("");
   const [isInviteOpen, setIsInviteOpen] = useState(false);
   const [newMemberData, setNewMemberData] = useState({

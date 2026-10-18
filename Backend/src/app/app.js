@@ -7,6 +7,8 @@ import userRoutes from "../routes/user.routes.js";
 import adminRoutes from "../routes/admin.routes.js";
 import teamRoutes from "../routes/team.routes.js";
 import projectRoutes from "../routes/project.routes.js";
+import taskRoutes from "../routes/task.routes.js";
+import notificationRoutes from "../routes/notification.routes.js";
 import mediaRoutes from "../routes/media.routes.js";
 import {
   notFoundHandler,
@@ -17,9 +19,27 @@ import {
 const app = express();
 
 // 2. Middlewares
+const allowedOrigins = [
+  config.CLIENT_URL?.replace(/\/$/, ""),
+  "http://localhost:5173",
+  "http://127.0.0.1:5173",
+  "http://localhost:3000",
+  "http://localhost:5050",
+].filter(Boolean);
+
 app.use(
   cors({
-    origin: config.CLIENT_URL,
+    origin: (origin, callback) => {
+      if (
+        !origin ||
+        allowedOrigins.includes(origin) ||
+        allowedOrigins.includes(origin.replace(/\/$/, ""))
+      ) {
+        callback(null, true);
+      } else {
+        callback(new Error(`CORS blocked for origin: ${origin}`));
+      }
+    },
     credentials: true,
   }),
 );
@@ -32,9 +52,11 @@ app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/teams", teamRoutes);
+app.use("/api/team", teamRoutes);
 app.use("/api/projects", projectRoutes);
+app.use("/api/tasks", taskRoutes);
+app.use("/api/notifications", notificationRoutes);
 app.use("/api/media", mediaRoutes);
-
 
 // 4. Test & Health Check Routes
 app.get("/", (req, res) => {

@@ -84,17 +84,44 @@ export function useProfile() {
     }
   };
 
-  const handlePhotoUpload = (file) => {
+  const handlePhotoUpload = async (file) => {
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      handleChange('avatar', e.target.result);
-    };
-    reader.readAsDataURL(file);
+    try {
+      setIsSaving(true);
+      const res = await profileService.uploadAvatar(file);
+      const avatarUrl = res?.data?.url || res?.user?.avatar;
+      if (avatarUrl) {
+        handleChange('avatar', avatarUrl);
+        updateProfile({ avatar: avatarUrl });
+        setSaveSuccess(true);
+        setTimeout(() => setSaveSuccess(false), 3000);
+      }
+    } catch (err) {
+      console.warn('Backend image upload failed, falling back to local preview:', err.message);
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        handleChange('avatar', e.target.result);
+      };
+      reader.readAsDataURL(file);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
-  const handlePhotoRemove = () => {
-    handleChange('avatar', '');
+  const handlePhotoRemove = async () => {
+    try {
+      setIsSaving(true);
+      await profileService.deleteAvatar();
+      handleChange('avatar', '');
+      updateProfile({ avatar: '' });
+      setSaveSuccess(true);
+      setTimeout(() => setSaveSuccess(false), 3000);
+    } catch (err) {
+      console.warn('Backend delete avatar failed:', err.message);
+      handleChange('avatar', '');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const validate = () => {

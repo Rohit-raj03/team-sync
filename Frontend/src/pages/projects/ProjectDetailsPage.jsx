@@ -11,12 +11,14 @@ import {
   Clock,
   ChevronRight,
   Sparkles,
+  Trash2,
 } from "lucide-react";
 import { PageHeader } from "../../shared/components/layout/PageHeader.jsx";
 import { Badge } from "../../shared/components/ui/Badge.jsx";
 import { Modal } from "../../shared/components/ui/Modal.jsx";
 import { ProjectMembers } from "../../features/projects/components/ProjectMembers.jsx";
 import { ProjectTaskList } from "../../features/projects/components/ProjectTaskList.jsx";
+import { ProjectForm } from "../../features/projects/components/ProjectForm.jsx";
 import { CreateTaskModal } from "../../features/tasks/components/CreateTaskModal.jsx";
 import { TaskDetails } from "../../features/tasks/components/TaskDetails.jsx";
 import { useProjects } from "../../features/projects/hooks/useProjects.js";
@@ -38,10 +40,14 @@ export const ProjectDetailsPage = () => {
     getProjectTasks,
     tagMemberToProject,
     untagMemberFromProject,
+    updateMemberRole,
+    updateProject,
+    deleteProject,
   } = useProjects();
   const { addTask } = useTasks();
 
   const [isCreateTaskOpen, setIsCreateTaskOpen] = useState(false);
+  const [isEditProjectOpen, setIsEditProjectOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState(null);
 
   const project = getProjectById(id);
@@ -76,6 +82,22 @@ export const ProjectDetailsPage = () => {
       projectName: project.name,
     });
     setIsCreateTaskOpen(false);
+  };
+
+  const handleEditProject = async (data) => {
+    await updateProject(project.id, data);
+    setIsEditProjectOpen(false);
+  };
+
+  const handleDeleteProject = async () => {
+    if (
+      window.confirm(
+        `Are you sure you want to delete "${project.name}"? This action cannot be undone.`
+      )
+    ) {
+      await deleteProject(project.id);
+      navigate(ROUTES.PROJECTS);
+    }
   };
 
   const completedTasksCount = projectTasks.filter(
@@ -144,8 +166,23 @@ export const ProjectDetailsPage = () => {
             </div>
           </div>
 
-          {/* Action Trigger: Add Task to Project */}
-          <div className="flex items-center gap-3 shrink-0">
+          {/* Action Triggers: Edit, Delete, Add Task */}
+          <div className="flex items-center gap-2.5 shrink-0">
+            <button
+              onClick={() => setIsEditProjectOpen(true)}
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-2xl border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-bold transition-all shadow-xs"
+              title="Edit project scope and information"
+            >
+              <Edit3 size={14} />
+              <span>Edit</span>
+            </button>
+            <button
+              onClick={handleDeleteProject}
+              className="p-2 rounded-2xl border border-slate-200 hover:border-rose-200 hover:bg-rose-50 text-slate-400 hover:text-rose-600 transition-all shadow-xs"
+              title="Delete project"
+            >
+              <Trash2 size={15} />
+            </button>
             <button
               onClick={() => setIsCreateTaskOpen(true)}
               className="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-[#4361EE] hover:bg-[#3451DE] active:scale-98 text-white text-xs font-bold shadow-md shadow-indigo-100 transition-all"
@@ -216,11 +253,14 @@ export const ProjectDetailsPage = () => {
         <ProjectMembers
           projectId={project.id}
           members={project.members || []}
-          onTagMember={(member, role) =>
-            tagMemberToProject(project.id, member, role)
+          onTagMember={(member, projectRole, role) =>
+            tagMemberToProject(project.id, member, projectRole, role)
           }
           onUntagMember={(memberId) =>
             untagMemberFromProject(project.id, memberId)
+          }
+          onUpdateMemberRole={(memberId, role, projectRole) =>
+            updateMemberRole(project.id, memberId, role, projectRole)
           }
         />
       </div>
@@ -246,7 +286,21 @@ export const ProjectDetailsPage = () => {
         }}
       />
 
-      {/* 6. Task Details Modal */}
+      {/* 6. Edit Project Modal */}
+      <Modal
+        isOpen={isEditProjectOpen}
+        onClose={() => setIsEditProjectOpen(false)}
+        title="Edit Project Details"
+        maxWidth="max-w-2xl"
+      >
+        <ProjectForm
+          initialData={project}
+          onSubmit={handleEditProject}
+          onCancel={() => setIsEditProjectOpen(false)}
+        />
+      </Modal>
+
+      {/* 7. Task Details Modal */}
       <Modal
         isOpen={!!selectedTask}
         onClose={() => setSelectedTask(null)}

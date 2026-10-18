@@ -1,9 +1,19 @@
-import { apiClient } from '../../../shared/api/apiClient.js';
+import { apiClient } from "../../../shared/api/apiClient.js";
 
 export const taskService = {
-  getTasks: async (params) => apiClient.get('/tasks', params),
+  getTasks: async (params) => apiClient.get("/tasks", params),
+  getProjectTasks: async (projectId, params) =>
+    apiClient.get(`/projects/${projectId}/tasks`, params),
   getTaskById: async (id) => apiClient.get(`/tasks/${id}`),
-  createTask: async (data) => apiClient.post('/tasks', data),
-  updateTask: async (id, data) => apiClient.put(`/tasks/${id}`, data),
+  createTask: async (data) => apiClient.post("/tasks", data),
+  updateTask: async (id, data) => apiClient.patch(`/tasks/${id}`, data),
   deleteTask: async (id) => apiClient.delete(`/tasks/${id}`),
+  toggleSubtask: async (taskId, subtaskId) =>
+    apiClient.patch(`/tasks/${taskId}/subtasks/${subtaskId}`),
+  getTaskComments: async (taskId) =>
+    apiClient.get(`/tasks/${taskId}/comments`),
+  createTaskComment: async (taskId, data) =>
+    apiClient.post(`/tasks/${taskId}/comments`, data),
 };
+
+export default taskService;

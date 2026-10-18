@@ -2,6 +2,7 @@ import express from "express";
 import {
   getAdminStats,
   getAllAdminUsers,
+  createAdminUser,
   updateUserRole,
   toggleUserStatus,
   deleteUser,
@@ -15,6 +16,7 @@ router.use(protect, requireAdmin);
 
 router.get("/stats", getAdminStats);
 router.get("/users", getAllAdminUsers);
+router.post("/users", createAdminUser);
 router.patch("/users/:id/role", updateUserRole);
 router.patch("/users/:id/status", toggleUserStatus);
 router.delete("/users/:id", deleteUser);

@@ -230,3 +230,72 @@ export const deleteUser = async (req, res) => {
   }
 };
 
+/**
+ * @desc    Admin: Create a new user account directly
+ * @route   POST /api/admin/users
+ * @access  Private / Admin
+ */
+export const createAdminUser = async (req, res) => {
+  try {
+    const { name, email, password, role, jobTitle, username, phone } = req.body;
+
+    if (!name || !email) {
+      return res.status(400).json({
+        success: false,
+        message: "Name and email are required.",
+      });
+    }
+
+    const cleanEmail = email.toLowerCase().trim();
+    const existing = await UserModel.findOne({ email: cleanEmail });
+    if (existing) {
+      return res.status(409).json({
+        success: false,
+        message: "A user with this email already exists.",
+      });
+    }
+
+    const validRoles = ["admin", "user", "member", "manager"];
+    let assignedRole = "user";
+    if (role) {
+      const normalized = role.toLowerCase().trim();
+      if (validRoles.includes(normalized)) {
+        assignedRole = normalized;
+      }
+    }
+
+    const newUser = await UserModel.create({
+      name: name.trim(),
+      email: cleanEmail,
+      username: username?.trim() || cleanEmail.split("@")[0],
+      password: password || "TeamSync@1234",
+      role: assignedRole,
+      jobTitle: jobTitle?.trim() || (assignedRole === "admin" ? "Administrator" : "Team Member"),
+      phone: phone || "",
+      isActive: true,
+    });
+
+    return res.status(201).json({
+      success: true,
+      message: "User created successfully",
+      user: {
+        id: newUser._id,
+        _id: newUser._id,
+        name: newUser.name,
+        email: newUser.email,
+        username: newUser.username,
+        role: newUser.role,
+        jobTitle: newUser.jobTitle,
+        isActive: newUser.isActive,
+        createdAt: newUser.createdAt,
+      },
+    });
+  } catch (error) {
+    console.error("createAdminUser error:", error.message);
+    return res.status(500).json({
+      success: false,
+      message: error.message || "Server error creating user",
+    });
+  }
+};
+

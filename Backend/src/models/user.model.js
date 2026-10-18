@@ -44,8 +44,12 @@ const userSchema = new mongoose.Schema(
     phone: {
       type: String,
       default: "",
-      minlength: [10, "minimum 10 char required"],
-      maxlength: [10, "maximum 10 char required"],
+      validate: {
+        validator: function (v) {
+          return !v || (v.length >= 10 && v.length <= 15);
+        },
+        message: "Phone number must be between 10 and 15 digits",
+      },
     },
 
     bio: {

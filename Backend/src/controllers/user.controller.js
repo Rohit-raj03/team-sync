@@ -158,7 +158,19 @@ export const updateUserProfile = async (req, res) => {
  */
 export const getAllUsers = async (req, res) => {
   try {
-    const users = await UserModel.find({ isActive: true })
+    const { search } = req.query;
+    const query = { isActive: true };
+
+    if (search && search.trim()) {
+      const s = search.trim();
+      query.$or = [
+        { name: { $regex: s, $options: "i" } },
+        { email: { $regex: s, $options: "i" } },
+        { username: { $regex: s, $options: "i" } },
+      ];
+    }
+
+    const users = await UserModel.find(query)
       .select("-password")
       .sort({ createdAt: -1 });
 
@@ -166,6 +178,7 @@ export const getAllUsers = async (req, res) => {
       success: true,
       count: users.length,
       users,
+      data: users,
     });
   } catch (error) {
     console.error("getAllUsers error:", error.message);

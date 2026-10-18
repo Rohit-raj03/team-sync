@@ -29,6 +29,11 @@ import {
 import { formatDate } from "../../../shared/utils/formatDate.js";
 import { useTasks } from "../hooks/useTasks.js";
 import { useTeam } from "../../team/hooks/useTeam.js";
+import { useProjects } from "../../projects/hooks/useProjects.js";
+import { MentionTextarea } from "./MentionTextarea.jsx";
+import { MentionRenderer } from "./MentionRenderer.jsx";
+import { TaskComments } from "./TaskComments.jsx";
+import { Avatar } from "../../../shared/components/ui/Avatar.jsx";
 import {
   TASK_STATUS,
   TASK_PRIORITY,
@@ -37,15 +42,40 @@ import {
 /**
  * Feature Component: TaskDetails
  * Layer: features/tasks/components/
- * Responsibility: Complete interactive task overview enabling inline subtask ticking, employee/assignee additions and removals, status transitions, and task metadata editing.
+ * Responsibility: Complete interactive task overview enabling inline subtask ticking, employee/assignee additions and removals, status transitions, metadata editing, @mentions, and real-time discussion comments.
  */
-export const TaskDetails = ({ task: initialTask, taskId, onUpdate }) => {
+export const TaskDetails = ({
+  task: initialTask,
+  taskId,
+  onUpdate,
+  projectMembers: passedMembers,
+}) => {
   const { allTasks, updateTask } = useTasks();
-  const { members } = useTeam();
+  const { members: teamMembers } = useTeam();
+  const { getProjectById } = useProjects();
 
   // Retrieve the live reactive task from Redux store
-  const currentId = taskId || initialTask?.id;
-  const task = allTasks.find((t) => t.id === currentId) || initialTask;
+  const currentId = taskId || initialTask?.id || initialTask?._id;
+  const task =
+    allTasks.find((t) => t.id === currentId || t._id === currentId) ||
+    initialTask;
+
+  const project = getProjectById(
+    task?.projectId || task?.project?._id || task?.project
+  );
+
+  const effectiveMembers =
+    passedMembers ||
+    (project?.members && project.members.length > 0
+      ? project.members.map((m) => ({
+          id: m.id || m._id || m.user?._id || m.user,
+          _id: m.id || m._id || m.user?._id || m.user,
+          name: m.name || m.user?.name || "Member",
+          username: m.username || m.user?.username || "",
+          avatar: m.avatar || m.user?.avatar,
+          role: m.projectRole || m.role || "Member",
+        }))
+      : teamMembers);
 
   // Local state for editing modes
   const [isEditingMeta, setIsEditingMeta] = useState(false);
@@ -230,14 +260,13 @@ export const TaskDetails = ({ task: initialTask, taskId, onUpdate }) => {
     setIsEditingMeta(false);
   };
 
-  // Filter team members for assignee search
-  const filteredTeamMembers = members.filter((m) => {
+  // Filter project members for assignee search
+  const filteredTeamMembers = effectiveMembers.filter((m) => {
     const q = memberSearchQuery.toLowerCase();
-    return (
-      m.name.toLowerCase().includes(q) ||
-      (m.username && m.username.toLowerCase().includes(q)) ||
-      (m.role && m.role.toLowerCase().includes(q))
-    );
+    const name = (m.name || "").toLowerCase();
+    const username = (m.username || "").toLowerCase();
+    const role = (m.role || m.projectRole || "").toLowerCase();
+    return name.includes(q) || username.includes(q) || role.includes(q);
   });
 
   const subtasks = task.subtasks || [];
@@ -388,13 +417,14 @@ export const TaskDetails = ({ task: initialTask, taskId, onUpdate }) => {
 
           <div>
             <label className="block text-[11px] font-bold uppercase text-slate-500 mb-1">
-              Description
+              Description (Type @ to mention team members)
             </label>
-            <textarea
+            <MentionTextarea
               rows={3}
               value={editDescription}
-              onChange={(e) => setEditDescription(e.target.value)}
-              className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#4361EE] resize-none"
+              onChange={(newVal) => setEditDescription(newVal)}
+              projectMembers={effectiveMembers}
+              placeholder="Task description with @mentions..."
             />
           </div>
 
@@ -449,9 +479,13 @@ export const TaskDetails = ({ task: initialTask, taskId, onUpdate }) => {
           <h2 className="text-xl font-bold text-slate-900 leading-snug">
             {task.title}
           </h2>
-          <p className="text-xs text-slate-600 mt-2 leading-relaxed whitespace-pre-line">
-            {task.description || "No detailed description provided."}
-          </p>
+          <div className="text-xs text-slate-600 mt-2 leading-relaxed whitespace-pre-line">
+            {task.description ? (
+              <MentionRenderer text={task.description} />
+            ) : (
+              "No detailed description provided."
+            )}
+          </div>
         </div>
       )}
 
@@ -482,6 +516,31 @@ export const TaskDetails = ({ task: initialTask, taskId, onUpdate }) => {
           <span className="font-semibold text-[#4361EE] mt-0.5 block">
             {task.estimatedTime || "8h"}
           </span>
+        </div>
+      </div>
+
+      {/* TASK CREATOR (Clearly distinguished from assignees) */}
+      <div className="p-3 bg-slate-50/80 rounded-2xl border border-slate-100 flex items-center justify-between">
+        <div className="flex items-center gap-2.5">
+          <Avatar
+            src={task.creator?.avatar}
+            name={task.creator?.name || "Task Creator"}
+            size="sm"
+            className="ring-1 ring-slate-200"
+          />
+          <div>
+            <div className="flex items-center gap-1.5">
+              <span className="text-xs font-bold text-slate-800">
+                {task.creator?.name || "Unknown Creator"}
+              </span>
+              <span className="text-[10px] font-bold px-1.5 py-0.2 rounded-md bg-purple-50 text-purple-700 border border-purple-100">
+                Creator
+              </span>
+            </div>
+            <p className="text-[11px] text-slate-400">
+              Created on {formatDate(task.createdAt || task.startDate)}
+            </p>
+          </div>
         </div>
       </div>
 
@@ -548,13 +607,11 @@ export const TaskDetails = ({ task: initialTask, taskId, onUpdate }) => {
                         {isAssigned && <Check size={11} strokeWidth={3} />}
                       </div>
 
-                      <img
+                      <Avatar
                         src={member.avatar}
-                        alt={member.name}
-                        className="w-7 h-7 rounded-full object-cover ring-1 ring-slate-100"
-                        onError={(e) => {
-                          e.target.src = `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(member.name)}`;
-                        }}
+                        name={member.name}
+                        size="xs"
+                        className="ring-1 ring-slate-100"
                       />
 
                       <div className="min-w-0">
@@ -592,13 +649,11 @@ export const TaskDetails = ({ task: initialTask, taskId, onUpdate }) => {
                 className="flex items-center justify-between p-2.5 bg-white rounded-xl border border-slate-200/80 shadow-xs hover:border-indigo-200 transition-all group"
               >
                 <div className="flex items-center gap-2.5 min-w-0">
-                  <img
+                  <Avatar
                     src={user.avatar}
-                    alt={user.name}
-                    className="w-8 h-8 rounded-full object-cover ring-1 ring-slate-100 shrink-0"
-                    onError={(e) => {
-                      e.target.src = `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(user.name)}`;
-                    }}
+                    name={user.name}
+                    size="sm"
+                    className="ring-1 ring-slate-100 shrink-0"
                   />
                   <div className="min-w-0">
                     <p className="text-xs font-bold text-slate-800 truncate">
@@ -822,6 +877,12 @@ export const TaskDetails = ({ task: initialTask, taskId, onUpdate }) => {
           <p className="text-slate-700 leading-relaxed">{task.comment}</p>
         </div>
       )}
+
+      {/* 9. Interactive Comments & @Mentions */}
+      <TaskComments
+        taskId={task.id || task._id}
+        projectMembers={effectiveMembers}
+      />
     </div>
   );
 };

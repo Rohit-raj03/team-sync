@@ -3,6 +3,7 @@ import { Search, Bell, ChevronDown, Menu } from "lucide-react";
 import { useAuth } from "../../../features/auth/hooks/useAuth.js";
 import { useNavigate } from "react-router-dom";
 import { ROUTES } from "../../constants/routes.js";
+import { Avatar } from "../ui/Avatar.jsx";
 
 /**
  * Shared Layout Component: Navbar
@@ -82,10 +83,11 @@ export const Navbar = ({ onToggleSidebar }) => {
             onClick={() => setIsProfileOpen((prev) => !prev)}
             className="flex items-center gap-2 p-1 rounded-full hover:bg-slate-50 transition-colors focus:outline-none"
           >
-            <img
-              src={user?.avatar || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(user?.name || "User")}`}
-              alt={user?.name || "User"}
-              className="w-9 h-9 rounded-full object-cover ring-2 ring-slate-100"
+            <Avatar
+              src={user?.avatar}
+              name={user?.name || "User"}
+              size="sm"
+              className="ring-2 ring-slate-100"
             />
             <ChevronDown size={15} className="text-slate-400" />
           </button>

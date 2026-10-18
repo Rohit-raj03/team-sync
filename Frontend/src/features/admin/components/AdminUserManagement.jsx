@@ -20,6 +20,7 @@ import {
   ShieldAlert,
 } from 'lucide-react';
 import { Badge } from '../../../shared/components/ui/Badge.jsx';
+import { Avatar } from '../../../shared/components/ui/Avatar.jsx';
 import { AdminConfirmationModal } from './AdminConfirmationModal.jsx';
 
 const TEAMS_LIST = [
@@ -309,13 +310,11 @@ export const AdminUserManagement = ({
                       <td className="py-3.5 px-4">
                         <div className="flex items-center gap-3">
                           <div className="relative">
-                            <img
+                            <Avatar
                               src={user.avatar}
-                              alt={user.name}
-                              className="w-9 h-9 rounded-full object-cover ring-2 ring-slate-100"
-                              onError={(e) => {
-                                e.target.src = `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(user.name)}`;
-                              }}
+                              name={user.name}
+                              size="sm"
+                              className="ring-2 ring-slate-100"
                             />
                             {isActive && (
                               <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 rounded-full ring-2 ring-white" />

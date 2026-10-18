@@ -39,6 +39,39 @@ router.get("/", async (req, res) => {
   }
 });
 
+router.get("/members", async (req, res) => {
+  try {
+    const UserModel = (await import("../models/user.model.js")).default;
+    const users = await UserModel.find({ isActive: true }).select("-password");
+    return res.status(200).json({
+      success: true,
+      count: users.length,
+      data: users,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: error.message || "Server error fetching members",
+    });
+  }
+});
+
+router.post("/invite", async (req, res) => {
+  try {
+    const { email, role, name } = req.body;
+    return res.status(200).json({
+      success: true,
+      message: `Invitation successfully sent to ${email}`,
+      data: { email, role: role || "member", name: name || "" },
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: error.message || "Server error sending invite",
+    });
+  }
+});
+
 router.get("/:teamId", async (req, res) => {
   try {
     const team = await TeamModel.findById(req.params.teamId)

@@ -1,6 +1,8 @@
-import { apiClient } from '../../../shared/api/apiClient.js';
+import { apiClient } from "../../../shared/api/apiClient.js";
 
 export const teamService = {
-  getMembers: () => apiClient.get('/team/members'),
-  inviteMember: (data) => apiClient.post('/team/invite', data),
+  getMembers: (params) => apiClient.get("/users", params),
+  inviteMember: (data) => apiClient.post("/team/invite", data),
 };
+
+export default teamService;

@@ -29,6 +29,8 @@ import { TaskDetails } from '../../features/tasks/components/TaskDetails.jsx';
 import { Modal } from '../../shared/components/ui/Modal.jsx';
 import { useProjects } from '../../features/projects/hooks/useProjects.js';
 import { useTasks } from '../../features/tasks/hooks/useTasks.js';
+import { useAuth } from '../../features/auth/hooks/useAuth.js';
+import { Avatar } from '../../shared/components/ui/Avatar.jsx';
 import { ROUTES } from '../../shared/constants/routes.js';
 
 /**
@@ -38,6 +40,7 @@ import { ROUTES } from '../../shared/constants/routes.js';
  */
 export const AdminDashboardPage = () => {
   const navigate = useNavigate();
+  const { user: currentUser } = useAuth();
   const {
     users,
     permissions,
@@ -151,14 +154,19 @@ export const AdminDashboardPage = () => {
             </Link>
 
             <div className="flex items-center gap-2.5 pl-2 border-l border-slate-100">
-              <img
-                src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=120&h=120&fit=crop&crop=faces"
-                alt="Admin"
-                className="w-8 h-8 rounded-full object-cover ring-2 ring-indigo-50"
+              <Avatar
+                src={currentUser?.avatar}
+                name={currentUser?.name || 'Administrator'}
+                size="sm"
+                className="ring-2 ring-indigo-50"
               />
               <div className="hidden sm:block text-left">
-                <p className="text-xs font-bold text-slate-900 leading-tight">Angelina Davis</p>
-                <p className="text-[10px] text-purple-600 font-semibold">Super Admin</p>
+                <p className="text-xs font-bold text-slate-900 leading-tight">
+                  {currentUser?.name || 'Administrator'}
+                </p>
+                <p className="text-[10px] text-purple-600 font-semibold capitalize">
+                  {currentUser?.role === 'admin' ? 'Super Admin' : currentUser?.role || 'Admin'}
+                </p>
               </div>
             </div>
           </div>

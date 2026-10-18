@@ -154,7 +154,7 @@ export const ProjectsPage = () => {
       {/* 4. Projects Grid */}
       <ProjectList
         projects={projects}
-        onProjectClick={(p) => navigate(ROUTES.PROJECT_DETAILS(p.id))}
+        onProjectClick={(p) => navigate(ROUTES.PROJECT_DETAILS(p.id || p._id))}
         onCreateClick={() => setIsModalOpen(true)}
       />
 

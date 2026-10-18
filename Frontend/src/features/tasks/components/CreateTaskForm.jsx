@@ -25,6 +25,7 @@ import { TaskStatusSelector } from "./TaskStatusSelector.jsx";
 import { TaskSubtasksList } from "./TaskSubtasksList.jsx";
 import { TaskAttachmentsUploader } from "./TaskAttachmentsUploader.jsx";
 import { TaskTagsInput } from "./TaskTagsInput.jsx";
+import { MentionTextarea } from "./MentionTextarea.jsx";
 import { useProjects } from "../../projects/hooks/useProjects.js";
 
 const ESTIMATION_PRESETS = ["2h", "4h", "1d", "2d", "3d", "1w"];
@@ -41,18 +42,16 @@ export const CreateTaskForm = ({
   isSubmitting = false,
 }) => {
   const { allProjects } = useProjects();
-  const availableProjects =
-    allProjects && allProjects.length > 0
-      ? allProjects
-      : [
-          { id: "p-1", name: "TeamSync Web App" },
-          { id: "p-2", name: "Mobile Client v2" },
-        ];
+  const availableProjects = allProjects || [];
 
   const [formData, setFormData] = useState({
     title: initialData.title || "",
     description: initialData.description || "",
-    projectId: initialData.projectId || availableProjects[0]?.id || "p-1",
+    projectId:
+      initialData.projectId ||
+      availableProjects[0]?.id ||
+      availableProjects[0]?._id ||
+      "",
     priority: initialData.priority || TASK_PRIORITY.MEDIUM,
     status: initialData.status || TASK_STATUS.TODO,
     startDate: initialData.startDate || new Date().toISOString().split("T")[0],
@@ -63,29 +62,16 @@ export const CreateTaskForm = ({
         .split("T")[0],
     estimatedTime: initialData.estimatedTime || "8h",
     assignees: initialData.assignees || [],
-    tags: initialData.tags || ["Frontend", "UI/UX"],
-    subtasks: initialData.subtasks || [
-      {
-        id: "st-1",
-        title: "Prepare design tokens & responsive specifications",
-        completed: true,
-      },
-      {
-        id: "st-2",
-        title: "Build interactive React components",
-        completed: false,
-      },
-    ],
-    attachments: initialData.attachments || [
-      {
-        id: "att-1",
-        name: "task-flow-wireframe.png",
-        size: "1.4 MB",
-        type: "image/png",
-      },
-    ],
+    tags: initialData.tags || [],
+    subtasks: initialData.subtasks || [],
+    attachments: initialData.attachments || [],
     comment: initialData.comment || "",
   });
+
+  const selectedProject = availableProjects.find(
+    (p) => (p.id || p._id) === formData.projectId
+  );
+  const projectMembers = selectedProject?.members || [];
 
   const [errors, setErrors] = useState({});
   const [isSuccess, setIsSuccess] = useState(false);
@@ -243,16 +229,19 @@ export const CreateTaskForm = ({
                 </button>
               </div>
 
-              {/* Textarea */}
-              <textarea
-                rows={5}
-                placeholder="Describe the objective, user story, acceptance criteria, or technical implementation notes..."
-                value={formData.description}
-                onChange={(e) =>
-                  setFormData({ ...formData, description: e.target.value })
-                }
-                className="w-full p-3.5 text-xs text-slate-800 placeholder-slate-400 bg-transparent focus:outline-none resize-none leading-relaxed"
-              />
+              {/* Mention-supported Textarea */}
+              <div className="p-2">
+                <MentionTextarea
+                  rows={5}
+                  placeholder="Describe the objective, user story, acceptance criteria, or type @ to mention project team members..."
+                  value={formData.description}
+                  onChange={(val) =>
+                    setFormData({ ...formData, description: val })
+                  }
+                  projectMembers={projectMembers}
+                  className="w-full text-xs text-slate-800 placeholder-slate-400 bg-transparent border-0 focus:ring-0 leading-relaxed"
+                />
+              </div>
             </div>
           </div>
 
@@ -284,14 +273,15 @@ export const CreateTaskForm = ({
                 Initial Comment / Handover Note (Optional)
               </label>
             </div>
-            <input
-              type="text"
-              placeholder="Leave an introductory note or ping team members on creation..."
+            <MentionTextarea
+              rows={2}
+              placeholder="Leave an introductory note or type @ to ping team members on creation..."
               value={formData.comment}
-              onChange={(e) =>
-                setFormData({ ...formData, comment: e.target.value })
+              onChange={(val) =>
+                setFormData({ ...formData, comment: val })
               }
-              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs bg-white placeholder-slate-400 text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#4361EE]"
+              projectMembers={projectMembers}
+              className="w-full text-xs"
             />
           </div>
         </div>
@@ -308,13 +298,26 @@ export const CreateTaskForm = ({
             </div>
             <select
               value={formData.projectId}
-              onChange={(e) =>
-                setFormData({ ...formData, projectId: e.target.value })
-              }
+              onChange={(e) => {
+                const newProjectId = e.target.value;
+                const newProj = availableProjects.find(
+                  (p) => (p.id || p._id) === newProjectId
+                );
+                const allowedMemberIds = new Set(
+                  (newProj?.members || []).map((m) => (m.id || m._id)?.toString())
+                );
+                setFormData((prev) => ({
+                  ...prev,
+                  projectId: newProjectId,
+                  assignees: prev.assignees.filter((a) =>
+                    allowedMemberIds.has((a.id || a._id)?.toString())
+                  ),
+                }));
+              }}
               className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#4361EE] shadow-xs cursor-pointer"
             >
               {availableProjects.map((project) => (
-                <option key={project.id} value={project.id}>
+                <option key={project.id || project._id} value={project.id || project._id}>
                   {project.name}{" "}
                   {project.category ? `(${project.category})` : ""}
                 </option>
@@ -324,7 +327,7 @@ export const CreateTaskForm = ({
             {/* Display Tagged Members in Selected Project */}
             {(() => {
               const currentProj = availableProjects.find(
-                (p) => p.id === formData.projectId,
+                (p) => (p.id || p._id) === formData.projectId,
               );
               if (!currentProj?.members || currentProj.members.length === 0)
                 return null;
@@ -336,7 +339,7 @@ export const CreateTaskForm = ({
                   <div className="flex -space-x-1.5 overflow-hidden">
                     {currentProj.members.slice(0, 4).map((m) => (
                       <img
-                        key={m.id}
+                        key={m.id || m._id}
                         src={m.avatar}
                         alt={m.name}
                         title={`${m.name} (${m.projectRole || m.role || "Member"})`}
@@ -371,10 +374,11 @@ export const CreateTaskForm = ({
             }
           />
 
-          {/* Assignee Multi-Selector with Dynamic Team Data */}
+          {/* Assignee Multi-Selector with Project Members */}
           <div className="p-4 rounded-2xl bg-white border border-slate-200/80 shadow-xs">
             <TaskAssigneeSelector
               selectedAssignees={formData.assignees}
+              availableMembers={projectMembers.length > 0 ? projectMembers : undefined}
               onChange={(newAssignees) =>
                 setFormData({ ...formData, assignees: newAssignees })
               }

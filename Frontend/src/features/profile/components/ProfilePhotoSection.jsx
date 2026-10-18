@@ -15,14 +15,15 @@ export const ProfilePhotoSection = ({
 }) => {
   const fileInputRef = useRef(null);
 
-  const initials = fullName
-    ? fullName
-        .split(" ")
-        .map((n) => n[0])
-        .join("")
-        .substring(0, 2)
-        .toUpperCase()
-    : "TS";
+  const [imageError, setImageError] = React.useState(false);
+
+  React.useEffect(() => {
+    setImageError(false);
+  }, [avatar]);
+
+  const firstLetter = (fullName && fullName.trim().length > 0)
+    ? fullName.trim().charAt(0).toUpperCase()
+    : "U";
 
   const handleFileChange = (e) => {
     const file = e.target.files?.[0];
@@ -36,15 +37,16 @@ export const ProfilePhotoSection = ({
       <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6">
         {/* Avatar Display with Hover Overlay */}
         <div className="relative group shrink-0">
-          {avatar ? (
+          {avatar && !imageError ? (
             <img
               src={avatar}
               alt={fullName}
+              onError={() => setImageError(true)}
               className="w-24 h-24 sm:w-28 sm:h-28 rounded-3xl object-cover ring-4 ring-slate-100 shadow-md group-hover:opacity-95 transition-all"
             />
           ) : (
-            <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-3xl bg-linear-to-tr from-[#4361EE] to-[#00C2FF] text-white text-2xl font-black flex items-center justify-center shadow-md ring-4 ring-slate-100">
-              {initials}
+            <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-3xl bg-linear-to-tr from-[#4361EE] to-[#00C2FF] text-white text-3xl font-black flex items-center justify-center shadow-md ring-4 ring-slate-100">
+              {firstLetter}
             </div>
           )}
 
