@@ -28,7 +28,7 @@ export const generateAccessToken = (user, role = "user") => {
   };
 
   return jwt.sign(payload, secret, {
-    expiresIn: config?.ACCESS_TOKEN_EXPIRES_IN || process.env.ACCESS_TOKEN_EXPIRES_IN || "15m",
+    expiresIn: config?.ACCESS_TOKEN_EXPIRES_IN || process.env.ACCESS_TOKEN_EXPIRES_IN || "7d",
   });
 };
 

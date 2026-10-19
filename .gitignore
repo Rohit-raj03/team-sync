@@ -29,7 +29,7 @@ Frontend/.env
 Frontend/.env.local
 Backend/.env
 Backend/.env.local
-
+.hide
 # Documentation
 doc/
 
