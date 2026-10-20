@@ -6,12 +6,13 @@ import CommentModel from "../models/comment.model.js";
 import NotificationModel from "../models/notification.model.js";
 
 /**
- * Helper to parse @mentions from text and return matched project member IDs
+ * Helper to parse @mentions from text and return matched member IDs
  * Supports formats:
  * - Direct ID/structured: @[Name](userId)
  * - Plain mention: @username or @name
+ * If projectMemberUserIds is null, any registered user can be mentioned.
  */
-const extractMentions = async (text, projectMemberUserIds) => {
+const extractMentions = async (text, projectMemberUserIds = null) => {
   if (!text || typeof text !== "string") return [];
   const mentionedIds = new Set();
 
@@ -20,7 +21,7 @@ const extractMentions = async (text, projectMemberUserIds) => {
   let match;
   while ((match = structuredRegex.exec(text)) !== null) {
     const uid = match[2];
-    if (projectMemberUserIds.includes(uid)) {
+    if (!projectMemberUserIds || projectMemberUserIds.includes(uid)) {
       mentionedIds.add(uid);
     }
   }
@@ -33,13 +34,16 @@ const extractMentions = async (text, projectMemberUserIds) => {
   }
 
   if (usernames.length > 0) {
-    const matchedUsers = await UserModel.find({
-      _id: { $in: projectMemberUserIds },
+    const userQuery = {
       $or: [
         { username: { $in: usernames } },
         { name: { $in: usernames.map((u) => new RegExp(`^${u}$`, "i")) } },
       ],
-    }).select("_id");
+    };
+    if (projectMemberUserIds && Array.isArray(projectMemberUserIds)) {
+      userQuery._id = { $in: projectMemberUserIds };
+    }
+    const matchedUsers = await UserModel.find(userQuery).select("_id");
 
     matchedUsers.forEach((u) => mentionedIds.add(u._id.toString()));
   }
@@ -59,7 +63,13 @@ export const getTasks = async (req, res) => {
 
     const query = {};
 
-    if (projectId) {
+    if (
+      projectId === "individual" ||
+      projectId === "none" ||
+      req.query.isIndividual === "true"
+    ) {
+      query.$or = [{ project: null }, { project: { $exists: false } }];
+    } else if (projectId) {
       if (!mongoose.Types.ObjectId.isValid(projectId)) {
         return res.status(400).json({
           success: false,
@@ -84,7 +94,7 @@ export const getTasks = async (req, res) => {
 
       query.project = projectId;
     } else {
-      // Find all projects accessible to the current user
+      // Find all projects accessible to the current user + include individual tasks (no project)
       if (req.user.role !== "admin") {
         const accessibleProjects = await ProjectModel.find({
           $or: [
@@ -96,7 +106,11 @@ export const getTasks = async (req, res) => {
         }).select("_id");
 
         const accessibleIds = accessibleProjects.map((p) => p._id);
-        query.project = { $in: accessibleIds };
+        query.$or = [
+          { project: { $in: accessibleIds } },
+          { project: null },
+          { project: { $exists: false } },
+        ];
       }
     }
 
@@ -234,48 +248,66 @@ export const createTask = async (req, res) => {
       });
     }
 
-    if (!projectId || !mongoose.Types.ObjectId.isValid(projectId)) {
-      return res.status(400).json({
-        success: false,
-        message: "Valid projectId is required",
-      });
+    const isIndividual =
+      !projectId ||
+      projectId === "none" ||
+      projectId === "individual" ||
+      projectId === "";
+
+    let project = null;
+    let projectMemberUserIds = null;
+
+    if (!isIndividual) {
+      if (!mongoose.Types.ObjectId.isValid(projectId)) {
+        return res.status(400).json({
+          success: false,
+          message: "Valid projectId is required",
+        });
+      }
+
+      project = await ProjectModel.findById(projectId);
+      if (!project) {
+        return res.status(404).json({
+          success: false,
+          message: "Project not found",
+        });
+      }
+
+      if (!project.isProjectMember(req.user._id, req.user.role)) {
+        return res.status(403).json({
+          success: false,
+          message: "You must be a member of this project to create tasks",
+        });
+      }
+
+      // Validate project member user IDs
+      projectMemberUserIds = [
+        project.manager?.toString(),
+        project.owner?.toString(),
+        ...(project.members || []).map((m) =>
+          (m.user?._id || m.user)?.toString()
+        ),
+      ].filter(Boolean);
     }
 
-    const project = await ProjectModel.findById(projectId);
-    if (!project) {
-      return res.status(404).json({
-        success: false,
-        message: "Project not found",
-      });
-    }
-
-    if (!project.isProjectMember(req.user._id, req.user.role)) {
-      return res.status(403).json({
-        success: false,
-        message: "You must be a member of this project to create tasks",
-      });
-    }
-
-    // Validate project member user IDs
-    const projectMemberUserIds = [
-      project.manager?.toString(),
-      project.owner?.toString(),
-      ...(project.members || []).map((m) =>
-        (m.user?._id || m.user)?.toString()
-      ),
-    ].filter(Boolean);
-
-    // Validate and sanitize assignees: MUST belong to this project
+    // Validate and sanitize assignees
     const sanitizedAssignees = [];
     if (Array.isArray(assignees)) {
       for (const a of assignees) {
         const uid = typeof a === "string" ? a : a.id || a._id || a.user;
         if (uid && mongoose.Types.ObjectId.isValid(uid)) {
-          if (!projectMemberUserIds.includes(uid.toString())) {
-            return res.status(400).json({
-              success: false,
-              message: `User ${uid} is not a member of project "${project.name}". Only project members can be assigned.`,
-            });
+          if (projectMemberUserIds) {
+            if (!projectMemberUserIds.includes(uid.toString())) {
+              return res.status(400).json({
+                success: false,
+                message: `User ${uid} is not a member of project "${project.name}". Only project members can be assigned.`,
+              });
+            }
+          } else {
+            const userExists = await UserModel.exists({ _id: uid });
+            if (!userExists) {
+              continue;
+            }
           }
           if (!sanitizedAssignees.includes(uid.toString())) {
             sanitizedAssignees.push(uid.toString());
@@ -292,16 +324,21 @@ export const createTask = async (req, res) => {
     const combinedMentions = new Set(textMentions);
 
     if (Array.isArray(mentions)) {
-      mentions.forEach((m) => {
+      for (const m of mentions) {
         const mid = typeof m === "string" ? m : m.id || m._id;
-        if (
-          mid &&
-          mongoose.Types.ObjectId.isValid(mid) &&
-          projectMemberUserIds.includes(mid.toString())
-        ) {
-          combinedMentions.add(mid.toString());
+        if (mid && mongoose.Types.ObjectId.isValid(mid)) {
+          if (projectMemberUserIds) {
+            if (projectMemberUserIds.includes(mid.toString())) {
+              combinedMentions.add(mid.toString());
+            }
+          } else {
+            const userExists = await UserModel.exists({ _id: mid });
+            if (userExists) {
+              combinedMentions.add(mid.toString());
+            }
+          }
         }
-      });
+      }
     }
 
     // Build comma-separated names for quick search / legacy display
@@ -324,8 +361,9 @@ export const createTask = async (req, res) => {
     const task = await TaskModel.create({
       title: title.trim(),
       description: description || "",
-      project: project._id,
-      projectName: project.name,
+      project: project ? project._id : null,
+      projectName: project ? project.name : (req.body.projectName || "Individual Task"),
+      isIndividual: isIndividual,
       status: status || "TODO",
       priority: priority || "MEDIUM",
       startDate: startDate || new Date(),
@@ -349,9 +387,11 @@ export const createTask = async (req, res) => {
           sender: req.user._id,
           type: "assignment",
           title: "New Task Assigned",
-          message: `${req.user.name} assigned you to "${task.title}" in ${project.name}.`,
+          message: project
+            ? `${req.user.name} assigned you to "${task.title}" in ${project.name}.`
+            : `${req.user.name} assigned you to individual task "${task.title}".`,
           link: `/tasks/${task._id}`,
-          relatedProject: project._id,
+          relatedProject: project ? project._id : undefined,
           relatedTask: task._id,
         });
       }
@@ -370,7 +410,7 @@ export const createTask = async (req, res) => {
           title: "Mentioned in Task",
           message: `${req.user.name} mentioned you in task "${task.title}".`,
           link: `/tasks/${task._id}`,
-          relatedProject: project._id,
+          relatedProject: project ? project._id : undefined,
           relatedTask: task._id,
         });
       }
@@ -421,17 +461,30 @@ export const updateTask = async (req, res) => {
       });
     }
 
-    const project = await ProjectModel.findById(task.project);
-    if (!project || !project.isProjectMember(req.user._id, req.user.role)) {
-      return res.status(403).json({
-        success: false,
-        message: "You are not authorized to update tasks in this project",
-      });
+    let project = null;
+    let projectMemberUserIds = null;
+    if (task.project) {
+      project = await ProjectModel.findById(task.project);
+      if (!project || !project.isProjectMember(req.user._id, req.user.role)) {
+        return res.status(403).json({
+          success: false,
+          message: "You are not authorized to update tasks in this project",
+        });
+      }
+
+      // Project member IDs for validation
+      projectMemberUserIds = [
+        project.manager?.toString(),
+        project.owner?.toString(),
+        ...(project.members || []).map((m) =>
+          (m.user?._id || m.user)?.toString()
+        ),
+      ].filter(Boolean);
     }
 
     const isCreator = task.creator?.toString() === req.user._id.toString();
     const isAdmin = req.user.role === "admin";
-    const canManage = project.canManageProject(req.user._id, req.user.role);
+    const canManage = project ? project.canManageProject(req.user._id, req.user.role) : false;
     const isAssignee = (task.assignees || []).some(
       (a) => (a?._id || a)?.toString() === req.user._id.toString()
     );
@@ -443,15 +496,6 @@ export const updateTask = async (req, res) => {
       });
     }
 
-    // Project member IDs for validation
-    const projectMemberUserIds = [
-      project.manager?.toString(),
-      project.owner?.toString(),
-      ...(project.members || []).map((m) =>
-        (m.user?._id || m.user)?.toString()
-      ),
-    ].filter(Boolean);
-
     // Validate assignees if updated
     if (req.body.assignees !== undefined) {
       const sanitized = [];
@@ -459,11 +503,16 @@ export const updateTask = async (req, res) => {
         for (const a of req.body.assignees) {
           const uid = typeof a === "string" ? a : a.id || a._id || a.user;
           if (uid && mongoose.Types.ObjectId.isValid(uid)) {
-            if (!projectMemberUserIds.includes(uid.toString())) {
-              return res.status(400).json({
-                success: false,
-                message: `User ${uid} is not a member of project "${project.name}". Cannot assign.`,
-              });
+            if (projectMemberUserIds) {
+              if (!projectMemberUserIds.includes(uid.toString())) {
+                return res.status(400).json({
+                  success: false,
+                  message: `User ${uid} is not a member of project "${project.name}". Cannot assign.`,
+                });
+              }
+            } else {
+              const exists = await UserModel.exists({ _id: uid });
+              if (!exists) continue;
             }
             if (!sanitized.includes(uid.toString())) {
               sanitized.push(uid.toString());
@@ -523,7 +572,7 @@ export const updateTask = async (req, res) => {
               title: "Mentioned in Task",
               message: `${req.user.name} mentioned you in task "${task.title}".`,
               link: `/tasks/${task._id}`,
-              relatedProject: project._id,
+              relatedProject: project ? project._id : undefined,
               relatedTask: task._id,
             }).catch(console.error);
           }
@@ -578,7 +627,7 @@ export const deleteTask = async (req, res) => {
       });
     }
 
-    const project = await ProjectModel.findById(task.project);
+    const project = task.project ? await ProjectModel.findById(task.project) : null;
     const isCreator = task.creator?.toString() === req.user._id.toString();
     const isAdmin = req.user.role === "admin";
     const isProjectManager = project && (
@@ -726,21 +775,25 @@ export const createTaskComment = async (req, res) => {
       });
     }
 
-    const project = await ProjectModel.findById(task.project);
-    if (!project || !project.isProjectMember(req.user._id, req.user.role)) {
-      return res.status(403).json({
-        success: false,
-        message: "You are not authorized to comment on this task",
-      });
-    }
+    let project = null;
+    let projectMemberUserIds = null;
+    if (task.project) {
+      project = await ProjectModel.findById(task.project);
+      if (!project || !project.isProjectMember(req.user._id, req.user.role)) {
+        return res.status(403).json({
+          success: false,
+          message: "You are not authorized to comment on this task",
+        });
+      }
 
-    const projectMemberUserIds = [
-      project.manager?.toString(),
-      project.owner?.toString(),
-      ...(project.members || []).map((m) =>
-        (m.user?._id || m.user)?.toString()
-      ),
-    ].filter(Boolean);
+      projectMemberUserIds = [
+        project.manager?.toString(),
+        project.owner?.toString(),
+        ...(project.members || []).map((m) =>
+          (m.user?._id || m.user)?.toString()
+        ),
+      ].filter(Boolean);
+    }
 
     // Extract mentions from comment text
     const textMentions = await extractMentions(
@@ -750,21 +803,26 @@ export const createTaskComment = async (req, res) => {
     const combinedMentions = new Set(textMentions);
 
     if (Array.isArray(mentions)) {
-      mentions.forEach((m) => {
+      for (const m of mentions) {
         const mid = typeof m === "string" ? m : m.id || m._id;
-        if (
-          mid &&
-          mongoose.Types.ObjectId.isValid(mid) &&
-          projectMemberUserIds.includes(mid.toString())
-        ) {
-          combinedMentions.add(mid.toString());
+        if (mid && mongoose.Types.ObjectId.isValid(mid)) {
+          if (projectMemberUserIds) {
+            if (projectMemberUserIds.includes(mid.toString())) {
+              combinedMentions.add(mid.toString());
+            }
+          } else {
+            const userExists = await UserModel.exists({ _id: mid });
+            if (userExists) {
+              combinedMentions.add(mid.toString());
+            }
+          }
         }
-      });
+      }
     }
 
     const comment = await CommentModel.create({
       task: task._id,
-      project: project._id,
+      project: project ? project._id : null,
       author: req.user._id,
       content: content.trim(),
       mentions: Array.from(combinedMentions),
@@ -780,7 +838,7 @@ export const createTaskComment = async (req, res) => {
           title: "Mentioned in Comment",
           message: `${req.user.name} mentioned you on task "${task.title}": "${content.slice(0, 80)}..."`,
           link: `/tasks/${task._id}`,
-          relatedProject: project._id,
+          relatedProject: project ? project._id : undefined,
           relatedTask: task._id,
         });
       }
@@ -800,7 +858,7 @@ export const createTaskComment = async (req, res) => {
           title: "New Task Comment",
           message: `${req.user.name} commented on "${task.title}".`,
           link: `/tasks/${task._id}`,
-          relatedProject: project._id,
+          relatedProject: project ? project._id : undefined,
           relatedTask: task._id,
         });
       }

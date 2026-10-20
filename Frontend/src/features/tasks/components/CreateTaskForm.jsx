@@ -27,6 +27,7 @@ import { TaskAttachmentsUploader } from "./TaskAttachmentsUploader.jsx";
 import { TaskTagsInput } from "./TaskTagsInput.jsx";
 import { MentionTextarea } from "./MentionTextarea.jsx";
 import { useProjects } from "../../projects/hooks/useProjects.js";
+import { useTeam } from "../../team/hooks/useTeam.js";
 
 const ESTIMATION_PRESETS = ["2h", "4h", "1d", "2d", "3d", "1w"];
 
@@ -42,16 +43,13 @@ export const CreateTaskForm = ({
   isSubmitting = false,
 }) => {
   const { allProjects } = useProjects();
+  const { members: allTeamMembers } = useTeam();
   const availableProjects = allProjects || [];
 
   const [formData, setFormData] = useState({
     title: initialData.title || "",
     description: initialData.description || "",
-    projectId:
-      initialData.projectId ||
-      availableProjects[0]?.id ||
-      availableProjects[0]?._id ||
-      "",
+    projectId: initialData.projectId || "",
     priority: initialData.priority || TASK_PRIORITY.MEDIUM,
     status: initialData.status || TASK_STATUS.TODO,
     startDate: initialData.startDate || new Date().toISOString().split("T")[0],
@@ -71,7 +69,11 @@ export const CreateTaskForm = ({
   const selectedProject = availableProjects.find(
     (p) => (p.id || p._id) === formData.projectId
   );
-  const projectMembers = selectedProject?.members || [];
+  // If project is selected and has members, use those; otherwise allow tagging/assigning from all team members
+  const projectMembers =
+    selectedProject?.members && selectedProject.members.length > 0
+      ? selectedProject.members
+      : allTeamMembers || [];
 
   const [errors, setErrors] = useState({});
   const [isSuccess, setIsSuccess] = useState(false);
@@ -100,14 +102,16 @@ export const CreateTaskForm = ({
     if (!validate()) return;
 
     if (onSubmit) {
-      const selectedProject = availableProjects.find(
-        (p) => p.id === formData.projectId,
+      const selectedProj = availableProjects.find(
+        (p) => (p.id || p._id) === formData.projectId,
       );
       const submissionData = {
         ...formData,
-        projectName: selectedProject
-          ? selectedProject.name
-          : "TeamSync Project",
+        projectId: formData.projectId || null,
+        projectName: selectedProj
+          ? selectedProj.name
+          : "Individual Task",
+        isIndividual: !formData.projectId,
         // For backwards compatibility with single assignedTo:
         assignedTo:
           formData.assignees.length > 0
@@ -293,8 +297,11 @@ export const CreateTaskForm = ({
             <div className="flex items-center gap-1.5">
               <FolderKanban size={14} className="text-slate-500" />
               <label className="text-xs font-bold uppercase tracking-wider text-slate-700">
-                Project <span className="text-rose-500">*</span>
+                Project / Context
               </label>
+              <span className="text-[10px] text-slate-400 font-normal">
+                (Optional - Default is Individual)
+              </span>
             </div>
             <select
               value={formData.projectId}
@@ -303,19 +310,31 @@ export const CreateTaskForm = ({
                 const newProj = availableProjects.find(
                   (p) => (p.id || p._id) === newProjectId
                 );
-                const allowedMemberIds = new Set(
-                  (newProj?.members || []).map((m) => (m.id || m._id)?.toString())
-                );
+                const allowedMemberIds =
+                  newProj?.members && newProj.members.length > 0
+                    ? new Set(
+                        newProj.members.map((m) =>
+                          (m.id || m._id || m.user?._id || m.user)?.toString()
+                        )
+                      )
+                    : null;
                 setFormData((prev) => ({
                   ...prev,
                   projectId: newProjectId,
-                  assignees: prev.assignees.filter((a) =>
-                    allowedMemberIds.has((a.id || a._id)?.toString())
-                  ),
+                  assignees: allowedMemberIds
+                    ? prev.assignees.filter((a) =>
+                        allowedMemberIds.has(
+                          (a.id || a._id || a.user?._id || a.user)?.toString()
+                        )
+                      )
+                    : prev.assignees,
                 }));
               }}
               className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#4361EE] shadow-xs cursor-pointer"
             >
+              <option value="">
+                No Project (Individual / Self Task)
+              </option>
               {availableProjects.map((project) => (
                 <option key={project.id || project._id} value={project.id || project._id}>
                   {project.name}{" "}
@@ -324,38 +343,49 @@ export const CreateTaskForm = ({
               ))}
             </select>
 
-            {/* Display Tagged Members in Selected Project */}
-            {(() => {
-              const currentProj = availableProjects.find(
-                (p) => (p.id || p._id) === formData.projectId,
-              );
-              if (!currentProj?.members || currentProj.members.length === 0)
-                return null;
-              return (
-                <div className="flex items-center gap-1.5 pt-1 text-[11px] text-slate-500">
-                  <span className="font-semibold text-slate-400">
-                    Tagged in project:
-                  </span>
-                  <div className="flex -space-x-1.5 overflow-hidden">
-                    {currentProj.members.slice(0, 4).map((m) => (
-                      <img
-                        key={m.id || m._id}
-                        src={m.avatar}
-                        alt={m.name}
-                        title={`${m.name} (${m.projectRole || m.role || "Member"})`}
-                        className="w-5 h-5 rounded-full ring-1 ring-white object-cover"
-                        onError={(e) => {
-                          e.target.src = `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(m.name)}`;
-                        }}
-                      />
-                    ))}
+            {/* Display Tagged Members in Selected Project OR Individual Task note */}
+            {formData.projectId ? (
+              (() => {
+                const currentProj = availableProjects.find(
+                  (p) => (p.id || p._id) === formData.projectId,
+                );
+                if (!currentProj?.members || currentProj.members.length === 0)
+                  return null;
+                return (
+                  <div className="flex items-center gap-1.5 pt-1 text-[11px] text-slate-500">
+                    <span className="font-semibold text-slate-400">
+                      Tagged in project:
+                    </span>
+                    <div className="flex -space-x-1.5 overflow-hidden">
+                      {currentProj.members.slice(0, 4).map((m) => (
+                        <img
+                          key={m.id || m._id}
+                          src={m.avatar}
+                          alt={m.name}
+                          title={`${m.name} (${m.projectRole || m.role || "Member"})`}
+                          className="w-5 h-5 rounded-full ring-1 ring-white object-cover"
+                          onError={(e) => {
+                            e.target.src = `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(m.name)}`;
+                          }}
+                        />
+                      ))}
+                    </div>
+                    <span className="text-[10px] text-slate-400 font-medium">
+                      ({currentProj.members.length} contributors)
+                    </span>
                   </div>
-                  <span className="text-[10px] text-slate-400 font-medium">
-                    ({currentProj.members.length} contributors)
-                  </span>
-                </div>
-              );
-            })()}
+                );
+              })()
+            ) : (
+              <div className="p-2.5 rounded-xl bg-purple-50/80 border border-purple-100 flex items-start gap-2 text-[11px] text-purple-900">
+                <span className="px-1.5 py-0.5 rounded bg-purple-200/70 font-bold text-[10px] text-purple-900 shrink-0 mt-0.5">
+                  Individual / Self
+                </span>
+                <p className="leading-relaxed">
+                  यह एक इंडिविजुअल टास्क रहेगा (किसी प्रोजेक्ट में ऐड नहीं होगा)। आप टीम के किसी भी सदस्य को असाइन और @टैग कर सकते हैं।
+                </p>
+              </div>
+            )}
           </div>
 
           {/* Status Selector */}

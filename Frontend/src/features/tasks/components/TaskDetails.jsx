@@ -372,11 +372,18 @@ export const TaskDetails = ({
 
         {/* Project Name + Edit Toggle Button */}
         <div className="flex items-center gap-3">
-          {task.projectName && (
-            <div className="flex items-center gap-1.5 text-xs text-slate-500 font-medium">
-              <FolderKanban size={13} className="text-[#4361EE]" />
-              <span>{task.projectName}</span>
+          {task.isIndividual || (!task.project && !task.projectId) || task.projectName === "Individual Task" ? (
+            <div className="flex items-center gap-1.5 text-xs font-semibold text-purple-700 bg-purple-50 border border-purple-100 px-2.5 py-1 rounded-xl">
+              <span className="w-1.5 h-1.5 rounded-full bg-purple-500" />
+              <span>Self / Individual Task</span>
             </div>
+          ) : (
+            task.projectName && (
+              <div className="flex items-center gap-1.5 text-xs text-slate-500 font-medium">
+                <FolderKanban size={13} className="text-[#4361EE]" />
+                <span>{task.projectName}</span>
+              </div>
+            )
           )}
 
           <button

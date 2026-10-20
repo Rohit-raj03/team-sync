@@ -4,10 +4,37 @@ import {
   TASK_PRIORITY,
 } from "../../../shared/constants/taskStatus.js";
 
+const DEFAULT_INDIVIDUAL_TASK = {
+  id: "default-self-task-1",
+  _id: "default-self-task-1",
+  title: "Self Task (Individual / No Project)",
+  description: "This is a default standalone task that does not belong to any project. You can assign and @mention any team members freely.",
+  project: null,
+  projectId: null,
+  projectName: "Individual Task",
+  isIndividual: true,
+  status: TASK_STATUS.TODO,
+  priority: TASK_PRIORITY.MEDIUM,
+  startDate: new Date().toISOString().split("T")[0],
+  dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
+  estimatedTime: "4h",
+  assignees: [],
+  assignedTo: "Unassigned",
+  tags: ["Self", "Individual"],
+  subtasks: [
+    { id: "sub-1", title: "Review standalone task features", completed: false },
+    { id: "sub-2", title: "Tag team members with @mention", completed: false },
+  ],
+  attachments: [],
+  comment: "",
+  mentions: [],
+  createdAt: new Date().toISOString(),
+};
+
 const taskSlice = createSlice({
   name: "tasks",
   initialState: {
-    tasks: [],
+    tasks: [DEFAULT_INDIVIDUAL_TASK],
     filter: "ALL",
     search: "",
     loading: false,
@@ -15,7 +42,15 @@ const taskSlice = createSlice({
   },
   reducers: {
     setTasks(state, action) {
-      state.tasks = action.payload;
+      const serverTasks = action.payload || [];
+      const hasIndividual = serverTasks.some(
+        (t) => t.isIndividual || (!t.project && !t.projectId) || t.projectName === "Individual Task"
+      );
+      if (!hasIndividual && serverTasks.length === 0) {
+        state.tasks = [DEFAULT_INDIVIDUAL_TASK];
+      } else {
+        state.tasks = serverTasks;
+      }
       state.loading = false;
       state.error = null;
     },

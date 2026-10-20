@@ -40,8 +40,14 @@ export function useTasks() {
   }, [fetchTasks]);
 
   const filteredTasks = tasks.filter((task) => {
+    const isIndividual =
+      task.isIndividual ||
+      !task.project && !task.projectId ||
+      task.projectName === "Individual Task";
+
     const matchesFilter =
       filter === "ALL" ||
+      (filter === "INDIVIDUAL" && isIndividual) ||
       task.status === filter ||
       task.status?.toUpperCase() === filter.toUpperCase();
 
@@ -51,6 +57,7 @@ export function useTasks() {
       task.title?.toLowerCase().includes(q) ||
       task.description?.toLowerCase().includes(q) ||
       task.assignedTo?.toLowerCase().includes(q) ||
+      task.projectName?.toLowerCase().includes(q) ||
       task.tags?.some((t) => t.toLowerCase().includes(q));
 
     return matchesFilter && matchesSearch;

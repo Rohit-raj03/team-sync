@@ -40,12 +40,18 @@ const taskSchema = new mongoose.Schema(
     project: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Project",
-      required: [true, "Task must belong to a project"],
+      required: false,
+      default: null,
       index: true,
     },
     projectName: {
       type: String,
-      default: "",
+      default: "Individual Task",
+    },
+    isIndividual: {
+      type: Boolean,
+      default: false,
+      index: true,
     },
     status: {
       type: String,
@@ -152,6 +158,11 @@ taskSchema.set("toJSON", {
       ret.projectId = ret.project._id ? ret.project._id.toString() : ret.project.toString();
       if (ret.project.name && !ret.projectName) {
         ret.projectName = ret.project.name;
+      }
+    } else {
+      ret.projectId = null;
+      if (!ret.projectName) {
+        ret.projectName = "Individual Task";
       }
     }
     if (Array.isArray(ret.assignees)) {
