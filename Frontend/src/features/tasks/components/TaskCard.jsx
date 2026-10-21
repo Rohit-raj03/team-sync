@@ -35,13 +35,18 @@ export const TaskCard = ({ task, onClick }) => {
             <Badge variant={getPriorityBadgeVariant(task.priority)}>
               {task.priority}
             </Badge>
-            {task.isIndividual || (!task.project && !task.projectId) || task.projectName === "Individual Task" ? (
+            {task.isIndividual ||
+            (!task.project && !task.projectId) ||
+            task.projectName === "Individual Task" ? (
               <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-50 text-purple-700 border border-purple-100">
                 Self / Individual
               </span>
             ) : (
               task.projectName && (
-                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-slate-100 text-slate-600 max-w-[130px] truncate" title={task.projectName}>
+                <span
+                  className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-slate-100 text-slate-600 max-w-32.5 truncate"
+                  title={task.projectName}
+                >
                   {task.projectName}
                 </span>
               )

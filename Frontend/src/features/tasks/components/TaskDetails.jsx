@@ -33,6 +33,7 @@ import { useProjects } from "../../projects/hooks/useProjects.js";
 import { MentionTextarea } from "./MentionTextarea.jsx";
 import { MentionRenderer } from "./MentionRenderer.jsx";
 import { TaskComments } from "./TaskComments.jsx";
+import { CreateTaskModal } from "./CreateTaskModal.jsx";
 import { Avatar } from "../../../shared/components/ui/Avatar.jsx";
 import {
   TASK_STATUS,
@@ -95,6 +96,9 @@ export const TaskDetails = ({
   // Subtask creation input state
   const [newSubtaskTitle, setNewSubtaskTitle] = useState("");
   const [isAddingSubtask, setIsAddingSubtask] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editingSubtaskId, setEditingSubtaskId] = useState(null);
+  const [editingSubtaskTitle, setEditingSubtaskTitle] = useState("");
 
   // Status & Priority dropdown states
   const [isStatusMenuOpen, setIsStatusMenuOpen] = useState(false);
@@ -388,21 +392,11 @@ export const TaskDetails = ({
 
           <button
             type="button"
-            onClick={() => {
-              if (isEditingMeta) {
-                handleCancelMeta();
-              } else {
-                setEditTitle(task.title);
-                setEditDescription(task.description || "");
-                setEditDueDate(task.dueDate || "");
-                setEditEstimatedTime(task.estimatedTime || "8h");
-                setIsEditingMeta(true);
-              }
-            }}
-            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl border border-slate-200 text-xs font-semibold text-slate-600 hover:bg-slate-50 transition-colors"
+            onClick={() => setIsEditModalOpen(true)}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-xs font-bold text-[#4361EE] border border-indigo-100 transition-colors cursor-pointer"
           >
-            <Edit2 size={12} />
-            <span>{isEditingMeta ? "Cancel Edit" : "Edit Info"}</span>
+            <Edit2 size={13} />
+            <span>Edit Task</span>
           </button>
         </div>
       </div>
@@ -739,50 +733,110 @@ export const TaskDetails = ({
         {/* Interactive Clickable Checklist */}
         {subtasks.length > 0 ? (
           <div className="space-y-1.5 max-h-56 overflow-y-auto">
-            {subtasks.map((sub) => (
-              <div
-                key={sub.id}
-                onClick={() => handleToggleSubtask(sub.id)}
-                className={`flex items-center justify-between p-2.5 rounded-xl border transition-all cursor-pointer select-none group ${
-                  sub.completed
-                    ? "bg-slate-50/80 border-slate-200/60"
-                    : "bg-white border-slate-200 hover:border-indigo-200 hover:shadow-xs"
-                }`}
-              >
-                <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                  {/* Clickable Tick Box */}
-                  <div
-                    className={`w-4 h-4 rounded border flex items-center justify-center transition-colors shrink-0 ${
-                      sub.completed
-                        ? "bg-emerald-500 border-emerald-500 text-white"
-                        : "border-slate-300 group-hover:border-[#4361EE] bg-white"
-                    }`}
-                  >
-                    {sub.completed && <Check size={11} strokeWidth={3} />}
-                  </div>
+            {subtasks.map((sub, idx) => {
+              const sId = getSubtaskId(sub, idx);
+              const isEditing = editingSubtaskId === sId;
 
-                  <span
-                    className={`text-xs transition-colors truncate ${
-                      sub.completed
-                        ? "line-through text-slate-400 font-normal"
-                        : "text-slate-800 font-medium group-hover:text-[#4361EE]"
-                    }`}
-                  >
-                    {sub.title}
-                  </span>
-                </div>
-
-                {/* Delete subtask button */}
-                <button
-                  type="button"
-                  onClick={(e) => handleRemoveSubtask(sub.id, e)}
-                  title="Delete subtask"
-                  className="opacity-0 group-hover:opacity-100 p-1 text-slate-300 hover:text-rose-500 hover:bg-rose-50 rounded-lg transition-all ml-2"
+              return (
+                <div
+                  key={sId}
+                  className={`flex items-center justify-between p-2.5 rounded-xl border transition-all ${
+                    sub.completed
+                      ? "bg-slate-50/80 border-slate-200/60"
+                      : "bg-white border-slate-200 hover:border-indigo-200 hover:shadow-xs"
+                  }`}
                 >
-                  <Trash2 size={13} />
-                </button>
-              </div>
-            ))}
+                  {isEditing ? (
+                    <div className="flex items-center gap-2 flex-1 min-w-0" onClick={(e) => e.stopPropagation()}>
+                      <input
+                        type="text"
+                        value={editingSubtaskTitle}
+                        onChange={(e) => setEditingSubtaskTitle(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") handleUpdateSubtaskTitle(sId, editingSubtaskTitle, e);
+                          if (e.key === "Escape") setEditingSubtaskId(null);
+                        }}
+                        autoFocus
+                        className="flex-1 px-2.5 py-1 text-xs rounded-lg border border-indigo-300 focus:outline-none focus:ring-2 focus:ring-[#4361EE] bg-white text-slate-800"
+                      />
+                      <button
+                        type="button"
+                        onClick={(e) => handleUpdateSubtaskTitle(sId, editingSubtaskTitle, e)}
+                        className="p-1 text-emerald-600 hover:bg-emerald-50 rounded-lg"
+                        title="Save title"
+                      >
+                        <Check size={14} />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setEditingSubtaskId(null);
+                        }}
+                        className="p-1 text-slate-400 hover:bg-slate-100 rounded-lg"
+                        title="Cancel"
+                      >
+                        <X size={14} />
+                      </button>
+                    </div>
+                  ) : (
+                    <>
+                      <div
+                        onClick={(e) => handleToggleSubtask(sId, e)}
+                        className="flex items-center gap-2.5 min-w-0 flex-1 cursor-pointer select-none group"
+                      >
+                        {/* Clickable Tick Box */}
+                        <div
+                          className={`w-4 h-4 rounded border flex items-center justify-center transition-colors shrink-0 ${
+                            sub.completed
+                              ? "bg-emerald-500 border-emerald-500 text-white"
+                              : "border-slate-300 group-hover:border-[#4361EE] bg-white"
+                          }`}
+                        >
+                          {sub.completed && <Check size={11} strokeWidth={3} />}
+                        </div>
+
+                        <span
+                          className={`text-xs transition-colors truncate ${
+                            sub.completed
+                              ? "line-through text-slate-400 font-normal"
+                              : "text-slate-800 font-medium group-hover:text-[#4361EE]"
+                          }`}
+                        >
+                          {sub.title}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center gap-1 shrink-0 ml-2">
+                        {/* Edit subtask title button */}
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setEditingSubtaskId(sId);
+                            setEditingSubtaskTitle(sub.title);
+                          }}
+                          title="Edit subtask title"
+                          className="p-1 text-slate-300 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all"
+                        >
+                          <Edit2 size={13} />
+                        </button>
+
+                        {/* Delete subtask button */}
+                        <button
+                          type="button"
+                          onClick={(e) => handleRemoveSubtask(sId, e)}
+                          title="Delete subtask"
+                          className="p-1 text-slate-300 hover:text-rose-500 hover:bg-rose-50 rounded-lg transition-all"
+                        >
+                          <Trash2 size={13} />
+                        </button>
+                      </div>
+                    </>
+                  )}
+                </div>
+              );
+            })}
           </div>
         ) : (
           <div className="p-3 bg-slate-50 rounded-xl text-center border border-dashed border-slate-200">
@@ -889,6 +943,30 @@ export const TaskDetails = ({
       <TaskComments
         taskId={task.id || task._id}
         projectMembers={effectiveMembers}
+      />
+      {/* Comprehensive Update Task Modal */}
+      <CreateTaskModal
+        isOpen={isEditModalOpen}
+        onClose={() => setIsEditModalOpen(false)}
+        initialData={{
+          ...task,
+          id: task.id || task._id,
+          _id: task._id || task.id,
+          projectId: task.projectId || task.project?._id || task.project || "",
+        }}
+        title="Update Task"
+        subtitle="Update overall task details, workflow status, assignees, and checklist."
+        onSubmit={(data) => {
+          const updated = {
+            ...task,
+            ...data,
+            id: task.id || task._id,
+            _id: task._id || task.id,
+          };
+          updateTask(updated);
+          onUpdate?.(updated);
+          setIsEditModalOpen(false);
+        }}
       />
     </div>
   );

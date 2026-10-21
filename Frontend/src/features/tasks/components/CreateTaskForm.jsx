@@ -41,7 +41,9 @@ export const CreateTaskForm = ({
   onSubmit,
   onCancel,
   isSubmitting = false,
+  mode,
 }) => {
+  const isEditMode = mode === "edit" || Boolean(initialData.id || initialData._id);
   const { allProjects } = useProjects();
   const { members: allTeamMembers } = useTeam();
   const availableProjects = allProjects || [];
@@ -534,12 +536,12 @@ export const CreateTaskForm = ({
           {isSubmitting ? (
             <>
               <Loader2 size={15} className="animate-spin" />
-              <span>Creating Task...</span>
+              <span>{isEditMode ? "Updating Task..." : "Creating Task..."}</span>
             </>
           ) : (
             <>
               <Check size={15} strokeWidth={2.5} />
-              <span>Create Task</span>
+              <span>{isEditMode ? "Update Task" : "Create Task"}</span>
             </>
           )}
         </button>

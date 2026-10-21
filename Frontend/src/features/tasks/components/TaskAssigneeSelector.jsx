@@ -67,7 +67,7 @@ export const TaskAssigneeSelector = ({
   };
 
   const handleQuickInvite = (e) => {
-    e.preventDefault();
+    e?.preventDefault?.();
     if (!newMemberData.name.trim()) {
       setInviteError("Please provide a full name");
       return;
@@ -311,7 +311,7 @@ export const TaskAssigneeSelector = ({
               </button>
             </div>
 
-            <form onSubmit={handleQuickInvite} className="p-6 space-y-4">
+            <div className="p-6 space-y-4">
               {inviteError && (
                 <div className="p-3 rounded-xl bg-rose-50 border border-rose-100 text-xs text-rose-700 font-medium">
                   {inviteError}
@@ -411,17 +411,18 @@ export const TaskAssigneeSelector = ({
                   Cancel
                 </button>
                 <button
-                  type="submit"
+                  type="button"
+                  onClick={handleQuickInvite}
                   className="px-4 py-2 rounded-xl bg-[#4361EE] hover:bg-[#3451DE] text-white text-xs font-bold shadow-sm transition-colors flex items-center gap-1.5"
                 >
                   <Check size={14} />
                   <span>Add & Assign</span>
                 </button>
               </div>
-            </form>
           </div>
         </div>
-      )}
-    </div>
-  );
+      </div>
+    )}
+  </div>
+);
 };

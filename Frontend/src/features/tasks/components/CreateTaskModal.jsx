@@ -5,15 +5,18 @@ import { CreateTaskForm } from "./CreateTaskForm.jsx";
 /**
  * Feature Component: CreateTaskModal
  * Layer: features/tasks/components/
- * Responsibility: Modal dialog container for creating new tasks anywhere in the app with backdrop, exit keys, and responsive scrolling.
+ * Responsibility: Modal dialog container for creating or updating tasks anywhere in the app with backdrop, exit keys, and responsive scrolling.
  */
 export const CreateTaskModal = ({
   isOpen,
   onClose,
   onSubmit,
   initialData = {},
+  title,
+  subtitle,
 }) => {
   if (!isOpen) return null;
+  const isEditMode = Boolean(initialData.id || initialData._id);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-slate-900/50 backdrop-blur-xs animate-in fade-in duration-200">
@@ -26,11 +29,13 @@ export const CreateTaskModal = ({
             </div>
             <div>
               <h2 className="text-base font-bold text-slate-900">
-                Create New Task
+                {title || (isEditMode ? "Update Task" : "Create New Task")}
               </h2>
               <p className="text-[11px] text-slate-500 font-medium">
-                Add an actionable item to your team's workflow and assign
-                contributors.
+                {subtitle ||
+                  (isEditMode
+                    ? "Update overall task details, workflow status, assignees, and checklist."
+                    : "Add an actionable item to your team's workflow and assign contributors.")}
               </p>
             </div>
           </div>
@@ -49,6 +54,7 @@ export const CreateTaskModal = ({
         <div className="p-6 overflow-y-auto flex-1">
           <CreateTaskForm
             initialData={initialData}
+            mode={isEditMode ? "edit" : "create"}
             onSubmit={(data) => {
               onSubmit?.(data);
               onClose?.();

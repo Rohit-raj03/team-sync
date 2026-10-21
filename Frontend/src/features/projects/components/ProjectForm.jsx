@@ -58,6 +58,10 @@ export const ProjectForm = ({
     members: initialData.members || [],
   });
 
+  const isInitialCustom = Boolean(
+    initialData.category && !PROJECT_CATEGORIES.includes(initialData.category)
+  );
+  const [isCustomCategory, setIsCustomCategory] = useState(isInitialCustom);
   const [errors, setErrors] = useState({});
 
   const validate = () => {
@@ -85,19 +89,19 @@ export const ProjectForm = ({
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
+    <form onSubmit={handleSubmit} className="space-y-4">
       {/* Global Validation Banner */}
       {Object.keys(errors).length > 0 && (
-        <div className="p-3.5 rounded-2xl bg-rose-50 border border-rose-200 text-rose-800 text-xs font-medium flex items-center gap-2.5 animate-in fade-in">
-          <AlertCircle size={16} className="text-rose-500 shrink-0" />
+        <div className="p-3 rounded-2xl bg-rose-50 border border-rose-200 text-rose-800 text-xs font-medium flex items-center gap-2 animate-in fade-in">
+          <AlertCircle size={15} className="text-rose-500 shrink-0" />
           <span>Please address the errors highlighted below.</span>
         </div>
       )}
 
-      {/* Top Grid: Name, Category, Color */}
-      <div className="space-y-4">
+      {/* Top Details: Name, Category, Theme Color */}
+      <div className="space-y-3">
         {/* Project Name */}
-        <div className="space-y-1.5">
+        <div className="space-y-1">
           <label className="block text-xs font-bold uppercase tracking-wider text-slate-700">
             Project Name <span className="text-rose-500">*</span>
           </label>
@@ -109,11 +113,11 @@ export const ProjectForm = ({
               setFormData({ ...formData, name: e.target.value });
               if (errors.name) setErrors({ ...errors, name: null });
             }}
-            className={`w-full px-4 py-2.5 rounded-2xl border text-sm font-semibold transition-all ${
+            className={`w-full px-3.5 py-2 rounded-2xl border text-sm font-semibold transition-all ${
               errors.name
                 ? "border-rose-400 bg-rose-50/20 focus:ring-2 focus:ring-rose-200"
                 : "border-slate-200 bg-white focus:ring-2 focus:ring-[#4361EE] focus:border-transparent"
-            } text-slate-900 placeholder-slate-400 shadow-xs`}
+            } text-slate-900 placeholder-slate-400 shadow-2xs`}
           />
           {errors.name && (
             <p className="text-xs text-rose-500 font-medium">{errors.name}</p>
@@ -121,31 +125,74 @@ export const ProjectForm = ({
         </div>
 
         {/* Category & Accent Color */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div className="space-y-1.5">
-            <label className="block text-xs font-bold uppercase tracking-wider text-slate-700">
-              Category
-            </label>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="space-y-1">
+            <div className="flex items-center justify-between">
+              <label className="block text-xs font-bold uppercase tracking-wider text-slate-700">
+                Category
+              </label>
+              {isCustomCategory && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsCustomCategory(false);
+                    setFormData((prev) => ({
+                      ...prev,
+                      category: PROJECT_CATEGORIES[0],
+                    }));
+                  }}
+                  className="text-[10px] font-semibold text-[#4361EE] hover:underline cursor-pointer"
+                >
+                  Use preset
+                </button>
+              )}
+            </div>
             <select
-              value={formData.category}
-              onChange={(e) =>
-                setFormData({ ...formData, category: e.target.value })
-              }
-              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-medium bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#4361EE]"
+              value={isCustomCategory ? "CUSTOM" : formData.category}
+              onChange={(e) => {
+                const val = e.target.value;
+                if (val === "CUSTOM") {
+                  setIsCustomCategory(true);
+                  if (PROJECT_CATEGORIES.includes(formData.category)) {
+                    setFormData((prev) => ({ ...prev, category: "" }));
+                  }
+                } else {
+                  setIsCustomCategory(false);
+                  setFormData((prev) => ({ ...prev, category: val }));
+                }
+              }}
+              className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-semibold bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#4361EE] cursor-pointer"
             >
               {PROJECT_CATEGORIES.map((cat) => (
                 <option key={cat} value={cat}>
                   {cat}
                 </option>
               ))}
+              <option value="CUSTOM">+ Custom Category...</option>
             </select>
+
+            {/* Custom Category Text Input */}
+            {isCustomCategory && (
+              <div className="pt-1.5 animate-in fade-in duration-150">
+                <input
+                  type="text"
+                  placeholder="Type custom category (e.g. AI / Machine Learning, Fintech)..."
+                  value={formData.category}
+                  onChange={(e) =>
+                    setFormData({ ...formData, category: e.target.value })
+                  }
+                  autoFocus
+                  className="w-full px-3 py-1.5 rounded-xl border border-indigo-300 bg-indigo-50/20 text-xs font-semibold text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#4361EE] shadow-2xs"
+                />
+              </div>
+            )}
           </div>
 
-          <div className="space-y-1.5">
+          <div className="space-y-1">
             <label className="block text-xs font-bold uppercase tracking-wider text-slate-700">
               Theme Color
             </label>
-            <div className="flex items-center gap-2 pt-1">
+            <div className="flex items-center gap-2 pt-0.5">
               {COLOR_PALETTES.map((palette) => (
                 <button
                   type="button"
@@ -155,14 +202,14 @@ export const ProjectForm = ({
                   }
                   style={{ backgroundColor: palette.value }}
                   title={palette.label}
-                  className={`w-7 h-7 rounded-full transition-transform flex items-center justify-center text-white ${
+                  className={`w-6 h-6 sm:w-7 sm:h-7 rounded-full transition-transform flex items-center justify-center text-white ${
                     formData.color === palette.value
-                      ? "scale-115 ring-2 ring-offset-2 ring-slate-400 shadow-xs"
+                      ? "scale-115 ring-2 ring-offset-2 ring-slate-400 shadow-2xs"
                       : "hover:scale-105 opacity-80 hover:opacity-100"
                   }`}
                 >
                   {formData.color === palette.value && (
-                    <Check size={14} strokeWidth={3} />
+                    <Check size={13} strokeWidth={3} />
                   )}
                 </button>
               ))}
@@ -171,25 +218,25 @@ export const ProjectForm = ({
         </div>
 
         {/* Description */}
-        <div className="space-y-1.5">
+        <div className="space-y-1">
           <label className="block text-xs font-bold uppercase tracking-wider text-slate-700">
             Description & Key Objectives
           </label>
           <textarea
-            rows={3}
+            rows={2}
             placeholder="Outline the core goals, deliverable scope, and technical roadmap for this project..."
             value={formData.description}
             onChange={(e) =>
               setFormData({ ...formData, description: e.target.value })
             }
-            className="w-full px-3.5 py-2.5 rounded-2xl border border-slate-200 text-xs text-slate-800 placeholder-slate-400 bg-white focus:outline-none focus:ring-2 focus:ring-[#4361EE] shadow-xs resize-none leading-relaxed"
+            className="w-full px-3 py-2 rounded-2xl border border-slate-200 text-xs text-slate-800 placeholder-slate-400 bg-white focus:outline-none focus:ring-2 focus:ring-[#4361EE] shadow-2xs resize-none leading-relaxed"
           />
         </div>
       </div>
 
       {/* Status, Priority & Dates */}
-      <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100/90 space-y-4">
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      <div className="p-3 sm:p-3.5 rounded-2xl bg-slate-50 border border-slate-100/90 space-y-2.5">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
           <div>
             <label className="block text-[11px] font-bold text-slate-600 mb-1">
               Status
@@ -199,7 +246,7 @@ export const ProjectForm = ({
               onChange={(e) =>
                 setFormData({ ...formData, status: e.target.value })
               }
-              className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-semibold bg-white text-slate-800 focus:ring-2 focus:ring-[#4361EE]"
+              className="w-full px-2.5 py-1.5 rounded-xl border border-slate-200 text-xs font-semibold bg-white text-slate-800 focus:ring-2 focus:ring-[#4361EE]"
             >
               <option value="PLANNING">Planning</option>
               <option value="ACTIVE">Active</option>
@@ -217,7 +264,7 @@ export const ProjectForm = ({
               onChange={(e) =>
                 setFormData({ ...formData, priority: e.target.value })
               }
-              className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-semibold bg-white text-slate-800 focus:ring-2 focus:ring-[#4361EE]"
+              className="w-full px-2.5 py-1.5 rounded-xl border border-slate-200 text-xs font-semibold bg-white text-slate-800 focus:ring-2 focus:ring-[#4361EE]"
             >
               <option value="LOW">Low</option>
               <option value="MEDIUM">Medium</option>
@@ -236,7 +283,7 @@ export const ProjectForm = ({
               onChange={(e) =>
                 setFormData({ ...formData, startDate: e.target.value })
               }
-              className="w-full px-2.5 py-1.5 rounded-xl border border-slate-200 text-xs bg-white text-slate-800 focus:ring-2 focus:ring-[#4361EE]"
+              className="w-full px-2 py-1.5 rounded-xl border border-slate-200 text-xs bg-white text-slate-800 focus:ring-2 focus:ring-[#4361EE]"
             />
           </div>
 
@@ -251,7 +298,7 @@ export const ProjectForm = ({
                 setFormData({ ...formData, dueDate: e.target.value });
                 if (errors.dueDate) setErrors({ ...errors, dueDate: null });
               }}
-              className={`w-full px-2.5 py-1.5 rounded-xl border text-xs bg-white text-slate-800 focus:ring-2 ${
+              className={`w-full px-2 py-1.5 rounded-xl border text-xs bg-white text-slate-800 focus:ring-2 ${
                 errors.dueDate
                   ? "border-rose-400 focus:ring-rose-200"
                   : "border-slate-200 focus:ring-[#4361EE]"
@@ -266,8 +313,8 @@ export const ProjectForm = ({
         )}
       </div>
 
-      {/* MEMBER TAGGING SECTION: Tag Who Is in This Project */}
-      <div className="p-4 rounded-2xl bg-white border border-slate-200/80 shadow-xs">
+      {/* MEMBER TAGGING SECTION: Tag Who Is in This Project with Role */}
+      <div className="p-3 sm:p-3.5 rounded-2xl bg-white border border-slate-200/80 shadow-2xs">
         <ProjectMemberTagSelector
           taggedMembers={formData.members}
           onChange={(newMembers) =>
@@ -276,14 +323,14 @@ export const ProjectForm = ({
         />
       </div>
 
-      {/* Form Action Controls */}
-      <div className="pt-4 border-t border-slate-100 flex items-center justify-end gap-3">
+      {/* Sticky Bottom Form Action Controls (Always Visible & Accessible on Screen) */}
+      <div className="sticky -bottom-4 sm:-bottom-6 bg-white/95 backdrop-blur-md pt-3 pb-2 border-t border-slate-100 flex items-center justify-end gap-3 -mx-4 sm:-mx-6 px-4 sm:px-6 z-10 shadow-2xs mt-2">
         {onCancel && (
           <button
             type="button"
             onClick={onCancel}
             disabled={isSubmitting}
-            className="px-5 py-2.5 rounded-2xl border border-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-50 transition-colors disabled:opacity-50"
+            className="px-4 py-2 rounded-xl border border-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-50 transition-colors disabled:opacity-50 cursor-pointer"
           >
             Cancel
           </button>
@@ -291,17 +338,21 @@ export const ProjectForm = ({
         <button
           type="submit"
           disabled={isSubmitting}
-          className="px-7 py-2.5 rounded-2xl bg-[#4361EE] hover:bg-[#3451DE] active:scale-98 text-white text-xs font-bold shadow-md shadow-indigo-100 transition-all flex items-center gap-2 disabled:opacity-60"
+          className="px-6 py-2 rounded-xl bg-[#4361EE] hover:bg-[#3451DE] active:scale-98 text-white text-xs font-bold shadow-md shadow-indigo-100 transition-all flex items-center gap-2 disabled:opacity-60 cursor-pointer"
         >
           {isSubmitting ? (
             <>
-              <Loader2 size={15} className="animate-spin" />
+              <Loader2 size={14} className="animate-spin" />
               <span>Saving Project...</span>
             </>
           ) : (
             <>
-              <Check size={15} strokeWidth={2.5} />
-              <span>Create Project</span>
+              <Check size={14} strokeWidth={2.5} />
+              <span>
+                {initialData.id || initialData._id
+                  ? "Update Project"
+                  : "Create Project"}
+              </span>
             </>
           )}
         </button>
@@ -309,3 +360,5 @@ export const ProjectForm = ({
     </form>
   );
 };
+
+export default ProjectForm;

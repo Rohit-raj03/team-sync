@@ -17,6 +17,12 @@ const projectMemberSchema = new mongoose.Schema(
       default: "Contributor",
       trim: true,
     },
+    tags: [
+      {
+        type: String,
+        trim: true,
+      },
+    ],
     joinedAt: {
       type: Date,
       default: Date.now,
@@ -197,6 +203,12 @@ projectSchema.set("toJSON", {
             avatar: m.user.avatar,
             role: m.role || "Member",
             projectRole: m.projectRole || m.role || "Contributor",
+            tags:
+              Array.isArray(m.tags) && m.tags.length > 0
+                ? m.tags
+                : m.projectRole
+                ? [m.projectRole]
+                : ["Contributor"],
             joinedAt: m.joinedAt,
             user: m.user,
           };

@@ -101,8 +101,13 @@ export function useProjects() {
 
   const getProjectById = useCallback(
     (id) => {
+      if (!id) return null;
       return (
-        enrichedProjects.find((p) => p.id === id || p._id === id) || null
+        enrichedProjects.find(
+          (p) =>
+            p.id?.toString() === id?.toString() ||
+            p._id?.toString() === id?.toString()
+        ) || null
       );
     },
     [enrichedProjects]

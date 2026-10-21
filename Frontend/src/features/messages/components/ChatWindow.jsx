@@ -1,6 +1,15 @@
-import React, { useState } from 'react';
-import { Send, Paperclip, Smile, Phone, Video, MoreVertical, FileText, ExternalLink } from 'lucide-react';
-import { Avatar } from '../../../shared/components/ui/Avatar.jsx';
+import React, { useState } from "react";
+import {
+  Send,
+  Paperclip,
+  Smile,
+  Phone,
+  Video,
+  MoreVertical,
+  FileText,
+  ExternalLink,
+} from "lucide-react";
+import { Avatar } from "../../../shared/components/ui/Avatar.jsx";
 
 /**
  * Feature Component: ChatWindow
@@ -8,32 +17,32 @@ import { Avatar } from '../../../shared/components/ui/Avatar.jsx';
  * Responsibility: Active conversation stream with message bubbles, image/file previews, and input controls matching Figma Screen 6.
  */
 export const ChatWindow = ({ activeChat, onToggleProfile }) => {
-  const [inputText, setInputText] = useState('');
+  const [inputText, setInputText] = useState("");
   const [messages, setMessages] = useState([
     {
-      id: '1',
-      sender: 'Sarah Chen',
-      text: 'Hey Alex! I just finalized the interactive navigation and Gantt schedule components in the Figma workspace.',
-      time: '12:38 pm',
+      id: "1",
+      sender: "Sarah Chen",
+      text: "Hey Alex! I just finalized the interactive navigation and Gantt schedule components in the Figma workspace.",
+      time: "12:38 pm",
       isMe: false,
     },
     {
-      id: '2',
-      sender: 'Sarah Chen',
-      text: 'Take a look at the export below and let me know if the color tokens align with our Tailwind setup.',
-      time: '12:39 pm',
+      id: "2",
+      sender: "Sarah Chen",
+      text: "Take a look at the export below and let me know if the color tokens align with our Tailwind setup.",
+      time: "12:39 pm",
       isMe: false,
       attachment: {
-        title: 'TeamSync_Design_System_v2.fig',
-        type: 'Figma File',
-        size: '18.4 MB',
+        title: "TeamSync_Design_System_v2.fig",
+        type: "Figma File",
+        size: "18.4 MB",
       },
     },
     {
-      id: '3',
-      sender: 'Alex Johnson',
-      text: 'This looks fantastic Sarah! The dual-spline area chart and status pills match the design perfectly. I will integrate them now.',
-      time: '12:42 pm',
+      id: "3",
+      sender: "Alex Johnson",
+      text: "This looks fantastic Sarah! The dual-spline area chart and status pills match the design perfectly. I will integrate them now.",
+      time: "12:42 pm",
       isMe: true,
     },
   ]);
@@ -46,17 +55,19 @@ export const ChatWindow = ({ activeChat, onToggleProfile }) => {
       ...prev,
       {
         id: `msg-${Date.now()}`,
-        sender: 'Alex Johnson',
+        sender: "Alex Johnson",
         text: inputText,
-        time: 'Just now',
+        time: "Just now",
         isMe: true,
       },
     ]);
-    setInputText('');
+    setInputText("");
   };
 
-  const title = activeChat?.name || 'Sarah Chen';
-  const subtitle = activeChat?.role || (activeChat?.type === 'channel' ? 'Public Channel' : 'Active Now');
+  const title = activeChat?.name || "Sarah Chen";
+  const subtitle =
+    activeChat?.role ||
+    (activeChat?.type === "channel" ? "Public Channel" : "Active Now");
 
   return (
     <div className="flex-1 bg-white rounded-3xl border border-slate-100 flex flex-col h-full overflow-hidden shadow-2xs">
@@ -65,19 +76,29 @@ export const ChatWindow = ({ activeChat, onToggleProfile }) => {
         <div className="flex items-center gap-3.5">
           <Avatar name={title} size="md" />
           <div>
-            <h4 className="font-bold text-sm text-slate-900 leading-tight">{title}</h4>
+            <h4 className="font-bold text-sm text-slate-900 leading-tight">
+              {title}
+            </h4>
             <div className="flex items-center gap-1.5 mt-0.5">
               <span className="w-2 h-2 rounded-full bg-emerald-500" />
-              <span className="text-[11px] font-medium text-slate-400">{subtitle}</span>
+              <span className="text-[11px] font-medium text-slate-400">
+                {subtitle}
+              </span>
             </div>
           </div>
         </div>
 
         <div className="flex items-center gap-1.5 text-slate-500">
-          <button className="p-2 rounded-xl hover:bg-slate-50 hover:text-indigo-600 transition-colors" title="Voice Call">
+          <button
+            className="p-2 rounded-xl hover:bg-slate-50 hover:text-indigo-600 transition-colors"
+            title="Voice Call"
+          >
             <Phone size={17} />
           </button>
-          <button className="p-2 rounded-xl hover:bg-slate-50 hover:text-indigo-600 transition-colors" title="Video Meeting">
+          <button
+            className="p-2 rounded-xl hover:bg-slate-50 hover:text-indigo-600 transition-colors"
+            title="Video Meeting"
+          >
             <Video size={17} />
           </button>
           <button
@@ -95,16 +116,20 @@ export const ChatWindow = ({ activeChat, onToggleProfile }) => {
         {messages.map((m) => (
           <div
             key={m.id}
-            className={`flex gap-3 max-w-lg ${m.isMe ? 'ml-auto flex-row-reverse' : ''}`}
+            className={`flex gap-3 max-w-lg ${m.isMe ? "ml-auto flex-row-reverse" : ""}`}
           >
-            {!m.isMe && <Avatar name={m.sender} size="sm" className="shrink-0 mt-1" />}
+            {!m.isMe && (
+              <Avatar name={m.sender} size="sm" className="shrink-0 mt-1" />
+            )}
 
-            <div className={`space-y-1.5 ${m.isMe ? 'items-end text-right' : ''}`}>
+            <div
+              className={`space-y-1.5 ${m.isMe ? "items-end text-right" : ""}`}
+            >
               <div
                 className={`p-4 rounded-3xl text-xs leading-relaxed ${
                   m.isMe
-                    ? 'bg-gradient-to-r from-indigo-600 to-blue-600 text-white rounded-br-xs shadow-xs'
-                    : 'bg-white text-slate-800 border border-slate-100 rounded-bl-xs shadow-2xs'
+                    ? "bg-linear-to-r from-indigo-600 to-blue-600 text-white rounded-br-xs shadow-xs"
+                    : "bg-white text-slate-800 border border-slate-100 rounded-bl-xs shadow-2xs"
                 }`}
               >
                 <p>{m.text}</p>
@@ -117,8 +142,12 @@ export const ChatWindow = ({ activeChat, onToggleProfile }) => {
                         <FileText size={16} />
                       </div>
                       <div className="text-left">
-                        <p className="font-bold text-xs truncate max-w-44">{m.attachment.title}</p>
-                        <span className="text-[10px] text-slate-400 font-medium">{m.attachment.size}</span>
+                        <p className="font-bold text-xs truncate max-w-44">
+                          {m.attachment.title}
+                        </p>
+                        <span className="text-[10px] text-slate-400 font-medium">
+                          {m.attachment.size}
+                        </span>
                       </div>
                     </div>
                     <button className="p-1.5 rounded-lg text-indigo-600 hover:bg-white transition-colors">
@@ -127,14 +156,19 @@ export const ChatWindow = ({ activeChat, onToggleProfile }) => {
                   </div>
                 )}
               </div>
-              <span className="text-[10px] font-medium text-slate-400 block px-1">{m.time}</span>
+              <span className="text-[10px] font-medium text-slate-400 block px-1">
+                {m.time}
+              </span>
             </div>
           </div>
         ))}
       </div>
 
       {/* Message Input Bar */}
-      <form onSubmit={handleSend} className="p-4 bg-white border-t border-slate-100 flex items-center gap-3">
+      <form
+        onSubmit={handleSend}
+        className="p-4 bg-white border-t border-slate-100 flex items-center gap-3"
+      >
         <button
           type="button"
           className="p-2 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
@@ -162,7 +196,7 @@ export const ChatWindow = ({ activeChat, onToggleProfile }) => {
         <button
           type="submit"
           disabled={!inputText.trim()}
-          className="w-10 h-10 rounded-full bg-gradient-to-r from-indigo-600 to-blue-600 text-white flex items-center justify-center shadow-md shadow-indigo-200 disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-lg transition-all"
+          className="w-10 h-10 rounded-full bg-linear-to-r from-indigo-600 to-blue-600 text-white flex items-center justify-center shadow-md shadow-indigo-200 disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-lg transition-all"
         >
           <Send size={16} className="ml-0.5" />
         </button>
@@ -172,4 +206,3 @@ export const ChatWindow = ({ activeChat, onToggleProfile }) => {
 };
 
 export default ChatWindow;
-

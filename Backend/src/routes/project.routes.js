@@ -26,10 +26,10 @@ const router = express.Router();
 
 router.use(protect);
 
-// Project List & Creation (Only Admins and Managers can create projects)
+// Project List & Creation
 router.route("/")
   .get(getProjects)
-  .post(requireManagerOrAdmin, createProject);
+  .post(createProject);
 
 // Eligible Members for Project (Must be before :projectId)
 router.get("/:projectId/eligible-members", getEligibleMembers);

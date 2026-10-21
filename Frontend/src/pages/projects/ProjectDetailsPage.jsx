@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { useDispatch } from "react-redux";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import {
   ArrowLeft,
@@ -23,6 +24,8 @@ import { CreateTaskModal } from "../../features/tasks/components/CreateTaskModal
 import { TaskDetails } from "../../features/tasks/components/TaskDetails.jsx";
 import { useProjects } from "../../features/projects/hooks/useProjects.js";
 import { useTasks } from "../../features/tasks/hooks/useTasks.js";
+import { projectService } from "../../features/projects/services/project.service.js";
+import { addProject as addProjectAction } from "../../features/projects/store/projectSlice.js";
 import { formatDate } from "../../shared/utils/formatDate.js";
 import { ROUTES } from "../../shared/constants/routes.js";
 

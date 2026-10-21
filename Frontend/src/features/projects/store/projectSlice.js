@@ -1,9 +1,12 @@
 import { createSlice } from "@reduxjs/toolkit";
+import { storage } from "../../../shared/utils/localStorage.js";
+
+const initialProjects = storage.get("teamsync_projects", []);
 
 const projectSlice = createSlice({
   name: "projects",
   initialState: {
-    projects: [],
+    projects: Array.isArray(initialProjects) ? initialProjects : [],
     filter: "ALL",
     search: "",
     loading: false,
@@ -11,7 +14,16 @@ const projectSlice = createSlice({
   },
   reducers: {
     setProjects(state, action) {
-      state.projects = action.payload;
+      const serverProjects = action.payload || [];
+      // Preserve any locally created projects (e.g. p-*) that haven't synced to server yet
+      const localProjects = (state.projects || []).filter(
+        (lp) =>
+          typeof (lp.id || lp._id) === "string" &&
+          (lp.id || lp._id).startsWith("p-") &&
+          !serverProjects.some((sp) => (sp.id || sp._id) === (lp.id || lp._id))
+      );
+      state.projects = [...localProjects, ...serverProjects];
+      storage.set("teamsync_projects", state.projects);
       state.loading = false;
       state.error = null;
     },
@@ -39,6 +51,7 @@ const projectSlice = createSlice({
       } else {
         state.projects[existsIndex] = newProject;
       }
+      storage.set("teamsync_projects", state.projects);
     },
     updateProject(state, action) {
       const updated = action.payload;
@@ -48,6 +61,7 @@ const projectSlice = createSlice({
       );
       if (idx !== -1) {
         state.projects[idx] = { ...state.projects[idx], ...updated };
+        storage.set("teamsync_projects", state.projects);
       }
     },
     deleteProject(state, action) {
@@ -55,6 +69,7 @@ const projectSlice = createSlice({
       state.projects = state.projects.filter(
         (p) => p.id !== id && p._id !== id
       );
+      storage.set("teamsync_projects", state.projects);
     },
     tagMemberToProject(state, action) {
       const { projectId, member, projectRole = "Contributor", role = "Member" } =
@@ -76,6 +91,7 @@ const projectSlice = createSlice({
             role,
             projectRole,
           });
+          storage.set("teamsync_projects", state.projects);
         }
       }
     },
@@ -88,6 +104,7 @@ const projectSlice = createSlice({
         project.members = project.members.filter(
           (m) => (m.id || m._id) !== memberId
         );
+        storage.set("teamsync_projects", state.projects);
       }
     },
     updateMemberRoleInProject(state, action) {
@@ -102,6 +119,7 @@ const projectSlice = createSlice({
         if (mem) {
           if (role) mem.role = role;
           if (projectRole !== undefined) mem.projectRole = projectRole;
+          storage.set("teamsync_projects", state.projects);
         }
       }
     },

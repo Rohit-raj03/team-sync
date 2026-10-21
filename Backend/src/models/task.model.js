@@ -165,6 +165,17 @@ taskSchema.set("toJSON", {
         ret.projectName = "Individual Task";
       }
     }
+    if (Array.isArray(ret.subtasks)) {
+      ret.subtasks = ret.subtasks.map((s, idx) => {
+        const sId = s._id ? s._id.toString() : s.id || `st-${idx}`;
+        return {
+          id: sId,
+          _id: sId,
+          title: s.title || "",
+          completed: Boolean(s.completed),
+        };
+      });
+    }
     if (Array.isArray(ret.assignees)) {
       ret.assignees = ret.assignees.map((a) => {
         if (a && typeof a === "object" && (a._id || a.id)) {

@@ -92,6 +92,7 @@ export const createProject = async (req, res) => {
         user: req.user._id,
         role: "Owner",
         projectRole: "Project Owner",
+        tags: ["Project Owner"],
         joinedAt: new Date(),
       },
     ];
@@ -106,10 +107,17 @@ export const createProject = async (req, res) => {
         ) {
           const userDoc = await UserModel.findById(userId);
           if (userDoc) {
+            const memberTags =
+              Array.isArray(m.tags) && m.tags.length > 0
+                ? m.tags
+                : m.projectRole
+                ? [m.projectRole]
+                : ["Contributor"];
             initialMembers.push({
               user: userDoc._id,
               role: m.role || "Member",
-              projectRole: m.projectRole || "Contributor",
+              projectRole: m.projectRole || memberTags[0] || "Contributor",
+              tags: memberTags,
               joinedAt: new Date(),
             });
           }
@@ -242,7 +250,7 @@ export const getProjects = async (req, res) => {
  */
 export const getProjectById = async (req, res) => {
   try {
-    const { projectId } = req.params;
+    const projectId = req.params.projectId || req.params.id;
 
     if (!mongoose.Types.ObjectId.isValid(projectId)) {
       return res.status(400).json({
@@ -293,7 +301,7 @@ export const getProjectById = async (req, res) => {
  */
 export const updateProject = async (req, res) => {
   try {
-    const { projectId } = req.params;
+    const projectId = req.params.projectId || req.params.id;
 
     if (!mongoose.Types.ObjectId.isValid(projectId)) {
       return res.status(400).json({
@@ -378,7 +386,7 @@ export const updateProject = async (req, res) => {
  */
 export const deleteProject = async (req, res) => {
   try {
-    const { projectId } = req.params;
+    const projectId = req.params.projectId || req.params.id;
 
     if (!mongoose.Types.ObjectId.isValid(projectId)) {
       return res.status(400).json({
@@ -433,7 +441,7 @@ export const deleteProject = async (req, res) => {
  */
 export const getProjectMembers = async (req, res) => {
   try {
-    const { projectId } = req.params;
+    const projectId = req.params.projectId || req.params.id;
 
     if (!mongoose.Types.ObjectId.isValid(projectId)) {
       return res.status(400).json({
@@ -485,7 +493,7 @@ export const getProjectMembers = async (req, res) => {
  */
 export const addProjectMember = async (req, res) => {
   try {
-    const { projectId } = req.params;
+    const projectId = req.params.projectId || req.params.id;
     const { userId, email, role = "Member", projectRole = "Contributor" } =
       req.body;
 
@@ -545,10 +553,18 @@ export const addProjectMember = async (req, res) => {
     const validRoles = ["Owner", "Admin", "Member", "Viewer"];
     const assignedRole = validRoles.includes(role) ? role : "Member";
 
+    const memberTags =
+      Array.isArray(req.body.tags) && req.body.tags.length > 0
+        ? req.body.tags
+        : projectRole
+        ? [projectRole]
+        : ["Contributor"];
+
     project.members.push({
       user: targetUser._id,
       role: assignedRole,
-      projectRole: projectRole || "Contributor",
+      projectRole: projectRole || memberTags[0] || "Contributor",
+      tags: memberTags,
       joinedAt: new Date(),
     });
 
@@ -600,7 +616,8 @@ export const addProjectMember = async (req, res) => {
  */
 export const updateProjectMemberRole = async (req, res) => {
   try {
-    const { projectId, userId } = req.params;
+    const projectId = req.params.projectId || req.params.id;
+    const userId = req.params.userId || req.params.memberId;
     const { role, projectRole } = req.body;
 
     if (
@@ -651,6 +668,14 @@ export const updateProjectMemberRole = async (req, res) => {
       member.projectRole = projectRole;
     }
 
+    if (req.body.tags !== undefined) {
+      const updatedTags = Array.isArray(req.body.tags) ? req.body.tags : [req.body.tags];
+      member.tags = updatedTags;
+      if (!projectRole && updatedTags.length > 0) {
+        member.projectRole = updatedTags[0];
+      }
+    }
+
     await project.save();
 
     const updated = await ProjectModel.findById(projectId).populate(
@@ -680,7 +705,8 @@ export const updateProjectMemberRole = async (req, res) => {
  */
 export const removeProjectMember = async (req, res) => {
   try {
-    const { projectId, userId } = req.params;
+    const projectId = req.params.projectId || req.params.id;
+    const userId = req.params.userId || req.params.memberId;
 
     if (
       !mongoose.Types.ObjectId.isValid(projectId) ||
@@ -756,7 +782,7 @@ export const removeProjectMember = async (req, res) => {
  */
 export const getEligibleMembers = async (req, res) => {
   try {
-    const { projectId } = req.params;
+    const projectId = req.params.projectId || req.params.id;
     const { search } = req.query;
 
     if (!mongoose.Types.ObjectId.isValid(projectId)) {
