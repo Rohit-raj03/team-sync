@@ -67,7 +67,7 @@ export const CreateTaskForm = ({
   });
 
   const selectedProject = availableProjects.find(
-    (p) => (p.id || p._id) === formData.projectId
+    (p) => (p.id || p._id) === formData.projectId,
   );
   // If project is selected and has members, use those; otherwise allow tagging/assigning from all team members
   const projectMembers =
@@ -108,9 +108,7 @@ export const CreateTaskForm = ({
       const submissionData = {
         ...formData,
         projectId: formData.projectId || null,
-        projectName: selectedProj
-          ? selectedProj.name
-          : "Individual Task",
+        projectName: selectedProj ? selectedProj.name : "Individual Task",
         isIndividual: !formData.projectId,
         // For backwards compatibility with single assignedTo:
         assignedTo:
@@ -281,9 +279,7 @@ export const CreateTaskForm = ({
               rows={2}
               placeholder="Leave an introductory note or type @ to ping team members on creation..."
               value={formData.comment}
-              onChange={(val) =>
-                setFormData({ ...formData, comment: val })
-              }
+              onChange={(val) => setFormData({ ...formData, comment: val })}
               projectMembers={projectMembers}
               className="w-full text-xs"
             />
@@ -308,14 +304,14 @@ export const CreateTaskForm = ({
               onChange={(e) => {
                 const newProjectId = e.target.value;
                 const newProj = availableProjects.find(
-                  (p) => (p.id || p._id) === newProjectId
+                  (p) => (p.id || p._id) === newProjectId,
                 );
                 const allowedMemberIds =
                   newProj?.members && newProj.members.length > 0
                     ? new Set(
                         newProj.members.map((m) =>
-                          (m.id || m._id || m.user?._id || m.user)?.toString()
-                        )
+                          (m.id || m._id || m.user?._id || m.user)?.toString(),
+                        ),
                       )
                     : null;
                 setFormData((prev) => ({
@@ -324,19 +320,20 @@ export const CreateTaskForm = ({
                   assignees: allowedMemberIds
                     ? prev.assignees.filter((a) =>
                         allowedMemberIds.has(
-                          (a.id || a._id || a.user?._id || a.user)?.toString()
-                        )
+                          (a.id || a._id || a.user?._id || a.user)?.toString(),
+                        ),
                       )
                     : prev.assignees,
                 }));
               }}
               className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#4361EE] shadow-xs cursor-pointer"
             >
-              <option value="">
-                No Project (Individual / Self Task)
-              </option>
+              <option value="">No Project (Individual / Self Task)</option>
               {availableProjects.map((project) => (
-                <option key={project.id || project._id} value={project.id || project._id}>
+                <option
+                  key={project.id || project._id}
+                  value={project.id || project._id}
+                >
                   {project.name}{" "}
                   {project.category ? `(${project.category})` : ""}
                 </option>
@@ -344,48 +341,39 @@ export const CreateTaskForm = ({
             </select>
 
             {/* Display Tagged Members in Selected Project OR Individual Task note */}
-            {formData.projectId ? (
-              (() => {
-                const currentProj = availableProjects.find(
-                  (p) => (p.id || p._id) === formData.projectId,
-                );
-                if (!currentProj?.members || currentProj.members.length === 0)
-                  return null;
-                return (
-                  <div className="flex items-center gap-1.5 pt-1 text-[11px] text-slate-500">
-                    <span className="font-semibold text-slate-400">
-                      Tagged in project:
-                    </span>
-                    <div className="flex -space-x-1.5 overflow-hidden">
-                      {currentProj.members.slice(0, 4).map((m) => (
-                        <img
-                          key={m.id || m._id}
-                          src={m.avatar}
-                          alt={m.name}
-                          title={`${m.name} (${m.projectRole || m.role || "Member"})`}
-                          className="w-5 h-5 rounded-full ring-1 ring-white object-cover"
-                          onError={(e) => {
-                            e.target.src = `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(m.name)}`;
-                          }}
-                        />
-                      ))}
+            {formData.projectId
+              ? (() => {
+                  const currentProj = availableProjects.find(
+                    (p) => (p.id || p._id) === formData.projectId,
+                  );
+                  if (!currentProj?.members || currentProj.members.length === 0)
+                    return null;
+                  return (
+                    <div className="flex items-center gap-1.5 pt-1 text-[11px] text-slate-500">
+                      <span className="font-semibold text-slate-400">
+                        Tagged in project:
+                      </span>
+                      <div className="flex -space-x-1.5 overflow-hidden">
+                        {currentProj.members.slice(0, 4).map((m) => (
+                          <img
+                            key={m.id || m._id}
+                            src={m.avatar}
+                            alt={m.name}
+                            title={`${m.name} (${m.projectRole || m.role || "Member"})`}
+                            className="w-5 h-5 rounded-full ring-1 ring-white object-cover"
+                            onError={(e) => {
+                              e.target.src = `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(m.name)}`;
+                            }}
+                          />
+                        ))}
+                      </div>
+                      <span className="text-[10px] text-slate-400 font-medium">
+                        ({currentProj.members.length} contributors)
+                      </span>
                     </div>
-                    <span className="text-[10px] text-slate-400 font-medium">
-                      ({currentProj.members.length} contributors)
-                    </span>
-                  </div>
-                );
-              })()
-            ) : (
-              <div className="p-2.5 rounded-xl bg-purple-50/80 border border-purple-100 flex items-start gap-2 text-[11px] text-purple-900">
-                <span className="px-1.5 py-0.5 rounded bg-purple-200/70 font-bold text-[10px] text-purple-900 shrink-0 mt-0.5">
-                  Individual / Self
-                </span>
-                <p className="leading-relaxed">
-                  यह एक इंडिविजुअल टास्क रहेगा (किसी प्रोजेक्ट में ऐड नहीं होगा)। आप टीम के किसी भी सदस्य को असाइन और @टैग कर सकते हैं।
-                </p>
-              </div>
-            )}
+                  );
+                })()
+              : ""}
           </div>
 
           {/* Status Selector */}
@@ -408,7 +396,9 @@ export const CreateTaskForm = ({
           <div className="p-4 rounded-2xl bg-white border border-slate-200/80 shadow-xs">
             <TaskAssigneeSelector
               selectedAssignees={formData.assignees}
-              availableMembers={projectMembers.length > 0 ? projectMembers : undefined}
+              availableMembers={
+                projectMembers.length > 0 ? projectMembers : undefined
+              }
               onChange={(newAssignees) =>
                 setFormData({ ...formData, assignees: newAssignees })
               }
