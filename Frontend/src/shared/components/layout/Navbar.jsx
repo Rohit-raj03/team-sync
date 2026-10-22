@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Search, Bell, ChevronDown, Menu } from "lucide-react";
 import { useAuth } from "../../../features/auth/hooks/useAuth.js";
+import { useNotifications } from "../../../features/notifications/hooks/useNotifications.js";
 import { useNavigate } from "react-router-dom";
 import { ROUTES } from "../../constants/routes.js";
 import { Avatar } from "../ui/Avatar.jsx";
@@ -8,10 +9,11 @@ import { Avatar } from "../ui/Avatar.jsx";
 /**
  * Shared Layout Component: Navbar
  * Layer: shared/components/layout/
- * Responsibility: Top navigation header with centered search bar, hamburger toggle for mobile/tablet when sidebar is hidden, notification badge, and profile dropdown.
+ * Responsibility: Top navigation header with centered search bar, hamburger toggle for mobile/tablet when sidebar is hidden, dynamic notification badge, and profile dropdown.
  */
 export const Navbar = ({ onToggleSidebar }) => {
   const { user, logout } = useAuth();
+  const { unreadCount = 0 } = useNotifications();
   const navigate = useNavigate();
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [search, setSearch] = useState("");
@@ -64,16 +66,18 @@ export const Navbar = ({ onToggleSidebar }) => {
 
       {/* Right: Notifications & User Profile */}
       <div className="flex items-center gap-5">
-        {/* Notification Bell with Badge */}
+        {/* Notification Bell with Dynamic Badge */}
         <div className="relative cursor-pointer">
           <button
             className="p-2 text-slate-500 hover:text-indigo-600 transition-colors relative focus:outline-none"
             aria-label="Notifications"
           >
             <Bell size={20} />
-            <span className="absolute top-1 right-1 w-4 h-4 bg-[#4361EE] text-white text-[9px] font-bold rounded-full flex items-center justify-center ring-2 ring-white">
-              2
-            </span>
+            {unreadCount > 0 && (
+              <span className="absolute top-1 right-1 min-w-4 h-4 px-1 bg-[#4361EE] text-white text-[9px] font-bold rounded-full flex items-center justify-center ring-2 ring-white">
+                {unreadCount > 9 ? "9+" : unreadCount}
+              </span>
+            )}
           </button>
         </div>
 

@@ -1,4 +1,4 @@
-import React from "react";
+import React, { Suspense } from "react";
 import {
   createBrowserRouter,
   RouterProvider,
@@ -7,52 +7,77 @@ import {
 import { ROUTES } from "./routes.js";
 import { ProtectedRoute } from "./ProtectedRoute.jsx";
 import { MainLayout } from "../../shared/components/layout/MainLayout.jsx";
+import { PageLoadingFallback } from "../../shared/components/ui/PageLoadingFallback.jsx";
+import { RouteErrorBoundary } from "../../shared/components/ui/RouteErrorBoundary.jsx";
 
-import { LoginPage } from "../../pages/auth/LoginPage.jsx";
-import { RegisterPage } from "../../pages/auth/RegisterPage.jsx";
-import { ForgotPasswordPage } from "../../pages/auth/ForgotPasswordPage.jsx";
-import { ResetPasswordPage } from "../../pages/auth/ResetPasswordPage.jsx";
-import { DashboardPage } from "../../pages/dashboard/DashboardPage.jsx";
-import { TasksPage } from "../../pages/tasks/TasksPage.jsx";
-import { CreateTaskPage } from "../../pages/tasks/CreateTaskPage.jsx";
-import { TaskDetailsPage } from "../../pages/tasks/TaskDetailsPage.jsx";
-import { ProjectsPage } from "../../pages/projects/ProjectsPage.jsx";
-import { ProjectDetailsPage } from "../../pages/projects/ProjectDetailsPage.jsx";
-import { TeamPage } from "../../pages/team/TeamPage.jsx";
-import { TimelinePage } from "../../pages/timeline/TimelinePage.jsx";
-import { FilesPage } from "../../pages/files/FilesPage.jsx";
-import { MessagesPage } from "../../pages/messages/MessagesPage.jsx";
-import { ProfilePage } from "../../pages/profile/ProfilePage.jsx";
-import { SettingsPage } from "../../pages/settings/SettingsPage.jsx";
-import { AdminDashboardPage } from "../../pages/admin/AdminDashboardPage.jsx";
+// Safe lazy loading: automatically supports both default and named component exports
+const safeLazy = (importFn) =>
+  React.lazy(async () => {
+    const mod = await importFn();
+    const component =
+      mod.default ||
+      Object.values(mod).find((val) => typeof val === "function") ||
+      mod;
+    return { default: component };
+  });
+
+// Lazy-loaded route pages for on-demand bundle splitting
+const LoginPage = safeLazy(() => import("../../pages/auth/LoginPage.jsx"));
+const RegisterPage = safeLazy(() => import("../../pages/auth/RegisterPage.jsx"));
+const ForgotPasswordPage = safeLazy(() => import("../../pages/auth/ForgotPasswordPage.jsx"));
+const ResetPasswordPage = safeLazy(() => import("../../pages/auth/ResetPasswordPage.jsx"));
+const DashboardPage = safeLazy(() => import("../../pages/dashboard/DashboardPage.jsx"));
+const TasksPage = safeLazy(() => import("../../pages/tasks/TasksPage.jsx"));
+const CreateTaskPage = safeLazy(() => import("../../pages/tasks/CreateTaskPage.jsx"));
+const TaskDetailsPage = safeLazy(() => import("../../pages/tasks/TaskDetailsPage.jsx"));
+const ProjectsPage = safeLazy(() => import("../../pages/projects/ProjectsPage.jsx"));
+const ProjectDetailsPage = safeLazy(() => import("../../pages/projects/ProjectDetailsPage.jsx"));
+const TeamPage = safeLazy(() => import("../../pages/team/TeamPage.jsx"));
+const TimelinePage = safeLazy(() => import("../../pages/timeline/TimelinePage.jsx"));
+const FilesPage = safeLazy(() => import("../../pages/files/FilesPage.jsx"));
+const MessagesPage = safeLazy(() => import("../../pages/messages/MessagesPage.jsx"));
+const ProfilePage = safeLazy(() => import("../../pages/profile/ProfilePage.jsx"));
+const SettingsPage = safeLazy(() => import("../../pages/settings/SettingsPage.jsx"));
+const AdminDashboardPage = safeLazy(() => import("../../pages/admin/AdminDashboardPage.jsx"));
+
+const withSuspense = (Component, message) => (
+  <Suspense fallback={<PageLoadingFallback message={message} />}>
+    <Component />
+  </Suspense>
+);
 
 const router = createBrowserRouter([
   {
     path: ROUTES.LOGIN,
-    element: <LoginPage />,
+    element: withSuspense(LoginPage, "Loading login..."),
+    errorElement: <RouteErrorBoundary />,
   },
   {
     path: ROUTES.REGISTER,
-    element: <RegisterPage />,
+    element: withSuspense(RegisterPage, "Loading registration..."),
+    errorElement: <RouteErrorBoundary />,
   },
   {
     path: ROUTES.FORGOT_PASSWORD,
-    element: <ForgotPasswordPage />,
+    element: withSuspense(ForgotPasswordPage, "Loading password recovery..."),
+    errorElement: <RouteErrorBoundary />,
   },
   {
     path: ROUTES.RESET_PASSWORD,
-    element: <ResetPasswordPage />,
+    element: withSuspense(ResetPasswordPage, "Loading password reset..."),
+    errorElement: <RouteErrorBoundary />,
   },
   {
     path: ROUTES.HOME,
     element: <ProtectedRoute />,
+    errorElement: <RouteErrorBoundary />,
     children: [
       {
         element: <ProtectedRoute allowedRoles={["admin"]} />,
         children: [
           {
             path: ROUTES.ADMIN,
-            element: <AdminDashboardPage />,
+            element: withSuspense(AdminDashboardPage, "Loading admin dashboard..."),
           },
         ],
       },
@@ -65,51 +90,51 @@ const router = createBrowserRouter([
           },
           {
             path: ROUTES.DASHBOARD,
-            element: <DashboardPage />,
+            element: withSuspense(DashboardPage, "Loading dashboard..."),
           },
           {
             path: ROUTES.TASKS,
-            element: <TasksPage />,
+            element: withSuspense(TasksPage, "Loading tasks..."),
           },
           {
             path: ROUTES.CREATE_TASK,
-            element: <CreateTaskPage />,
+            element: withSuspense(CreateTaskPage, "Loading task editor..."),
           },
           {
             path: ROUTES.TASK_DETAILS(":id"),
-            element: <TaskDetailsPage />,
+            element: withSuspense(TaskDetailsPage, "Loading task details..."),
           },
           {
             path: ROUTES.PROJECTS,
-            element: <ProjectsPage />,
+            element: withSuspense(ProjectsPage, "Loading projects..."),
           },
           {
             path: ROUTES.PROJECT_DETAILS(":id"),
-            element: <ProjectDetailsPage />,
+            element: withSuspense(ProjectDetailsPage, "Loading project details..."),
           },
           {
             path: ROUTES.TEAM,
-            element: <TeamPage />,
+            element: withSuspense(TeamPage, "Loading team..."),
           },
           {
             path: ROUTES.TIMELINE,
-            element: <TimelinePage />,
+            element: withSuspense(TimelinePage, "Loading timeline..."),
           },
           {
             path: ROUTES.FILES,
-            element: <FilesPage />,
+            element: withSuspense(FilesPage, "Loading files..."),
           },
           {
             path: ROUTES.MESSAGES,
-            element: <MessagesPage />,
+            element: withSuspense(MessagesPage, "Loading messages..."),
           },
           {
             path: ROUTES.PROFILE,
-            element: <ProfilePage />,
+            element: withSuspense(ProfilePage, "Loading profile..."),
           },
           {
             path: ROUTES.SETTINGS,
-            element: <SettingsPage />,
+            element: withSuspense(SettingsPage, "Loading settings..."),
           },
         ],
       },
@@ -124,3 +149,5 @@ const router = createBrowserRouter([
 export const AppRouter = () => {
   return <RouterProvider router={router} />;
 };
+
+export default AppRouter;

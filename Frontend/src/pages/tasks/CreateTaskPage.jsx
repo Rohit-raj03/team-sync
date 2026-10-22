@@ -84,3 +84,5 @@ export const CreateTaskPage = () => {
     </div>
   );
 };
+
+export default CreateTaskPage;

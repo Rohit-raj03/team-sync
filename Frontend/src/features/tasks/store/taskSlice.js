@@ -4,40 +4,10 @@ import {
   TASK_PRIORITY,
 } from "../../../shared/constants/taskStatus.js";
 
-const DEFAULT_INDIVIDUAL_TASK = {
-  id: "default-self-task-1",
-  _id: "default-self-task-1",
-  title: "Self Task (Individual / No Project)",
-  description:
-    "This is a default standalone task that does not belong to any project. You can assign and @mention any team members freely.",
-  project: null,
-  projectId: null,
-  projectName: "Individual Task",
-  isIndividual: true,
-  status: TASK_STATUS.TODO,
-  priority: TASK_PRIORITY.MEDIUM,
-  startDate: new Date().toISOString().split("T")[0],
-  dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
-    .toISOString()
-    .split("T")[0],
-  estimatedTime: "4h",
-  assignees: [],
-  assignedTo: "Unassigned",
-  tags: ["Self", "Individual"],
-  subtasks: [
-    { id: "sub-1", title: "Review standalone task features", completed: false },
-    { id: "sub-2", title: "Tag team members with @mention", completed: false },
-  ],
-  attachments: [],
-  comment: "",
-  mentions: [],
-  createdAt: new Date().toISOString(),
-};
-
 const taskSlice = createSlice({
   name: "tasks",
   initialState: {
-    tasks: [DEFAULT_INDIVIDUAL_TASK],
+    tasks: [],
     filter: "ALL",
     search: "",
     loading: false,
@@ -45,18 +15,7 @@ const taskSlice = createSlice({
   },
   reducers: {
     setTasks(state, action) {
-      const serverTasks = action.payload || [];
-      const hasIndividual = serverTasks.some(
-        (t) =>
-          t.isIndividual ||
-          (!t.project && !t.projectId) ||
-          t.projectName === "Individual Task",
-      );
-      if (!hasIndividual && serverTasks.length === 0) {
-        state.tasks = [DEFAULT_INDIVIDUAL_TASK];
-      } else {
-        state.tasks = serverTasks;
-      }
+      state.tasks = Array.isArray(action.payload) ? action.payload : [];
       state.loading = false;
       state.error = null;
     },
@@ -72,7 +31,9 @@ const taskSlice = createSlice({
       const newTask = {
         ...t,
         id: t.id || t._id || `t-${Date.now()}`,
-        _id: t._id || t.id,
+        _id: t._id || t.id || `t-${Date.now()}`,
+        status: t.status || TASK_STATUS.TODO,
+        priority: t.priority || TASK_PRIORITY.MEDIUM,
         createdAt: t.createdAt || new Date().toISOString(),
       };
       const existsIndex = state.tasks.findIndex(
@@ -81,7 +42,7 @@ const taskSlice = createSlice({
       if (existsIndex === -1) {
         state.tasks.unshift(newTask);
       } else {
-        state.tasks[existsIndex] = newTask;
+        state.tasks[existsIndex] = { ...state.tasks[existsIndex], ...newTask };
       }
     },
     updateTask(state, action) {
@@ -95,8 +56,10 @@ const taskSlice = createSlice({
       }
     },
     deleteTask(state, action) {
-      const id = action.payload;
-      state.tasks = state.tasks.filter((t) => t.id !== id && t._id !== id);
+      const targetId = action.payload;
+      state.tasks = state.tasks.filter(
+        (t) => t.id !== targetId && t._id !== targetId,
+      );
     },
     setTaskFilter(state, action) {
       state.filter = action.payload;

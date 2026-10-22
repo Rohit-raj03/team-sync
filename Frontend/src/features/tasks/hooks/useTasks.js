@@ -13,31 +13,58 @@ import {
 } from "../store/taskSlice.js";
 import { taskService } from "../services/task.service.js";
 
-export function useTasks() {
+// Global cache and request deduplication state
+let inFlightTasksPromise = null;
+let lastTasksFetchTimestamp = 0;
+const CACHE_TTL_MS = 15000; // 15 seconds cache window
+
+export function useTasks(options = {}) {
+  const { autoFetch = true } = options;
   const dispatch = useDispatch();
   const { tasks, filter, search, loading, error } = useSelector(
     (state) => state.tasks
   );
 
-  const fetchTasks = useCallback(async () => {
-    try {
-      dispatch(setLoading(true));
-      const res = await taskService.getTasks();
-      const serverTasks = res?.tasks || res?.data;
-      if (Array.isArray(serverTasks)) {
-        dispatch(setTasks(serverTasks));
-      }
-    } catch (err) {
-      console.warn("Could not fetch tasks from server:", err.message);
-      dispatch(setError(err.message));
-    } finally {
-      dispatch(setLoading(false));
+  const fetchTasks = useCallback(async (force = false) => {
+    const isCacheValid = tasks.length > 0 && Date.now() - lastTasksFetchTimestamp < CACHE_TTL_MS;
+    if (!force && isCacheValid) {
+      return tasks;
     }
-  }, [dispatch]);
+
+    if (inFlightTasksPromise) {
+      return inFlightTasksPromise;
+    }
+
+    inFlightTasksPromise = (async () => {
+      try {
+        if (tasks.length === 0) {
+          dispatch(setLoading(true));
+        }
+        const res = await taskService.getTasks();
+        const serverTasks = res?.tasks || res?.data;
+        if (Array.isArray(serverTasks)) {
+          dispatch(setTasks(serverTasks));
+          lastTasksFetchTimestamp = Date.now();
+        }
+        return serverTasks;
+      } catch (err) {
+        console.warn("Could not fetch tasks from server:", err.message);
+        dispatch(setError(err.message));
+        throw err;
+      } finally {
+        dispatch(setLoading(false));
+        inFlightTasksPromise = null;
+      }
+    })();
+
+    return inFlightTasksPromise;
+  }, [dispatch, tasks.length]);
 
   useEffect(() => {
-    fetchTasks();
-  }, [fetchTasks]);
+    if (autoFetch) {
+      fetchTasks();
+    }
+  }, [autoFetch, fetchTasks]);
 
   const filteredTasks = tasks.filter((task) => {
     const isIndividual =

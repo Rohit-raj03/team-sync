@@ -721,12 +721,15 @@ export const TaskDetails = ({
       </div>
 
       {/* 5. INTERACTIVE SUBTASKS CHECKLIST ("subtask ko tick kar sake") */}
-      <div className="space-y-3">
+      <div className="space-y-3 p-3.5 rounded-2xl bg-slate-50/50 border border-slate-100">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-1.5">
-            <ListChecks size={15} className="text-slate-500" />
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-700">
-              Subtasks ({completedSubtasksCount}/{subtasks.length})
+          <div className="flex items-center gap-2">
+            <ListChecks size={15} className="text-[#4361EE]" />
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-800">
+              Subtasks Checklist ({completedSubtasksCount}/{subtasks.length})
+            </span>
+            <span className="text-[10px] font-bold uppercase text-slate-500 bg-slate-200/70 px-1.5 py-0.2 rounded-md">
+              Sub-items
             </span>
           </div>
 
@@ -739,7 +742,7 @@ export const TaskDetails = ({
             <button
               type="button"
               onClick={() => setIsAddingSubtask((prev) => !prev)}
-              className="inline-flex items-center gap-1 text-xs font-bold text-[#4361EE] hover:text-[#3451DE] transition-colors"
+              className="inline-flex items-center gap-1 text-xs font-bold text-[#4361EE] hover:text-[#3451DE] transition-colors cursor-pointer"
             >
               <Plus size={13} />
               <span>Add Subtask</span>
@@ -936,21 +939,28 @@ export const TaskDetails = ({
         </div>
       )}
 
-      {/* 7. Tags */}
+      {/* 7. Tags (Metadata) */}
       {task.tags && task.tags.length > 0 && (
         <div className="space-y-1.5">
-          <span className="block text-xs font-bold uppercase tracking-wider text-slate-700">
-            Tags
-          </span>
+          <div className="flex items-center gap-1.5">
+            <Tag size={13} className="text-amber-500" />
+            <span className="block text-xs font-bold uppercase tracking-wider text-slate-700">
+              Tags & Labels
+            </span>
+          </div>
           <div className="flex flex-wrap gap-1.5">
-            {task.tags.map((t) => (
-              <span
-                key={t}
-                className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-indigo-50 text-[#4361EE] border border-indigo-100"
-              >
-                #{t}
-              </span>
-            ))}
+            {task.tags.map((t) => {
+              const label = t.startsWith("#") ? t.slice(1) : t;
+              return (
+                <span
+                  key={t}
+                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold bg-amber-50 text-amber-900 border border-amber-200/80 shadow-2xs"
+                >
+                  <Tag size={10} className="text-amber-500" />
+                  <span>#{label}</span>
+                </span>
+              );
+            })}
           </div>
         </div>
       )}

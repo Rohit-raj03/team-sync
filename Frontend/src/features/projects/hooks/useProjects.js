@@ -15,37 +15,64 @@ import {
 } from "../store/projectSlice.js";
 import { projectService } from "../services/project.service.js";
 
+// Global cache and request deduplication state for projects
+let inFlightProjectsPromise = null;
+let lastProjectsFetchTimestamp = 0;
+const PROJECTS_CACHE_TTL_MS = 15000;
+
 /**
  * Feature Hook: useProjects
  * Connects frontend project state to backend REST APIs with live task metrics & member management.
  */
-export function useProjects() {
+export function useProjects(options = {}) {
+  const { autoFetch = true } = options;
   const dispatch = useDispatch();
   const { projects, filter, search, loading, error } = useSelector(
     (state) => state.projects
   );
   const tasks = useSelector((state) => state.tasks?.tasks || []);
 
-  // Fetch projects from server on mount
-  const fetchProjects = useCallback(async () => {
-    try {
-      dispatch(setLoading(true));
-      const res = await projectService.getProjects();
-      const serverProjects = res?.projects || res?.data;
-      if (Array.isArray(serverProjects)) {
-        dispatch(setProjects(serverProjects));
-      }
-    } catch (err) {
-      console.warn("Could not fetch projects from server:", err.message);
-      dispatch(setError(err.message));
-    } finally {
-      dispatch(setLoading(false));
+  // Fetch projects from server on mount with deduplication and caching
+  const fetchProjects = useCallback(async (force = false) => {
+    const isCacheValid = projects.length > 0 && Date.now() - lastProjectsFetchTimestamp < PROJECTS_CACHE_TTL_MS;
+    if (!force && isCacheValid) {
+      return projects;
     }
-  }, [dispatch]);
+
+    if (inFlightProjectsPromise) {
+      return inFlightProjectsPromise;
+    }
+
+    inFlightProjectsPromise = (async () => {
+      try {
+        if (projects.length === 0) {
+          dispatch(setLoading(true));
+        }
+        const res = await projectService.getProjects();
+        const serverProjects = res?.projects || res?.data;
+        if (Array.isArray(serverProjects)) {
+          dispatch(setProjects(serverProjects));
+          lastProjectsFetchTimestamp = Date.now();
+        }
+        return serverProjects;
+      } catch (err) {
+        console.warn("Could not fetch projects from server:", err.message);
+        dispatch(setError(err.message));
+        throw err;
+      } finally {
+        dispatch(setLoading(false));
+        inFlightProjectsPromise = null;
+      }
+    })();
+
+    return inFlightProjectsPromise;
+  }, [dispatch, projects.length]);
 
   useEffect(() => {
-    fetchProjects();
-  }, [fetchProjects]);
+    if (autoFetch) {
+      fetchProjects();
+    }
+  }, [autoFetch, fetchProjects]);
 
   // Compute linked tasks and completion percentage dynamically for every project
   const enrichedProjects = useMemo(() => {

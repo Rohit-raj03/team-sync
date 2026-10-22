@@ -319,3 +319,5 @@ export const ProjectDetailsPage = () => {
     </div>
   );
 };
+
+export default ProjectDetailsPage;

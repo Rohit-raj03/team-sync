@@ -144,16 +144,21 @@ export const CreateTaskForm = ({
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Left Column: Core Task Content & Documentation (7 Cols) */}
         <div className="lg:col-span-7 space-y-6">
-          {/* Task Title */}
-          <div className="space-y-1.5">
+          {/* Task Title (Primary Hero Field) */}
+          <div className="p-4 rounded-3xl bg-linear-to-b from-indigo-50/40 to-white border border-indigo-100 shadow-xs space-y-2">
             <div className="flex items-center justify-between">
-              <label
-                htmlFor="task-title"
-                className="block text-xs font-bold uppercase tracking-wider text-slate-700"
-              >
-                Task Title <span className="text-rose-500">*</span>
-              </label>
-              <span className="text-[11px] text-slate-400">
+              <div className="flex items-center gap-2">
+                <span className="px-2 py-0.5 rounded-full bg-[#4361EE] text-white text-[10px] font-extrabold uppercase tracking-wider shadow-2xs">
+                  Primary Task
+                </span>
+                <label
+                  htmlFor="task-title"
+                  className="block text-xs font-bold uppercase tracking-wider text-slate-800"
+                >
+                  Task Title <span className="text-rose-500">*</span>
+                </label>
+              </div>
+              <span className="text-[11px] font-semibold text-slate-400">
                 {formData.title.length}/100
               </span>
             </div>
@@ -167,11 +172,11 @@ export const CreateTaskForm = ({
                 setFormData({ ...formData, title: e.target.value });
                 if (errors.title) setErrors({ ...errors, title: null });
               }}
-              className={`w-full px-4 py-3 rounded-2xl border text-sm font-medium transition-all ${
+              className={`w-full px-4 py-3 rounded-2xl border text-base font-bold transition-all ${
                 errors.title
-                  ? "border-rose-400 focus:ring-2 focus:ring-rose-200 bg-rose-50/20"
-                  : "border-slate-200 focus:ring-2 focus:ring-[#4361EE] focus:border-transparent bg-white"
-              } text-slate-900 placeholder-slate-400 shadow-xs`}
+                  ? "border-rose-400 focus:ring-2 focus:ring-rose-200 bg-rose-50/20 text-rose-900"
+                  : "border-slate-200 focus:ring-2 focus:ring-[#4361EE] focus:border-transparent bg-white text-slate-900"
+              } placeholder-slate-400 shadow-xs`}
             />
             {errors.title && (
               <p className="text-xs text-rose-500 font-medium">

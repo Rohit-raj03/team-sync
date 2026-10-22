@@ -55,14 +55,14 @@ export const ProjectMemberTagSelector = ({
         m.name?.toLowerCase().includes(q) ||
         (m.username && m.username.toLowerCase().includes(q)) ||
         (m.role && m.role.toLowerCase().includes(q)) ||
-        (m.email && m.email.toLowerCase().includes(q))
+        (m.email && m.email.toLowerCase().includes(q)),
     );
   }, [members, searchQuery]);
 
   // Find tagged record by member id
   const getTaggedRecord = (memberId) => {
     return taggedMembers.find(
-      (m) => (m.id || m._id)?.toString() === memberId?.toString()
+      (m) => (m.id || m._id)?.toString() === memberId?.toString(),
     );
   };
 
@@ -75,7 +75,7 @@ export const ProjectMemberTagSelector = ({
     if (tagged) return tagged;
     return (
       members.find(
-        (m) => (m.id || m._id)?.toString() === selectedMemberId?.toString()
+        (m) => (m.id || m._id)?.toString() === selectedMemberId?.toString(),
       ) || null
     );
   }, [selectedMemberId, taggedMembers, members]);
@@ -123,8 +123,10 @@ export const ProjectMemberTagSelector = ({
     if (isTagged(mId)) {
       onChange(
         taggedMembers.map((m) =>
-          (m.id || m._id)?.toString() === mId?.toString() ? updatedMemberObj : m
-        )
+          (m.id || m._id)?.toString() === mId?.toString()
+            ? updatedMemberObj
+            : m,
+        ),
       );
     } else {
       onChange([...taggedMembers, updatedMemberObj]);
@@ -146,8 +148,8 @@ export const ProjectMemberTagSelector = ({
     e?.stopPropagation();
     onChange(
       taggedMembers.filter(
-        (m) => (m.id || m._id)?.toString() !== memberId?.toString()
-      )
+        (m) => (m.id || m._id)?.toString() !== memberId?.toString(),
+      ),
     );
     if (selectedMemberId?.toString() === memberId?.toString()) {
       setSelectedMemberId(null);
@@ -162,15 +164,22 @@ export const ProjectMemberTagSelector = ({
     if (!isTagged(mId)) {
       const defaultRole = (() => {
         const title = (member.role || "").toLowerCase();
-        if (title.includes("design") || title.includes("ui") || title.includes("ux"))
+        if (
+          title.includes("design") ||
+          title.includes("ui") ||
+          title.includes("ux")
+        )
           return "UI/UX Designer";
         if (title.includes("frontend")) return "Frontend Developer";
         if (title.includes("backend")) return "Backend Developer";
         if (title.includes("full") || title.includes("stack"))
           return "Full Stack Developer";
-        if (title.includes("qa") || title.includes("test")) return "QA Reviewer";
-        if (title.includes("lead") || title.includes("manager")) return "Project Lead";
-        if (title.includes("devops") || title.includes("cloud")) return "DevOps Engineer";
+        if (title.includes("qa") || title.includes("test"))
+          return "QA Reviewer";
+        if (title.includes("lead") || title.includes("manager"))
+          return "Project Lead";
+        if (title.includes("devops") || title.includes("cloud"))
+          return "DevOps Engineer";
         return "Contributor";
       })();
 
@@ -188,7 +197,9 @@ export const ProjectMemberTagSelector = ({
     setSelectedMemberId(mId);
   };
 
-  const activeMemberTags = activeMember ? getMemberTags(activeMember.id || activeMember._id) : [];
+  const activeMemberTags = activeMember
+    ? getMemberTags(activeMember.id || activeMember._id)
+    : [];
 
   return (
     <div className="space-y-3.5">
@@ -202,7 +213,8 @@ export const ProjectMemberTagSelector = ({
             </span>
           </label>
           <p className="text-[11px] text-slate-400 font-medium">
-            Select a member from the list below to define their tags and custom roles.
+            Select a member from the list below to define their tags and custom
+            roles.
           </p>
         </div>
       </div>
@@ -220,7 +232,8 @@ export const ProjectMemberTagSelector = ({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 p-2.5 bg-slate-50/90 rounded-2xl border border-slate-200/80 max-h-36 overflow-y-auto">
             {taggedMembers.map((member) => {
               const mId = member.id || member._id;
-              const isSelected = selectedMemberId?.toString() === mId?.toString();
+              const isSelected =
+                selectedMemberId?.toString() === mId?.toString();
               const tags = getMemberTags(mId);
 
               return (
@@ -293,7 +306,8 @@ export const ProjectMemberTagSelector = ({
                   </span>
                 </div>
                 <p className="text-[10px] text-slate-500">
-                  Select predefined tags or enter custom role tags for this member.
+                  Select predefined tags or enter custom role tags for this
+                  member.
                 </p>
               </div>
             </div>
@@ -443,7 +457,8 @@ export const ProjectMemberTagSelector = ({
             filteredMembers.map((member) => {
               const mId = member.id || member._id;
               const tagged = isTagged(mId);
-              const isSelected = selectedMemberId?.toString() === mId?.toString();
+              const isSelected =
+                selectedMemberId?.toString() === mId?.toString();
               const tags = getMemberTags(mId);
 
               return (
@@ -454,8 +469,8 @@ export const ProjectMemberTagSelector = ({
                     isSelected
                       ? "bg-indigo-50/80 border-l-4 border-l-[#4361EE]"
                       : tagged
-                      ? "bg-emerald-50/20 hover:bg-slate-50"
-                      : "hover:bg-slate-50"
+                        ? "bg-emerald-50/20 hover:bg-slate-50"
+                        : "hover:bg-slate-50"
                   }`}
                 >
                   <div className="flex items-center gap-2.5 min-w-0 pr-2">
@@ -486,7 +501,7 @@ export const ProjectMemberTagSelector = ({
                   <div className="flex items-center gap-2 shrink-0">
                     {tagged ? (
                       <div className="flex items-center gap-1.5">
-                        <div className="flex flex-wrap gap-1 max-w-[150px] justify-end">
+                        <div className="flex flex-wrap gap-1 max-w-37.5 justify-end">
                           {tags.slice(0, 2).map((t) => (
                             <span
                               key={t}
