@@ -14,6 +14,10 @@ export const taskService = {
     apiClient.get(`/tasks/${taskId}/comments`),
   createTaskComment: async (taskId, data) =>
     apiClient.post(`/tasks/${taskId}/comments`, data),
+  deleteTaskComment: async (taskId, commentId) =>
+    apiClient.delete(`/tasks/${taskId}/comments/${commentId}`),
+  clearTaskComments: async (taskId) =>
+    apiClient.delete(`/tasks/${taskId}/comments`),
 };
 
 export default taskService;

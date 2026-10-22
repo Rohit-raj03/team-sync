@@ -10,6 +10,7 @@ import {
   Clock,
   Sparkles,
   Loader2,
+  X,
 } from "lucide-react";
 import { ProjectMemberTagSelector } from "./ProjectMemberTagSelector.jsx";
 
@@ -58,10 +59,6 @@ export const ProjectForm = ({
     members: initialData.members || [],
   });
 
-  const isInitialCustom = Boolean(
-    initialData.category && !PROJECT_CATEGORIES.includes(initialData.category)
-  );
-  const [isCustomCategory, setIsCustomCategory] = useState(isInitialCustom);
   const [errors, setErrors] = useState({});
 
   const validate = () => {
@@ -125,94 +122,100 @@ export const ProjectForm = ({
         </div>
 
         {/* Category & Accent Color */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <div className="space-y-1">
-            <div className="flex items-center justify-between">
+        <div className="space-y-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-start">
+            {/* Category Input Field */}
+            <div className="space-y-1">
               <label className="block text-xs font-bold uppercase tracking-wider text-slate-700">
                 Category
               </label>
-              {isCustomCategory && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setIsCustomCategory(false);
-                    setFormData((prev) => ({
-                      ...prev,
-                      category: PROJECT_CATEGORIES[0],
-                    }));
-                  }}
-                  className="text-[10px] font-semibold text-[#4361EE] hover:underline cursor-pointer"
-                >
-                  Use preset
-                </button>
-              )}
-            </div>
-            <select
-              value={isCustomCategory ? "CUSTOM" : formData.category}
-              onChange={(e) => {
-                const val = e.target.value;
-                if (val === "CUSTOM") {
-                  setIsCustomCategory(true);
-                  if (PROJECT_CATEGORIES.includes(formData.category)) {
-                    setFormData((prev) => ({ ...prev, category: "" }));
-                  }
-                } else {
-                  setIsCustomCategory(false);
-                  setFormData((prev) => ({ ...prev, category: val }));
-                }
-              }}
-              className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-semibold bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#4361EE] cursor-pointer"
-            >
-              {PROJECT_CATEGORIES.map((cat) => (
-                <option key={cat} value={cat}>
-                  {cat}
-                </option>
-              ))}
-              <option value="CUSTOM">+ Custom Category...</option>
-            </select>
-
-            {/* Custom Category Text Input */}
-            {isCustomCategory && (
-              <div className="pt-1.5 animate-in fade-in duration-150">
+              <div className="relative">
                 <input
                   type="text"
-                  placeholder="Type custom category (e.g. AI / Machine Learning, Fintech)..."
+                  placeholder="Type category or select a tag below..."
                   value={formData.category}
                   onChange={(e) =>
                     setFormData({ ...formData, category: e.target.value })
                   }
-                  autoFocus
-                  className="w-full px-3 py-1.5 rounded-xl border border-indigo-300 bg-indigo-50/20 text-xs font-semibold text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#4361EE] shadow-2xs"
+                  className="w-full pl-8 pr-8 py-2 rounded-xl border border-slate-200 text-xs font-semibold bg-white text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#4361EE] focus:border-transparent shadow-2xs"
                 />
+                <Tag
+                  size={14}
+                  className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"
+                />
+                {formData.category && (
+                  <button
+                    type="button"
+                    onClick={() => setFormData({ ...formData, category: "" })}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-300 hover:text-slate-600 p-0.5 rounded cursor-pointer"
+                    title="Clear category"
+                  >
+                    <X size={13} />
+                  </button>
+                )}
               </div>
-            )}
+            </div>
+
+            {/* Theme Color */}
+            <div className="space-y-1">
+              <label className="block text-xs font-bold uppercase tracking-wider text-slate-700">
+                Theme Color
+              </label>
+              <div className="flex items-center gap-2 pt-1">
+                {COLOR_PALETTES.map((palette) => (
+                  <button
+                    type="button"
+                    key={palette.value}
+                    onClick={() =>
+                      setFormData({ ...formData, color: palette.value })
+                    }
+                    style={{ backgroundColor: palette.value }}
+                    title={palette.label}
+                    className={`w-6 h-6 sm:w-7 sm:h-7 rounded-full transition-transform flex items-center justify-center text-white cursor-pointer ${
+                      formData.color === palette.value
+                        ? "scale-115 ring-2 ring-offset-2 ring-slate-400 shadow-2xs"
+                        : "hover:scale-105 opacity-80 hover:opacity-100"
+                    }`}
+                  >
+                    {formData.color === palette.value && (
+                      <Check size={13} strokeWidth={3} />
+                    )}
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
 
-          <div className="space-y-1">
-            <label className="block text-xs font-bold uppercase tracking-wider text-slate-700">
-              Theme Color
-            </label>
-            <div className="flex items-center gap-2 pt-0.5">
-              {COLOR_PALETTES.map((palette) => (
-                <button
-                  type="button"
-                  key={palette.value}
-                  onClick={() =>
-                    setFormData({ ...formData, color: palette.value })
-                  }
-                  style={{ backgroundColor: palette.value }}
-                  title={palette.label}
-                  className={`w-6 h-6 sm:w-7 sm:h-7 rounded-full transition-transform flex items-center justify-center text-white ${
-                    formData.color === palette.value
-                      ? "scale-115 ring-2 ring-offset-2 ring-slate-400 shadow-2xs"
-                      : "hover:scale-105 opacity-80 hover:opacity-100"
-                  }`}
-                >
-                  {formData.color === palette.value && (
-                    <Check size={13} strokeWidth={3} />
-                  )}
-                </button>
-              ))}
+          {/* Clickable Preset Category Tags */}
+          <div className="space-y-1.5">
+            <span className="text-[11px] font-semibold text-slate-500">
+              Popular Category Tags:
+            </span>
+            <div className="flex flex-wrap gap-1.5">
+              {PROJECT_CATEGORIES.map((cat) => {
+                const isSelected =
+                  formData.category?.trim().toLowerCase() === cat.toLowerCase();
+                return (
+                  <button
+                    key={cat}
+                    type="button"
+                    onClick={() =>
+                      setFormData({
+                        ...formData,
+                        category: isSelected ? "" : cat,
+                      })
+                    }
+                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+                      isSelected
+                        ? "bg-[#4361EE] text-white shadow-xs border border-[#4361EE]"
+                        : "bg-slate-100 hover:bg-slate-200/80 text-slate-700 border border-slate-200/70"
+                    }`}
+                  >
+                    <span>{cat}</span>
+                    {isSelected && <Check size={12} strokeWidth={2.5} />}
+                  </button>
+                );
+              })}
             </div>
           </div>
         </div>

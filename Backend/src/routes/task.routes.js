@@ -8,6 +8,8 @@ import {
   toggleSubtask,
   getTaskComments,
   createTaskComment,
+  deleteTaskComment,
+  clearTaskComments,
 } from "../controllers/task.controller.js";
 import { protect } from "../middlewares/auth.middleware.js";
 
@@ -21,7 +23,10 @@ router.route("/")
 
 router.route("/:taskId/comments")
   .get(getTaskComments)
-  .post(createTaskComment);
+  .post(createTaskComment)
+  .delete(clearTaskComments);
+
+router.delete("/:taskId/comments/:commentId", deleteTaskComment);
 
 router.patch("/:taskId/subtasks/:subtaskId", toggleSubtask);
 router.patch("/:taskId/subtasks/:subtaskId/toggle", toggleSubtask);

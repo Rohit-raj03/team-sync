@@ -325,7 +325,7 @@ export const TaskAssigneeSelector = ({
                 <input
                   type="text"
                   required
-                  placeholder="e.g. Rahul Sharma"
+                  placeholder="e.g. name"
                   value={newMemberData.name}
                   onChange={(e) =>
                     setNewMemberData({ ...newMemberData, name: e.target.value })
@@ -345,7 +345,7 @@ export const TaskAssigneeSelector = ({
                   />
                   <input
                     type="email"
-                    placeholder="e.g. rahul@teamsync.io"
+                    placeholder="e.g. email"
                     value={newMemberData.email}
                     onChange={(e) =>
                       setNewMemberData({
@@ -365,7 +365,7 @@ export const TaskAssigneeSelector = ({
                   </label>
                   <input
                     type="text"
-                    placeholder="e.g. rahul"
+                    placeholder="e.g. username"
                     value={newMemberData.username}
                     onChange={(e) =>
                       setNewMemberData({
@@ -419,10 +419,10 @@ export const TaskAssigneeSelector = ({
                   <span>Add & Assign</span>
                 </button>
               </div>
+            </div>
           </div>
         </div>
-      </div>
-    )}
-  </div>
-);
+      )}
+    </div>
+  );
 };

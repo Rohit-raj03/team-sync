@@ -40,6 +40,8 @@ import {
   TASK_PRIORITY,
 } from "../../../shared/constants/taskStatus.js";
 
+const getSubtaskId = (sub, idx) => sub?.id || sub?._id || `st-${idx}`;
+
 /**
  * Feature Component: TaskDetails
  * Layer: features/tasks/components/
@@ -107,11 +109,13 @@ export const TaskDetails = ({
   if (!task) return null;
 
   // 1. SUBTASK TICKING / TOGGLE
-  const handleToggleSubtask = (subtaskId) => {
+  const handleToggleSubtask = (subtaskId, e) => {
+    e?.stopPropagation?.();
     const currentSubtasks = task.subtasks || [];
-    const updatedSubtasks = currentSubtasks.map((sub) =>
-      sub.id === subtaskId ? { ...sub, completed: !sub.completed } : sub,
-    );
+    const updatedSubtasks = currentSubtasks.map((sub, idx) => {
+      const sId = getSubtaskId(sub, idx);
+      return sId === subtaskId ? { ...sub, completed: !sub.completed } : sub;
+    });
 
     const updatedTask = {
       ...task,
@@ -146,9 +150,10 @@ export const TaskDetails = ({
 
   // 3. REMOVE SUBTASK
   const handleRemoveSubtask = (subtaskId, e) => {
-    e?.stopPropagation();
-    const updatedSubtasks = (task.subtasks || []).filter(
-      (s) => s.id !== subtaskId,
+    e?.stopPropagation?.();
+    const currentSubtasks = task.subtasks || [];
+    const updatedSubtasks = currentSubtasks.filter(
+      (s, idx) => getSubtaskId(s, idx) !== subtaskId,
     );
 
     const updatedTask = {
@@ -158,6 +163,28 @@ export const TaskDetails = ({
 
     updateTask(updatedTask);
     onUpdate?.(updatedTask);
+  };
+
+  // 3b. UPDATE SUBTASK TITLE
+  const handleUpdateSubtaskTitle = (subtaskId, newTitle, e) => {
+    e?.stopPropagation?.();
+    if (!newTitle || !newTitle.trim()) return;
+
+    const currentSubtasks = task.subtasks || [];
+    const updatedSubtasks = currentSubtasks.map((sub, idx) => {
+      const sId = getSubtaskId(sub, idx);
+      return sId === subtaskId ? { ...sub, title: newTitle.trim() } : sub;
+    });
+
+    const updatedTask = {
+      ...task,
+      subtasks: updatedSubtasks,
+    };
+
+    updateTask(updatedTask);
+    onUpdate?.(updatedTask);
+    setEditingSubtaskId(null);
+    setEditingSubtaskTitle("");
   };
 
   // 4. EMPLOYEE / ASSIGNEE EDITING (TOGGLE ASSIGNEE)

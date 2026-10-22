@@ -8,7 +8,8 @@ const DEFAULT_INDIVIDUAL_TASK = {
   id: "default-self-task-1",
   _id: "default-self-task-1",
   title: "Self Task (Individual / No Project)",
-  description: "This is a default standalone task that does not belong to any project. You can assign and @mention any team members freely.",
+  description:
+    "This is a default standalone task that does not belong to any project. You can assign and @mention any team members freely.",
   project: null,
   projectId: null,
   projectName: "Individual Task",
@@ -16,7 +17,9 @@ const DEFAULT_INDIVIDUAL_TASK = {
   status: TASK_STATUS.TODO,
   priority: TASK_PRIORITY.MEDIUM,
   startDate: new Date().toISOString().split("T")[0],
-  dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
+  dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+    .toISOString()
+    .split("T")[0],
   estimatedTime: "4h",
   assignees: [],
   assignedTo: "Unassigned",
@@ -44,7 +47,10 @@ const taskSlice = createSlice({
     setTasks(state, action) {
       const serverTasks = action.payload || [];
       const hasIndividual = serverTasks.some(
-        (t) => t.isIndividual || (!t.project && !t.projectId) || t.projectName === "Individual Task"
+        (t) =>
+          t.isIndividual ||
+          (!t.project && !t.projectId) ||
+          t.projectName === "Individual Task",
       );
       if (!hasIndividual && serverTasks.length === 0) {
         state.tasks = [DEFAULT_INDIVIDUAL_TASK];
@@ -70,7 +76,7 @@ const taskSlice = createSlice({
         createdAt: t.createdAt || new Date().toISOString(),
       };
       const existsIndex = state.tasks.findIndex(
-        (item) => item.id === newTask.id || item._id === newTask.id
+        (item) => item.id === newTask.id || item._id === newTask.id,
       );
       if (existsIndex === -1) {
         state.tasks.unshift(newTask);
@@ -82,7 +88,7 @@ const taskSlice = createSlice({
       const updated = action.payload;
       const targetId = updated.id || updated._id;
       const idx = state.tasks.findIndex(
-        (t) => t.id === targetId || t._id === targetId
+        (t) => t.id === targetId || t._id === targetId,
       );
       if (idx !== -1) {
         state.tasks[idx] = { ...state.tasks[idx], ...updated };
@@ -100,13 +106,9 @@ const taskSlice = createSlice({
     },
     toggleSubtask(state, action) {
       const { taskId, subtaskId } = action.payload;
-      const task = state.tasks.find(
-        (t) => t.id === taskId || t._id === taskId
-      );
+      const task = state.tasks.find((t) => t.id === taskId || t._id === taskId);
       if (task && Array.isArray(task.subtasks)) {
-        const sub = task.subtasks.find(
-          (s) => (s.id || s._id) === subtaskId
-        );
+        const sub = task.subtasks.find((s) => (s.id || s._id) === subtaskId);
         if (sub) {
           sub.completed = !sub.completed;
         }

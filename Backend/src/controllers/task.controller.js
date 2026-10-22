@@ -882,3 +882,97 @@ export const createTaskComment = async (req, res) => {
     });
   }
 };
+
+/**
+ * @desc    Delete a comment on a task
+ * @route   DELETE /api/tasks/:taskId/comments/:commentId
+ * @access  Private
+ */
+export const deleteTaskComment = async (req, res) => {
+  try {
+    const { taskId, commentId } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(commentId)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid comment ID format",
+      });
+    }
+
+    const comment = await CommentModel.findById(commentId);
+    if (!comment) {
+      return res.status(404).json({
+        success: false,
+        message: "Comment not found",
+      });
+    }
+
+    // Authorization: comment author, admin, or task creator
+    if (mongoose.Types.ObjectId.isValid(taskId)) {
+      const task = await TaskModel.findById(taskId);
+      const isAuthor = comment.author?.toString() === req.user._id.toString();
+      const isAdmin = req.user.role === "admin";
+      const isTaskCreator = task?.creator?.toString() === req.user._id.toString();
+
+      if (!isAuthor && !isAdmin && !isTaskCreator) {
+        return res.status(403).json({
+          success: false,
+          message: "You are not authorized to delete this comment",
+        });
+      }
+    }
+
+    await CommentModel.findByIdAndDelete(commentId);
+
+    return res.status(200).json({
+      success: true,
+      message: "Comment deleted successfully",
+      commentId,
+    });
+  } catch (error) {
+    console.error("deleteTaskComment error:", error.message);
+    return res.status(500).json({
+      success: false,
+      message: error.message || "Server error deleting comment",
+    });
+  }
+};
+
+/**
+ * @desc    Clear / delete all comments for a task
+ * @route   DELETE /api/tasks/:taskId/comments
+ * @access  Private
+ */
+export const clearTaskComments = async (req, res) => {
+  try {
+    const { taskId } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(taskId)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid task ID format",
+      });
+    }
+
+    const task = await TaskModel.findById(taskId);
+    if (!task) {
+      return res.status(404).json({
+        success: false,
+        message: "Task not found",
+      });
+    }
+
+    await CommentModel.deleteMany({ task: taskId });
+
+    return res.status(200).json({
+      success: true,
+      message: "All discussion activities cleared successfully",
+    });
+  } catch (error) {
+    console.error("clearTaskComments error:", error.message);
+    return res.status(500).json({
+      success: false,
+      message: error.message || "Server error clearing comments",
+    });
+  }
+};
