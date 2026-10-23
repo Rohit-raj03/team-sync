@@ -1,7 +1,8 @@
 import React, { useState } from "react";
 import { Modal } from "../../../shared/components/ui/Modal.jsx";
 import { Button } from "../../../shared/components/ui/Button.jsx";
-import { Eye, EyeOff, Lock, CheckCircle2, AlertCircle } from "lucide-react";
+import { Input } from "../../../shared/components/ui/Input.jsx";
+import { CheckCircle2, AlertCircle, Lock } from "lucide-react";
 import { profileService } from "../services/profile.service.js";
 
 /**
@@ -14,8 +15,6 @@ export const PasswordChangeModal = ({ isOpen, onClose, onPasswordUpdated }) => {
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
 
-  const [showCurrent, setShowCurrent] = useState(false);
-  const [showNew, setShowNew] = useState(false);
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -75,75 +74,40 @@ export const PasswordChangeModal = ({ isOpen, onClose, onPasswordUpdated }) => {
         )}
 
         {/* Current Password */}
-        <div className="space-y-1.5">
-          <label className="block text-xs font-bold text-slate-700">
-            Current Password
-          </label>
-          <div className="relative">
-            <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400">
-              <Lock size={15} />
-            </div>
-            <input
-              type={showCurrent ? "text" : "password"}
-              value={currentPassword}
-              onChange={(e) => setCurrentPassword(e.target.value)}
-              placeholder="••••••••••••"
-              className="w-full pl-10 pr-10 py-2.5 bg-[#F8FAFC] text-xs font-semibold text-slate-900 rounded-2xl border border-slate-200/80 focus:border-indigo-400 focus:bg-white focus:outline-none focus:ring-4 focus:ring-indigo-50 transition-all"
-            />
-            <button
-              type="button"
-              onClick={() => setShowCurrent((p) => !p)}
-              className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
-            >
-              {showCurrent ? <EyeOff size={15} /> : <Eye size={15} />}
-            </button>
-          </div>
-        </div>
+        <Input
+          label="Current Password"
+          name="currentPassword"
+          type="password"
+          value={currentPassword}
+          onChange={(e) => setCurrentPassword(e.target.value)}
+          placeholder="••••••••••••"
+          icon={Lock}
+          showPasswordToggle={true}
+        />
 
         {/* New Password */}
-        <div className="space-y-1.5">
-          <label className="block text-xs font-bold text-slate-700">
-            New Password
-          </label>
-          <div className="relative">
-            <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400">
-              <Lock size={15} />
-            </div>
-            <input
-              type={showNew ? "text" : "password"}
-              value={newPassword}
-              onChange={(e) => setNewPassword(e.target.value)}
-              placeholder="••••••••••••"
-              className="w-full pl-10 pr-10 py-2.5 bg-[#F8FAFC] text-xs font-semibold text-slate-900 rounded-2xl border border-slate-200/80 focus:border-indigo-400 focus:bg-white focus:outline-none focus:ring-4 focus:ring-indigo-50 transition-all"
-            />
-            <button
-              type="button"
-              onClick={() => setShowNew((p) => !p)}
-              className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
-            >
-              {showNew ? <EyeOff size={15} /> : <Eye size={15} />}
-            </button>
-          </div>
-        </div>
+        <Input
+          label="New Password"
+          name="newPassword"
+          type="password"
+          value={newPassword}
+          onChange={(e) => setNewPassword(e.target.value)}
+          placeholder="••••••••••••"
+          icon={Lock}
+          showPasswordToggle={true}
+        />
 
         {/* Confirm Password */}
-        <div className="space-y-1.5">
-          <label className="block text-xs font-bold text-slate-700">
-            Confirm New Password
-          </label>
-          <div className="relative">
-            <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400">
-              <Lock size={15} />
-            </div>
-            <input
-              type="password"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              placeholder="••••••••••••"
-              className="w-full pl-10 pr-4 py-2.5 bg-[#F8FAFC] text-xs font-semibold text-slate-900 rounded-2xl border border-slate-200/80 focus:border-indigo-400 focus:bg-white focus:outline-none focus:ring-4 focus:ring-indigo-50 transition-all"
-            />
-          </div>
-        </div>
+        <Input
+          label="Confirm New Password"
+          name="confirmPassword"
+          type="password"
+          value={confirmPassword}
+          onChange={(e) => setConfirmPassword(e.target.value)}
+          placeholder="••••••••••••"
+          icon={Lock}
+          showPasswordToggle={true}
+        />
 
         {/* Security Checklist */}
         <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-100 space-y-1.5 text-[11px] font-medium text-slate-500">

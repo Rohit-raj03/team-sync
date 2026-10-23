@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
+import { Mail, Lock, User } from "lucide-react";
 import { Input } from "../../../shared/components/ui/Input.jsx";
 import { Button } from "../../../shared/components/ui/Button.jsx";
 import { useAuth } from "../hooks/useAuth.js";
@@ -32,6 +33,10 @@ export const LoginForm = () => {
     }
   };
 
+  // Determine icon: if text doesn't contain '@' and has length, show User icon, else Mail icon
+  const EmailOrUserIcon =
+    values.email.length > 0 && !values.email.includes("@") ? User : Mail;
+
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       {errors.form && (
@@ -46,6 +51,7 @@ export const LoginForm = () => {
         placeholder="alex@teamsync.io"
         value={values.email}
         onChange={handleChange}
+        icon={EmailOrUserIcon}
         error={errors.email}
       />
       <Input
@@ -55,6 +61,8 @@ export const LoginForm = () => {
         placeholder="••••••••"
         value={values.password}
         onChange={handleChange}
+        icon={Lock}
+        showPasswordToggle={true}
         error={errors.password}
       />
       <div className="flex justify-end -mt-1">
@@ -84,3 +92,5 @@ export const LoginForm = () => {
     </form>
   );
 };
+
+export default LoginForm;

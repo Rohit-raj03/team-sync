@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import { Lock, Eye, EyeOff, CheckCircle2, AlertCircle, ArrowLeft, Loader2 } from "lucide-react";
+import { CheckCircle2, AlertCircle, ArrowLeft, Loader2, Lock } from "lucide-react";
+import { Input } from "../../shared/components/ui/Input.jsx";
 import { authService } from "../../features/auth/services/auth.service.js";
 import { ROUTES } from "../../shared/constants/routes.js";
 
@@ -16,7 +17,6 @@ export const ResetPasswordPage = () => {
 
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -109,53 +109,32 @@ export const ResetPasswordPage = () => {
               </div>
             )}
 
-            <div className="space-y-1.5">
-              <label className="block text-xs font-bold text-slate-700">
-                New Password
-              </label>
-              <div className="relative">
-                <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400">
-                  <Lock size={15} />
-                </div>
-                <input
-                  type={showPassword ? "text" : "password"}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="At least 6 characters"
-                  className="w-full pl-10 pr-10 py-2.5 bg-[#F8FAFC] text-xs font-semibold text-slate-900 rounded-2xl border border-slate-200/80 focus:border-indigo-400 focus:bg-white focus:outline-none focus:ring-4 focus:ring-indigo-50 transition-all"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword((p) => !p)}
-                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
-                >
-                  {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
-                </button>
-              </div>
-            </div>
+            <Input
+              label="New Password"
+              name="password"
+              type="password"
+              placeholder="At least 6 characters"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              icon={Lock}
+              showPasswordToggle={true}
+            />
 
-            <div className="space-y-1.5">
-              <label className="block text-xs font-bold text-slate-700">
-                Confirm New Password
-              </label>
-              <div className="relative">
-                <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400">
-                  <Lock size={15} />
-                </div>
-                <input
-                  type="password"
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  placeholder="Repeat new password"
-                  className="w-full pl-10 pr-4 py-2.5 bg-[#F8FAFC] text-xs font-semibold text-slate-900 rounded-2xl border border-slate-200/80 focus:border-indigo-400 focus:bg-white focus:outline-none focus:ring-4 focus:ring-indigo-50 transition-all"
-                />
-              </div>
-            </div>
+            <Input
+              label="Confirm New Password"
+              name="confirmPassword"
+              type="password"
+              placeholder="Repeat new password"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              icon={Lock}
+              showPasswordToggle={true}
+            />
 
             <button
               type="submit"
               disabled={loading || !token}
-              className="w-full inline-flex items-center justify-center gap-2 py-3 px-4 rounded-2xl bg-[#4361EE] hover:bg-[#3451DE] text-white text-xs font-bold shadow-md shadow-indigo-100 transition-all disabled:opacity-50"
+              className="w-full inline-flex items-center justify-center gap-2 py-3 px-4 rounded-2xl bg-[#4361EE] hover:bg-[#3451DE] text-white text-xs font-bold shadow-md shadow-indigo-100 transition-all disabled:opacity-50 cursor-pointer"
             >
               {loading ? (
                 <>
@@ -186,4 +165,3 @@ export const ResetPasswordPage = () => {
 };
 
 export default ResetPasswordPage;
-
