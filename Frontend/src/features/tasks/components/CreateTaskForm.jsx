@@ -31,10 +31,56 @@ import { useTeam } from "../../team/hooks/useTeam.js";
 
 const ESTIMATION_PRESETS = ["2h", "4h", "1d", "2d", "3d", "1w"];
 
+const formatDateForInput = (val) => {
+  if (!val) return "";
+  const d = new Date(val);
+  return isNaN(d.getTime()) ? "" : d.toISOString().split("T")[0];
+};
+
+const resolveInitialFormData = (init, isEdit) => {
+  const pId =
+    init?.projectId ||
+    (typeof init?.project === "string" ? init.project : null) ||
+    init?.project?._id ||
+    init?.project?.id ||
+    "";
+
+  return {
+    title: init?.title || "",
+    description: init?.description || "",
+    projectId: pId,
+    priority: init?.priority || TASK_PRIORITY.MEDIUM,
+    status: init?.status || TASK_STATUS.TODO,
+    startDate:
+      formatDateForInput(init?.startDate) ||
+      (isEdit ? "" : new Date().toISOString().split("T")[0]),
+    dueDate:
+      formatDateForInput(init?.dueDate) ||
+      (isEdit
+        ? ""
+        : new Date(Date.now() + 5 * 24 * 60 * 60 * 1000)
+            .toISOString()
+            .split("T")[0]),
+    estimatedTime: init?.estimatedTime || "8h",
+    assignees: Array.isArray(init?.assignees)
+      ? init.assignees.map((a) =>
+          typeof a === "object"
+            ? { ...a, id: a.id || a._id }
+            : { id: a }
+        )
+      : [],
+    tags: Array.isArray(init?.tags) ? init.tags : [],
+    subtasks: Array.isArray(init?.subtasks) ? init.subtasks : [],
+    attachments: Array.isArray(init?.attachments) ? init.attachments : [],
+    comment: init?.comment || "",
+  };
+};
+
 /**
  * Feature Component: CreateTaskForm
  * Layer: features/tasks/components/
- * Responsibility: Comprehensive task creation form implementing full metadata, assignee multi-select, checklist, file attachments, and validation states.
+ * Responsibility: Comprehensive task creation and editing form implementing full metadata,
+ * prefilling, assignee multi-select, schedule timeline dates, checklist, file attachments, and validation states.
  */
 export const CreateTaskForm = ({
   initialData = {},
@@ -48,25 +94,20 @@ export const CreateTaskForm = ({
   const { members: allTeamMembers } = useTeam();
   const availableProjects = allProjects || [];
 
-  const [formData, setFormData] = useState({
-    title: initialData.title || "",
-    description: initialData.description || "",
-    projectId: initialData.projectId || "",
-    priority: initialData.priority || TASK_PRIORITY.MEDIUM,
-    status: initialData.status || TASK_STATUS.TODO,
-    startDate: initialData.startDate || new Date().toISOString().split("T")[0],
-    dueDate:
-      initialData.dueDate ||
-      new Date(Date.now() + 5 * 24 * 60 * 60 * 1000)
-        .toISOString()
-        .split("T")[0],
-    estimatedTime: initialData.estimatedTime || "8h",
-    assignees: initialData.assignees || [],
-    tags: initialData.tags || [],
-    subtasks: initialData.subtasks || [],
-    attachments: initialData.attachments || [],
-    comment: initialData.comment || "",
-  });
+  const [formData, setFormData] = useState(() =>
+    resolveInitialFormData(initialData, isEditMode)
+  );
+
+  const [serverError, setServerError] = useState("");
+  const [internalSubmitting, setInternalSubmitting] = useState(false);
+  const submitting = isSubmitting || internalSubmitting;
+
+  useEffect(() => {
+    if (initialData && (initialData.id || initialData._id || initialData.title)) {
+      setFormData(resolveInitialFormData(initialData, isEditMode));
+      setServerError("");
+    }
+  }, [initialData, isEditMode]);
 
   const selectedProject = availableProjects.find(
     (p) => (p.id || p._id) === formData.projectId,
@@ -101,26 +142,40 @@ export const CreateTaskForm = ({
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (submitting) return;
+    setServerError("");
     if (!validate()) return;
 
     if (onSubmit) {
-      const selectedProj = availableProjects.find(
-        (p) => (p.id || p._id) === formData.projectId,
-      );
-      const submissionData = {
-        ...formData,
-        projectId: formData.projectId || null,
-        projectName: selectedProj ? selectedProj.name : "Individual Task",
-        isIndividual: !formData.projectId,
-        // For backwards compatibility with single assignedTo:
-        assignedTo:
-          formData.assignees.length > 0
-            ? formData.assignees.map((a) => a.name).join(", ")
-            : "Unassigned",
-      };
+      setInternalSubmitting(true);
+      try {
+        const selectedProj = availableProjects.find(
+          (p) => (p.id || p._id) === formData.projectId,
+        );
+        const submissionData = {
+          ...formData,
+          projectId: formData.projectId || null,
+          projectName: selectedProj ? selectedProj.name : "Individual Task",
+          isIndividual: !formData.projectId,
+          // For backwards compatibility with single assignedTo:
+          assignedTo:
+            formData.assignees.length > 0
+              ? formData.assignees.map((a) => a.name || a.username || "Member").join(", ")
+              : "Unassigned",
+        };
 
-      setIsSuccess(true);
-      await onSubmit(submissionData);
+        await onSubmit(submissionData);
+        setIsSuccess(true);
+      } catch (err) {
+        console.error("Task submission error:", err);
+        setServerError(
+          err.response?.data?.message ||
+          err.message ||
+          "Failed to save task. Please verify your permissions and input."
+        );
+      } finally {
+        setInternalSubmitting(false);
+      }
     }
   };
 
@@ -130,6 +185,14 @@ export const CreateTaskForm = ({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
+      {/* Server Error Banner */}
+      {serverError && (
+        <div className="p-3.5 rounded-2xl bg-rose-50 border border-rose-200 text-rose-800 text-xs font-semibold flex items-center gap-2.5 animate-in fade-in">
+          <AlertCircle size={16} className="text-rose-500 shrink-0" />
+          <span>{serverError}</span>
+        </div>
+      )}
+
       {/* Global Validation Banner */}
       {Object.keys(errors).length > 0 && (
         <div className="p-3.5 rounded-2xl bg-rose-50 border border-rose-200 text-rose-800 text-xs font-medium flex items-center gap-2.5 animate-in fade-in">
@@ -526,7 +589,7 @@ export const CreateTaskForm = ({
           <button
             type="button"
             onClick={onCancel}
-            disabled={isSubmitting}
+            disabled={submitting}
             className="w-full sm:w-auto px-6 py-2.5 rounded-2xl border border-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-100 hover:text-slate-800 transition-colors disabled:opacity-50"
           >
             Cancel
@@ -535,10 +598,10 @@ export const CreateTaskForm = ({
 
         <button
           type="submit"
-          disabled={isSubmitting}
+          disabled={submitting}
           className="w-full sm:w-auto px-8 py-2.5 rounded-2xl bg-[#4361EE] hover:bg-[#3451DE] active:scale-98 text-white text-xs font-bold shadow-md shadow-indigo-200 transition-all flex items-center justify-center gap-2 disabled:opacity-60 disabled:pointer-events-none"
         >
-          {isSubmitting ? (
+          {submitting ? (
             <>
               <Loader2 size={15} className="animate-spin" />
               <span>{isEditMode ? "Updating Task..." : "Creating Task..."}</span>

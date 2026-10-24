@@ -89,6 +89,10 @@ const projectSchema = new mongoose.Schema(
       type: String,
       default: "#4361EE",
     },
+    themeColor: {
+      type: String,
+      default: "#4361EE",
+    },
     manager: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
@@ -148,6 +152,12 @@ projectSchema.pre("save", function (next) {
     this.dueDate = this.endDate;
   }
 
+  if (this.color && !this.themeColor) {
+    this.themeColor = this.color;
+  } else if (this.themeColor && !this.color) {
+    this.color = this.themeColor;
+  }
+
   next();
 });
 
@@ -191,6 +201,8 @@ projectSchema.set("toJSON", {
   virtuals: true,
   transform: (doc, ret) => {
     ret.id = ret._id;
+    ret.themeColor = ret.themeColor || ret.color || "#4361EE";
+    ret.color = ret.color || ret.themeColor || "#4361EE";
     if (Array.isArray(ret.members)) {
       ret.members = ret.members.map((m) => {
         if (m.user && typeof m.user === "object") {

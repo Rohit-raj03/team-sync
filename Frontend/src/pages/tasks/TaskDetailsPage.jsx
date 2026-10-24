@@ -5,6 +5,7 @@ import { Button } from '../../shared/components/ui/Button.jsx';
 import { TaskDetails } from '../../features/tasks/components/TaskDetails.jsx';
 import { useTask } from '../../features/tasks/hooks/useTask.js';
 import { ArrowLeft } from 'lucide-react';
+import { ROUTES } from '../../shared/constants/routes.js';
 
 export const TaskDetailsPage = () => {
   const { id } = useParams();
@@ -22,7 +23,11 @@ export const TaskDetailsPage = () => {
       </Button>
       <PageHeader title="Task Details" />
       <div className="p-8 bg-white rounded-3xl border border-slate-100">
-        <TaskDetails task={task} />
+        <TaskDetails
+          task={task}
+          onDelete={() => navigate(ROUTES.TASKS)}
+          onClose={() => navigate(ROUTES.TASKS)}
+        />
       </div>
     </div>
   );

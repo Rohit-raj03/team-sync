@@ -34,6 +34,7 @@ import { MentionTextarea } from "./MentionTextarea.jsx";
 import { MentionRenderer } from "./MentionRenderer.jsx";
 import { TaskComments } from "./TaskComments.jsx";
 import { CreateTaskModal } from "./CreateTaskModal.jsx";
+import { DeleteTaskModal } from "./DeleteTaskModal.jsx";
 import { Avatar } from "../../../shared/components/ui/Avatar.jsx";
 import {
   TASK_STATUS,
@@ -51,9 +52,11 @@ export const TaskDetails = ({
   task: initialTask,
   taskId,
   onUpdate,
+  onDelete,
+  onClose,
   projectMembers: passedMembers,
 }) => {
-  const { allTasks, updateTask } = useTasks();
+  const { allTasks, updateTask, deleteTask } = useTasks();
   const { members: teamMembers } = useTeam();
   const { getProjectById } = useProjects();
 
@@ -101,6 +104,32 @@ export const TaskDetails = ({
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editingSubtaskId, setEditingSubtaskId] = useState(null);
   const [editingSubtaskTitle, setEditingSubtaskTitle] = useState("");
+
+  // Delete modal state
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState("");
+
+  const handleDeleteConfirm = async (reason) => {
+    setIsDeleting(true);
+    setDeleteError("");
+    try {
+      const idToDelete = task.id || task._id || currentId;
+      await deleteTask(idToDelete, reason);
+      setIsDeleteModalOpen(false);
+      onDelete?.(idToDelete);
+      onClose?.();
+    } catch (err) {
+      console.error("Task deletion failed:", err);
+      setDeleteError(
+        err.response?.data?.message ||
+        err.message ||
+        "Failed to delete task. You may not have permission to delete this task."
+      );
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   // Status & Priority dropdown states
   const [isStatusMenuOpen, setIsStatusMenuOpen] = useState(false);
@@ -417,14 +446,29 @@ export const TaskDetails = ({
             )
           )}
 
-          <button
-            type="button"
-            onClick={() => setIsEditModalOpen(true)}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-xs font-bold text-[#4361EE] border border-indigo-100 transition-colors cursor-pointer"
-          >
-            <Edit2 size={13} />
-            <span>Edit Task</span>
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setIsEditModalOpen(true)}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-xs font-bold text-[#4361EE] border border-indigo-100 transition-colors cursor-pointer shadow-2xs"
+            >
+              <Edit2 size={13} />
+              <span>Edit Task</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                setDeleteError("");
+                setIsDeleteModalOpen(true);
+              }}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-xs font-bold text-rose-600 border border-rose-100 transition-colors cursor-pointer shadow-2xs"
+              title="Delete task with mandatory reason"
+            >
+              <Trash2 size={13} />
+              <span>Delete</span>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -993,17 +1037,32 @@ export const TaskDetails = ({
         }}
         title="Update Task"
         subtitle="Update overall task details, workflow status, assignees, and checklist."
-        onSubmit={(data) => {
+        onSubmit={async (data) => {
           const updated = {
             ...task,
             ...data,
             id: task.id || task._id,
             _id: task._id || task.id,
           };
-          updateTask(updated);
-          onUpdate?.(updated);
+          const res = await updateTask(updated);
+          onUpdate?.(res || updated);
           setIsEditModalOpen(false);
         }}
+      />
+
+      {/* Delete Task Confirmation Modal */}
+      <DeleteTaskModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => {
+          if (!isDeleting) {
+            setIsDeleteModalOpen(false);
+            setDeleteError("");
+          }
+        }}
+        onConfirm={handleDeleteConfirm}
+        taskTitle={task.title}
+        isDeleting={isDeleting}
+        apiError={deleteError}
       />
     </div>
   );

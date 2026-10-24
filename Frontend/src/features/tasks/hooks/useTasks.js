@@ -114,19 +114,19 @@ export function useTasks(options = {}) {
       dispatch(updateTaskAction(updated));
       return updated;
     } catch (err) {
-      dispatch(updateTaskAction(taskData));
-      return taskData;
+      console.error("Failed to update task:", err.message);
+      throw err;
     }
   };
 
-  const handleDeleteTask = async (id) => {
+  const handleDeleteTask = async (id, reason) => {
     try {
-      await taskService.deleteTask(id);
+      await taskService.deleteTask(id, reason);
       dispatch(deleteTaskAction(id));
       return true;
     } catch (err) {
-      dispatch(deleteTaskAction(id));
-      return false;
+      console.error("Failed to delete task:", err.message);
+      throw err;
     }
   };
 

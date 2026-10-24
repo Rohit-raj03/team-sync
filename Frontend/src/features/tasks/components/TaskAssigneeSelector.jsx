@@ -49,13 +49,17 @@ export const TaskAssigneeSelector = ({
     );
   }, [members, searchQuery]);
 
+  const getMemberId = (m) => (m ? String(m.id || m._id || m.user || m) : "");
+
   const isSelected = (memberId) => {
-    return selectedAssignees.some((a) => a.id === memberId);
+    const target = String(memberId);
+    return selectedAssignees.some((a) => getMemberId(a) === target);
   };
 
   const handleToggleMember = (member) => {
-    if (isSelected(member.id)) {
-      onChange(selectedAssignees.filter((a) => a.id !== member.id));
+    const mId = getMemberId(member);
+    if (isSelected(mId)) {
+      onChange(selectedAssignees.filter((a) => getMemberId(a) !== mId));
     } else {
       onChange([...selectedAssignees, member]);
     }
@@ -63,7 +67,8 @@ export const TaskAssigneeSelector = ({
 
   const handleRemoveMember = (memberId, e) => {
     e?.stopPropagation();
-    onChange(selectedAssignees.filter((a) => a.id !== memberId));
+    const target = String(memberId);
+    onChange(selectedAssignees.filter((a) => getMemberId(a) !== target));
   };
 
   const handleQuickInvite = (e) => {

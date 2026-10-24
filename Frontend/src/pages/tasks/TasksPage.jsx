@@ -71,8 +71,10 @@ export const TasksPage = () => {
       >
         <TaskDetails
           task={selectedTask}
-          taskId={selectedTask?.id}
+          taskId={selectedTask?.id || selectedTask?._id}
           onUpdate={(updated) => setSelectedTask(updated)}
+          onDelete={() => setSelectedTask(null)}
+          onClose={() => setSelectedTask(null)}
         />
       </Modal>
     </div>

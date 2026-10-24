@@ -7,7 +7,8 @@ export const taskService = {
   getTaskById: async (id) => apiClient.get(`/tasks/${id}`),
   createTask: async (data) => apiClient.post("/tasks", data),
   updateTask: async (id, data) => apiClient.patch(`/tasks/${id}`, data),
-  deleteTask: async (id) => apiClient.delete(`/tasks/${id}`),
+  deleteTask: async (id, reason) =>
+    apiClient.delete(`/tasks/${id}`, typeof reason === "string" ? { reason } : reason),
   toggleSubtask: async (taskId, subtaskId) =>
     apiClient.patch(`/tasks/${taskId}/subtasks/${subtaskId}`),
   getTaskComments: async (taskId) =>

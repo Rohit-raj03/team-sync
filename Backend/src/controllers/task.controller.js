@@ -4,6 +4,7 @@ import ProjectModel from "../models/project.model.js";
 import UserModel from "../models/user.model.js";
 import CommentModel from "../models/comment.model.js";
 import NotificationModel from "../models/notification.model.js";
+import AuditLogModel from "../models/auditLog.model.js";
 
 /**
  * Helper to parse @mentions from text and return matched member IDs
@@ -144,7 +145,7 @@ export const getTasks = async (req, res) => {
     }
 
     const tasks = await TaskModel.find(query)
-      .populate("project", "name key color status category")
+      .populate("project", "name key color themeColor status category")
       .populate("creator", "name email avatar username jobTitle")
       .populate("assignees", "name email avatar username jobTitle role")
       .populate("mentions", "name email avatar username")
@@ -182,7 +183,7 @@ export const getTaskById = async (req, res) => {
     }
 
     const task = await TaskModel.findById(taskId)
-      .populate("project", "name key color status category manager owner members")
+      .populate("project", "name key color themeColor status category manager owner members")
       .populate("creator", "name email avatar username jobTitle")
       .populate("assignees", "name email avatar username jobTitle role")
       .populate("mentions", "name email avatar username");
@@ -417,7 +418,7 @@ export const createTask = async (req, res) => {
     }
 
     const populated = await TaskModel.findById(task._id)
-      .populate("project", "name key color status category")
+      .populate("project", "name key color themeColor status category")
       .populate("creator", "name email avatar username jobTitle")
       .populate("assignees", "name email avatar username jobTitle role")
       .populate("mentions", "name email avatar username");
@@ -496,6 +497,98 @@ export const updateTask = async (req, res) => {
       });
     }
 
+    // Validate title if updated
+    if (req.body.title !== undefined) {
+      if (typeof req.body.title !== "string" || !req.body.title.trim()) {
+        return res.status(400).json({
+          success: false,
+          message: "Task title is required.",
+        });
+      }
+      if (req.body.title.trim().length < 3) {
+        return res.status(400).json({
+          success: false,
+          message: "Task title must be at least 3 characters.",
+        });
+      }
+      task.title = req.body.title.trim();
+    }
+
+    // Validate dates if updated
+    const prospectiveStart =
+      req.body.startDate !== undefined
+        ? req.body.startDate
+          ? new Date(req.body.startDate)
+          : null
+        : task.startDate;
+    const prospectiveDue =
+      req.body.dueDate !== undefined
+        ? req.body.dueDate
+          ? new Date(req.body.dueDate)
+          : null
+        : task.dueDate;
+
+    if (
+      prospectiveStart &&
+      prospectiveDue &&
+      !isNaN(prospectiveStart.getTime()) &&
+      !isNaN(prospectiveDue.getTime())
+    ) {
+      if (prospectiveDue.getTime() < prospectiveStart.getTime()) {
+        return res.status(400).json({
+          success: false,
+          message: "Due date cannot be before start date.",
+        });
+      }
+    }
+
+    // Update project association if provided and permitted
+    if (req.body.projectId !== undefined || req.body.project !== undefined) {
+      const targetProjId =
+        req.body.projectId !== undefined
+          ? req.body.projectId
+          : req.body.project;
+
+      if (!targetProjId || targetProjId === "null" || targetProjId === "") {
+        task.project = null;
+        task.projectName = "Individual Task";
+        task.isIndividual = true;
+        project = null;
+        projectMemberUserIds = null;
+      } else {
+        if (!mongoose.Types.ObjectId.isValid(targetProjId)) {
+          return res.status(400).json({
+            success: false,
+            message: "Invalid target project ID format.",
+          });
+        }
+        const targetProj = await ProjectModel.findById(targetProjId);
+        if (!targetProj) {
+          return res.status(404).json({
+            success: false,
+            message: "Target project not found.",
+          });
+        }
+        if (!targetProj.isProjectMember(req.user._id, req.user.role)) {
+          return res.status(403).json({
+            success: false,
+            message: `You are not authorized to assign tasks to project "${targetProj.name}".`,
+          });
+        }
+        task.project = targetProj._id;
+        task.projectName = targetProj.name;
+        task.isIndividual = false;
+        project = targetProj;
+        projectMemberUserIds = [
+          targetProj.manager?.toString(),
+          targetProj.owner?.toString(),
+          ...(targetProj.members || []).map(
+            (m) => (m.user?._id || m.user)?.toString()
+          ),
+        ].filter(Boolean);
+      }
+    }
+
     // Validate assignees if updated
     if (req.body.assignees !== undefined) {
       const sanitized = [];
@@ -533,7 +626,6 @@ export const updateTask = async (req, res) => {
     }
 
     const simpleFields = [
-      "title",
       "description",
       "status",
       "priority",
@@ -583,7 +675,7 @@ export const updateTask = async (req, res) => {
     await task.save();
 
     const populated = await TaskModel.findById(task._id)
-      .populate("project", "name key color status category")
+      .populate("project", "name key color themeColor status category")
       .populate("creator", "name email avatar username jobTitle")
       .populate("assignees", "name email avatar username jobTitle role")
       .populate("mentions", "name email avatar username");
@@ -642,6 +734,38 @@ export const deleteTask = async (req, res) => {
       });
     }
 
+    // Mandatory deletion reason validation (backend independent verification)
+    const rawReason = req.body?.reason || req.query?.reason;
+    if (!rawReason || typeof rawReason !== "string" || !rawReason.trim()) {
+      return res.status(400).json({
+        success: false,
+        message: "A reason for deletion is mandatory.",
+      });
+    }
+
+    const trimmedReason = rawReason.trim();
+    if (trimmedReason.length > 500) {
+      return res.status(400).json({
+        success: false,
+        message: "Deletion reason cannot exceed 500 characters.",
+      });
+    }
+
+    // Persist immutable audit record before permanent deletion
+    await AuditLogModel.create({
+      action: "TASK_DELETED",
+      entityType: "Task",
+      taskId: task._id,
+      taskTitle: task.title,
+      projectId: project ? project._id : (task.project || null),
+      projectName: project ? project.name : (task.projectName || "Individual Task"),
+      deletedBy: req.user._id,
+      deletedByName: req.user.name || req.user.username || "Team Member",
+      deletedByEmail: req.user.email || "",
+      reason: trimmedReason,
+      timestamp: new Date(),
+    });
+
     await CommentModel.deleteMany({ task: taskId });
     await TaskModel.findByIdAndDelete(taskId);
 
@@ -687,7 +811,7 @@ export const toggleSubtask = async (req, res) => {
     await task.save();
 
     const populated = await TaskModel.findById(taskId)
-      .populate("project", "name key color status category")
+      .populate("project", "name key color themeColor status category")
       .populate("creator", "name email avatar username jobTitle")
       .populate("assignees", "name email avatar username jobTitle role");
 

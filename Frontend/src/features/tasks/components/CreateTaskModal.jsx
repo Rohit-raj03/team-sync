@@ -55,8 +55,8 @@ export const CreateTaskModal = ({
           <CreateTaskForm
             initialData={initialData}
             mode={isEditMode ? "edit" : "create"}
-            onSubmit={(data) => {
-              onSubmit?.(data);
+            onSubmit={async (data) => {
+              await onSubmit?.(data);
               onClose?.();
             }}
             onCancel={onClose}

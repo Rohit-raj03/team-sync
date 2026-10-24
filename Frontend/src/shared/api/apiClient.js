@@ -5,5 +5,10 @@ export const apiClient = {
   post: (url, data) => axiosInstance.post(url, data),
   put: (url, data) => axiosInstance.put(url, data),
   patch: (url, data) => axiosInstance.patch(url, data),
-  delete: (url) => axiosInstance.delete(url),
+  delete: (url, dataOrConfig) => {
+    if (dataOrConfig && dataOrConfig.data !== undefined) {
+      return axiosInstance.delete(url, dataOrConfig);
+    }
+    return axiosInstance.delete(url, dataOrConfig ? { data: dataOrConfig } : undefined);
+  },
 };
