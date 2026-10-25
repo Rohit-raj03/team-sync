@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { NavLink } from "react-router-dom";
 import {
   LayoutGrid,
@@ -12,16 +12,13 @@ import {
   X,
   Shield,
 } from "lucide-react";
+
 import { ROUTES } from "../../constants/routes.js";
 import { useAuth } from "../../../features/auth/hooks/useAuth.js";
 
-/**
- * Shared Layout Component: Sidebar
- * Layer: shared/components/layout/
- * Responsibility: Icon rail navigation matching the exact Figma design screenshot.
- */
 export const Sidebar = ({ isOpen, onClose }) => {
   const { user, logout } = useAuth();
+  const [activeTooltip, setActiveTooltip] = useState(null);
 
   const navItems = [
     { label: "Dashboard", icon: LayoutGrid, to: ROUTES.DASHBOARD },
@@ -36,51 +33,90 @@ export const Sidebar = ({ isOpen, onClose }) => {
       : []),
   ];
 
+  const handleNavClick = () => {
+    setActiveTooltip(null);
+    onClose?.();
+  };
+
+  const handleLogout = () => {
+    setActiveTooltip(null);
+    onClose?.();
+    logout();
+  };
+
   return (
     <>
       {isOpen && (
         <div
-          onClick={onClose}
-          className="fixed inset-0 bg-slate-900/30 backdrop-blur-xs z-40 lg:hidden"
+          onClick={() => {
+            setActiveTooltip(null);
+            onClose?.();
+          }}
+          className="fixed inset-0 z-40 bg-slate-900/30 backdrop-blur-xs lg:hidden"
         />
       )}
 
       <aside
-        className={`fixed lg:static top-0 bottom-0 left-0 z-40 w-20 bg-white border-r border-slate-100 flex flex-col items-center py-6 transition-transform duration-200 ${
-          isOpen
-            ? "translate-x-0 shadow-2xl"
-            : "-translate-x-full lg:translate-x-0"
-        }`}
+        onMouseLeave={() => setActiveTooltip(null)}
+        className={`fixed lg:static top-0 bottom-0 left-0 z-50
+          w-20 shrink-0 bg-white border-r border-slate-100
+          flex flex-col items-center py-6
+          transition-transform duration-200
+          ${
+            isOpen
+              ? "translate-x-0 shadow-2xl"
+              : "-translate-x-full lg:translate-x-0"
+          }`}
       >
-        {/* Mobile Close Button */}
         <button
-          onClick={onClose}
-          className="lg:hidden mb-2 p-2 rounded-xl text-slate-400 hover:text-red-400 hover:bg-slate-100  transition-colors focus:outline-none"
-          title="Close Navigation"
+          type="button"
+          onClick={() => {
+            setActiveTooltip(null);
+            onClose?.();
+          }}
+          className="lg:hidden mb-2 p-2 rounded-xl text-slate-400
+            hover:text-red-400 hover:bg-slate-100 transition-colors"
           aria-label="Close navigation menu"
         >
           <X size={20} />
         </button>
 
-        {/* Navigation Rail */}
-        <nav className="flex-1 flex flex-col items-center justify-center gap-6 w-full px-2 mt-2">
+        <nav
+          className="flex-1 flex flex-col items-center justify-center
+          gap-6 w-full px-2 mt-2"
+        >
           {navItems.map((item) => {
             const Icon = item.icon;
+
             return (
               <NavLink
                 key={item.to}
                 to={item.to}
-                onClick={onClose}
+                onClick={handleNavClick}
+                onMouseEnter={() => setActiveTooltip(item.to)}
+                onFocus={() => setActiveTooltip(item.to)}
+                onBlur={() => setActiveTooltip(null)}
+                aria-label={item.label}
                 className={({ isActive }) =>
-                  `w-11 h-11 rounded-2xl flex items-center justify-center transition-all duration-200 group relative ${
+                  `w-11 h-11 shrink-0 rounded-2xl
+                  flex items-center justify-center
+                  transition-all duration-200 group relative
+                  ${
                     isActive
-                      ? "bg-[#4361EE] text-white shadow-md shadow-indigo-300 scale-105"
+                      ? "bg-[#4361EE] text-white shadow-md shadow-indigo-300"
                       : "text-slate-400 hover:text-indigo-600 hover:bg-slate-50"
                   }`
                 }
               >
                 <Icon size={20} strokeWidth={2.2} />
-                <span className="hidden lg:group-hover:inline-block absolute left-14 bg-slate-800 text-white text-[11px] font-semibold px-2.5 py-1 rounded-lg whitespace-nowrap shadow-lg z-50 pointer-events-none">
+
+                <span
+                  className={`absolute left-14 top-1/2 -translate-y-1/2
+                    bg-slate-800 text-white text-[11px] font-semibold
+                    px-2.5 py-1.5 rounded-lg whitespace-nowrap shadow-lg
+                    z-[60] pointer-events-none
+                    ${activeTooltip === item.to ? "inline-block" : "hidden"}`}
+                >
                   {item.label}
                 </span>
               </NavLink>
@@ -88,18 +124,31 @@ export const Sidebar = ({ isOpen, onClose }) => {
           })}
         </nav>
 
-        {/* Bottom Logout Button */}
-        <div className="w-full px-2 pt-4 border-t border-slate-100 flex justify-center">
+        <div
+          className="w-full px-2 pt-4 border-t border-slate-100
+          flex justify-center"
+        >
           <button
-            onClick={() => {
-              onClose?.();
-              logout();
-            }}
-            title="Log Out"
-            className="w-11 h-11 rounded-2xl flex items-center justify-center text-slate-400 hover:text-rose-600 hover:cursor-pointer hover:bg-rose-50 transition-all group relative"
+            type="button"
+            onClick={handleLogout}
+            onMouseEnter={() => setActiveTooltip("logout")}
+            onFocus={() => setActiveTooltip("logout")}
+            onBlur={() => setActiveTooltip(null)}
+            aria-label="Log out"
+            className="w-11 h-11 shrink-0 rounded-2xl
+              flex items-center justify-center text-slate-400
+              hover:text-rose-600 hover:bg-rose-50 transition-all
+              group relative"
           >
             <LogOut size={20} strokeWidth={2} />
-            <span className="hidden lg:group-hover:inline-block absolute left-14 bg-slate-800 text-white text-[11px] font-semibold px-2.5 py-1 rounded-lg whitespace-nowrap shadow-lg z-50 pointer-events-none">
+
+            <span
+              className={`absolute left-14 top-1/2 -translate-y-1/2
+                bg-slate-800 text-white text-[11px] font-semibold
+                px-2.5 py-1.5 rounded-lg whitespace-nowrap shadow-lg
+                z-[60] pointer-events-none
+                ${activeTooltip === "logout" ? "inline-block" : "hidden"}`}
+            >
               Log Out
             </span>
           </button>

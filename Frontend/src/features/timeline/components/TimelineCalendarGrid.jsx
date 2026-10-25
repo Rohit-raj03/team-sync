@@ -15,7 +15,6 @@ import { Avatar } from "../../../shared/components/ui/Avatar.jsx";
 import { TimelineTaskBar } from "./TimelineTaskBar.jsx";
 import { TimelineTaskHoverCard } from "./TimelineTaskHoverCard.jsx";
 import {
-  getTaskThemeColor,
   deriveProjectColorTokens,
   DEFAULT_PROJECT_COLOR,
   STANDALONE_TASK_COLOR,
@@ -58,16 +57,6 @@ export const TimelineCalendarGrid = ({
   } = useMemo(() => {
     return generateTimelineRange(anchorDate, viewMode);
   }, [anchorDate, viewMode]);
-
-  // Projects map for fast lookups
-  const projectsMap = useMemo(() => {
-    const map = new Map();
-    projects.forEach((p) => {
-      map.set(p.id || p._id, p);
-      if (p._id) map.set(String(p._id), p);
-    });
-    return map;
-  }, [projects]);
 
   // Group tasks by project track
   const tracks = useMemo(() => {

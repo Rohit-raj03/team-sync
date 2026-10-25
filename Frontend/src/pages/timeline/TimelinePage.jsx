@@ -35,7 +35,6 @@ export const TimelinePage = () => {
     loading: tasksLoading,
     error: tasksError,
     addTask,
-    updateTask,
     fetchTasks,
   } = useTasks();
 

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Calendar,
   Clock,
@@ -64,9 +64,7 @@ const resolveInitialFormData = (init, isEdit) => {
     estimatedTime: init?.estimatedTime || "8h",
     assignees: Array.isArray(init?.assignees)
       ? init.assignees.map((a) =>
-          typeof a === "object"
-            ? { ...a, id: a.id || a._id }
-            : { id: a }
+          typeof a === "object" ? { ...a, id: a.id || a._id } : { id: a },
         )
       : [],
     tags: Array.isArray(init?.tags) ? init.tags : [],
@@ -89,13 +87,14 @@ export const CreateTaskForm = ({
   isSubmitting = false,
   mode,
 }) => {
-  const isEditMode = mode === "edit" || Boolean(initialData.id || initialData._id);
+  const isEditMode =
+    mode === "edit" || Boolean(initialData.id || initialData._id);
   const { allProjects } = useProjects();
   const { members: allTeamMembers } = useTeam();
   const availableProjects = allProjects || [];
 
   const [formData, setFormData] = useState(() =>
-    resolveInitialFormData(initialData, isEditMode)
+    resolveInitialFormData(initialData, isEditMode),
   );
 
   const [serverError, setServerError] = useState("");
@@ -103,7 +102,10 @@ export const CreateTaskForm = ({
   const submitting = isSubmitting || internalSubmitting;
 
   useEffect(() => {
-    if (initialData && (initialData.id || initialData._id || initialData.title)) {
+    if (
+      initialData &&
+      (initialData.id || initialData._id || initialData.title)
+    ) {
       setFormData(resolveInitialFormData(initialData, isEditMode));
       setServerError("");
     }
@@ -119,7 +121,6 @@ export const CreateTaskForm = ({
       : allTeamMembers || [];
 
   const [errors, setErrors] = useState({});
-  const [isSuccess, setIsSuccess] = useState(false);
 
   // Validate form fields
   const validate = () => {
@@ -160,18 +161,19 @@ export const CreateTaskForm = ({
           // For backwards compatibility with single assignedTo:
           assignedTo:
             formData.assignees.length > 0
-              ? formData.assignees.map((a) => a.name || a.username || "Member").join(", ")
+              ? formData.assignees
+                  .map((a) => a.name || a.username || "Member")
+                  .join(", ")
               : "Unassigned",
         };
 
         await onSubmit(submissionData);
-        setIsSuccess(true);
       } catch (err) {
         console.error("Task submission error:", err);
         setServerError(
           err.response?.data?.message ||
-          err.message ||
-          "Failed to save task. Please verify your permissions and input."
+            err.message ||
+            "Failed to save task. Please verify your permissions and input.",
         );
       } finally {
         setInternalSubmitting(false);
@@ -235,7 +237,7 @@ export const CreateTaskForm = ({
                 setFormData({ ...formData, title: e.target.value });
                 if (errors.title) setErrors({ ...errors, title: null });
               }}
-              className={`w-full px-4 py-3 rounded-2xl border text-base font-bold transition-all ${
+              className={`w-full px-4 py-3 rounded-2xl border text-sm font-medium transition-all ${
                 errors.title
                   ? "border-rose-400 focus:ring-2 focus:ring-rose-200 bg-rose-50/20 text-rose-900"
                   : "border-slate-200 focus:ring-2 focus:ring-[#4361EE] focus:border-transparent bg-white text-slate-900"
@@ -604,7 +606,9 @@ export const CreateTaskForm = ({
           {submitting ? (
             <>
               <Loader2 size={15} className="animate-spin" />
-              <span>{isEditMode ? "Updating Task..." : "Creating Task..."}</span>
+              <span>
+                {isEditMode ? "Updating Task..." : "Creating Task..."}
+              </span>
             </>
           ) : (
             <>
