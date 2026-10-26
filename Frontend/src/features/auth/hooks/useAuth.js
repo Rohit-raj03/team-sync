@@ -9,6 +9,7 @@ import {
   logout as logoutAction,
 } from '../store/authSlice.js';
 import { authService } from '../services/auth.service.js';
+import { showToast } from '../../../shared/utils/toast.js';
 
 export function useAuth() {
   const dispatch = useDispatch();
@@ -19,9 +20,12 @@ export function useAuth() {
       dispatch(loginStart());
       const data = await authService.login(credentials);
       dispatch(loginSuccess(data));
+      showToast.auth.loginSuccess();
       return data;
     } catch (err) {
-      dispatch(loginFailure(err.message || 'Login failed'));
+      const errMsg = err.message || 'Login failed';
+      dispatch(loginFailure(errMsg));
+      showToast.auth.loginError(err);
       throw err;
     }
   };
@@ -31,9 +35,12 @@ export function useAuth() {
       dispatch(loginStart());
       const data = await authService.register(userData);
       dispatch(registerSuccess(data));
+      showToast.auth.registerSuccess();
       return data;
     } catch (err) {
-      dispatch(loginFailure(err.message || 'Registration failed'));
+      const errMsg = err.message || 'Registration failed';
+      dispatch(loginFailure(errMsg));
+      showToast.auth.registerError(err);
       throw err;
     }
   };
@@ -66,6 +73,7 @@ export function useAuth() {
 
   const logout = () => {
     dispatch(logoutAction());
+    showToast.auth.logoutSuccess();
   };
 
   return {

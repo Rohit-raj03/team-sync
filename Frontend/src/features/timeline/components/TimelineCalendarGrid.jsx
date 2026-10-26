@@ -49,14 +49,10 @@ export const TimelineCalendarGrid = ({
   const hoverTimeoutRef = useRef(null);
 
   // Generate date intervals and bounds
-  const {
-    intervals,
-    timelineStart,
-    timelineEnd,
-    todayPositionPercent,
-  } = useMemo(() => {
-    return generateTimelineRange(anchorDate, viewMode);
-  }, [anchorDate, viewMode]);
+  const { intervals, timelineStart, timelineEnd, todayPositionPercent } =
+    useMemo(() => {
+      return generateTimelineRange(anchorDate, viewMode);
+    }, [anchorDate, viewMode]);
 
   // Group tasks by project track
   const tracks = useMemo(() => {
@@ -82,7 +78,7 @@ export const TimelineCalendarGrid = ({
       const { subRows, subRowCount } = packTasksIntoSubRows(
         projTasks,
         timelineStart,
-        timelineEnd
+        timelineEnd,
       );
 
       result.push({
@@ -114,7 +110,7 @@ export const TimelineCalendarGrid = ({
       const { subRows, subRowCount } = packTasksIntoSubRows(
         standaloneTasks,
         timelineStart,
-        timelineEnd
+        timelineEnd,
       );
 
       result.push({
@@ -198,9 +194,7 @@ export const TimelineCalendarGrid = ({
         <h3 className="text-sm font-bold text-slate-800">
           Failed to load schedule timeline
         </h3>
-        <p className="text-xs text-slate-500 mt-1 max-w-sm mx-auto">
-          {error}
-        </p>
+        <p className="text-xs text-slate-500 mt-1 max-w-sm mx-auto">{error}</p>
       </Card>
     );
   }
@@ -211,7 +205,7 @@ export const TimelineCalendarGrid = ({
     <Card className="p-0 overflow-hidden relative shadow-[0_10px_35px_-5px_rgba(0,0,0,0.04)] border-slate-200/80">
       {tracks.length > 0 && hasAnyTasks ? (
         <div className="overflow-x-auto select-none">
-          <div className="min-w-[900px] lg:min-w-[1100px]">
+          <div className="min-w-225 lg:min-w-275">
             {/* Header Row: Left Tracks Title + Right Timeline Date Intervals */}
             <div className="grid grid-cols-12 border-b border-slate-200/90 bg-[#F8FAFC]">
               {/* Left Column Header */}
@@ -239,8 +233,8 @@ export const TimelineCalendarGrid = ({
                       interval.isToday
                         ? "bg-indigo-50/70"
                         : interval.isWeekend
-                        ? "bg-slate-50/50"
-                        : ""
+                          ? "bg-slate-50/50"
+                          : ""
                     }`}
                   >
                     <p
@@ -313,7 +307,9 @@ export const TimelineCalendarGrid = ({
                         <button
                           onClick={() => toggleTrackCollapse(track.id)}
                           className="p-1 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors ml-2"
-                          title={isCollapsed ? "Expand track" : "Collapse track"}
+                          title={
+                            isCollapsed ? "Expand track" : "Collapse track"
+                          }
                         >
                           {isCollapsed ? (
                             <ChevronRight size={14} />
@@ -328,7 +324,9 @@ export const TimelineCalendarGrid = ({
                     <div
                       className="col-span-9 lg:col-span-9 relative"
                       style={{
-                        minHeight: isCollapsed ? "36px" : `${trackContentHeight}px`,
+                        minHeight: isCollapsed
+                          ? "36px"
+                          : `${trackContentHeight}px`,
                       }}
                     >
                       {/* Vertical Grid Columns (Dashed hairline borders) */}
@@ -345,8 +343,8 @@ export const TimelineCalendarGrid = ({
                               interval.isToday
                                 ? "bg-indigo-50/20"
                                 : interval.isWeekend
-                                ? "bg-slate-50/25"
-                                : ""
+                                  ? "bg-slate-50/25"
+                                  : ""
                             }`}
                           />
                         ))}
@@ -413,7 +411,9 @@ export const TimelineCalendarGrid = ({
             No Timeline Milestones Found
           </h3>
           <p className="text-xs text-slate-400 mt-1.5 max-w-md mx-auto leading-relaxed">
-            There are no tasks matching your active filters or date window. Create new tasks with start and due dates to track live Gantt sprints here.
+            There are no tasks matching your active filters or date window.
+            Create new tasks with start and due dates to track live Gantt
+            sprints here.
           </p>
           {onAddTask && (
             <button

@@ -114,7 +114,7 @@ export const Sidebar = ({ isOpen, onClose }) => {
                   className={`absolute left-14 top-1/2 -translate-y-1/2
                     bg-slate-800 text-white text-[11px] font-semibold
                     px-2.5 py-1.5 rounded-lg whitespace-nowrap shadow-lg
-                    z-[60] pointer-events-none
+                    z-60 pointer-events-none
                     ${activeTooltip === item.to ? "inline-block" : "hidden"}`}
                 >
                   {item.label}
@@ -146,7 +146,7 @@ export const Sidebar = ({ isOpen, onClose }) => {
               className={`absolute left-14 top-1/2 -translate-y-1/2
                 bg-slate-800 text-white text-[11px] font-semibold
                 px-2.5 py-1.5 rounded-lg whitespace-nowrap shadow-lg
-                z-[60] pointer-events-none
+                z-60 pointer-events-none
                 ${activeTooltip === "logout" ? "inline-block" : "hidden"}`}
             >
               Log Out

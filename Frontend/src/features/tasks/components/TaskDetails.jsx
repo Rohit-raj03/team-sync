@@ -151,7 +151,7 @@ export const TaskDetails = ({
       subtasks: updatedSubtasks,
     };
 
-    updateTask(updatedTask);
+    updateTask(updatedTask, { silent: true });
     onUpdate?.(updatedTask);
   };
 
@@ -190,7 +190,7 @@ export const TaskDetails = ({
       subtasks: updatedSubtasks,
     };
 
-    updateTask(updatedTask);
+    updateTask(updatedTask, { silent: true });
     onUpdate?.(updatedTask);
   };
 
@@ -210,7 +210,7 @@ export const TaskDetails = ({
       subtasks: updatedSubtasks,
     };
 
-    updateTask(updatedTask);
+    updateTask(updatedTask, { silent: true });
     onUpdate?.(updatedTask);
     setEditingSubtaskId(null);
     setEditingSubtaskTitle("");

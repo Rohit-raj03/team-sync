@@ -98,8 +98,12 @@ export const ProjectDetailsPage = () => {
         `Are you sure you want to delete "${project.name}"? This action cannot be undone.`
       )
     ) {
-      await deleteProject(project.id);
-      navigate(ROUTES.PROJECTS);
+      try {
+        await deleteProject(project.id);
+        navigate(ROUTES.PROJECTS);
+      } catch (err) {
+        // Handled by delete toast
+      }
     }
   };
 

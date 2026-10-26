@@ -12,6 +12,7 @@ import {
   toggleSubtask as toggleSubtaskAction,
 } from "../store/taskSlice.js";
 import { taskService } from "../services/task.service.js";
+import { showToast, extractErrorMessage } from "../../../shared/utils/toast.js";
 
 // Global cache and request deduplication state
 let inFlightTasksPromise = null;
@@ -91,43 +92,76 @@ export function useTasks(options = {}) {
   });
 
   const handleAddTask = async (taskData) => {
-    try {
-      const res = await taskService.createTask(taskData);
-      const created = res?.task || res?.data || taskData;
-      dispatch(addTaskAction(created));
-      return created;
-    } catch (err) {
-      const fallbackTask = {
-        ...taskData,
-        id: `t-${Date.now()}`,
-      };
-      dispatch(addTaskAction(fallbackTask));
-      return fallbackTask;
-    }
+    const taskPromise = (async () => {
+      try {
+        const res = await taskService.createTask(taskData);
+        const created = res?.task || res?.data || taskData;
+        dispatch(addTaskAction(created));
+        return created;
+      } catch (err) {
+        const fallbackTask = {
+          ...taskData,
+          id: `t-${Date.now()}`,
+        };
+        dispatch(addTaskAction(fallbackTask));
+        return fallbackTask;
+      }
+    })();
+
+    return showToast.promise(taskPromise, {
+      loading: "Creating task...",
+      success: "Task created.",
+      error: (err) => extractErrorMessage(err, "Failed to create task"),
+    });
   };
 
-  const handleUpdateTask = async (taskData) => {
+  const handleUpdateTask = async (taskData, options = {}) => {
     const taskId = taskData.id || taskData._id;
-    try {
-      const res = await taskService.updateTask(taskId, taskData);
-      const updated = res?.task || res?.data || taskData;
+
+    // Silent updates (e.g. subtask toggle) don't trigger intrusive notifications
+    if (options.silent) {
+      try {
+        if (!String(taskId).startsWith("t-")) {
+          await taskService.updateTask(taskId, taskData);
+        }
+      } catch (err) {
+        console.warn("Could not persist silent task update:", err.message);
+      }
+      dispatch(updateTaskAction(taskData));
+      return taskData;
+    }
+
+    const updatePromise = (async () => {
+      let updated = taskData;
+      if (!String(taskId).startsWith("t-")) {
+        const res = await taskService.updateTask(taskId, taskData);
+        updated = res?.task || res?.data || taskData;
+      }
       dispatch(updateTaskAction(updated));
       return updated;
-    } catch (err) {
-      console.error("Failed to update task:", err.message);
-      throw err;
-    }
+    })();
+
+    return showToast.promise(updatePromise, {
+      loading: "Updating task...",
+      success: "Task updated.",
+      error: (err) => extractErrorMessage(err, "Failed to update task"),
+    });
   };
 
   const handleDeleteTask = async (id, reason) => {
-    try {
-      await taskService.deleteTask(id, reason);
+    const deletePromise = (async () => {
+      if (!String(id).startsWith("t-")) {
+        await taskService.deleteTask(id, reason);
+      }
       dispatch(deleteTaskAction(id));
       return true;
-    } catch (err) {
-      console.error("Failed to delete task:", err.message);
-      throw err;
-    }
+    })();
+
+    return showToast.promise(deletePromise, {
+      loading: "Deleting task...",
+      success: "Task deleted.",
+      error: (err) => extractErrorMessage(err, "Failed to delete task"),
+    });
   };
 
   const handleToggleSubtask = async (taskId, subtaskId) => {

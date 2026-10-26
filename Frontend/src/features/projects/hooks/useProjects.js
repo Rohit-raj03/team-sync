@@ -14,6 +14,7 @@ import {
   setProjectSearch,
 } from "../store/projectSlice.js";
 import { projectService } from "../services/project.service.js";
+import { showToast, extractErrorMessage } from "../../../shared/utils/toast.js";
 
 // Global cache and request deduplication state for projects
 let inFlightProjectsPromise = null;
@@ -150,39 +151,71 @@ export function useProjects(options = {}) {
   );
 
   const handleAddProject = async (data) => {
-    try {
-      const res = await projectService.createProject(data);
-      const created = res?.project || res?.data || data;
-      dispatch(addProjectAction(created));
-      return created;
-    } catch (err) {
-      // Fall back to local dispatch if server is offline
-      const localProject = { ...data, id: `p-${Date.now()}` };
-      dispatch(addProjectAction(localProject));
-      return localProject;
-    }
+    const projectPromise = (async () => {
+      try {
+        const res = await projectService.createProject(data);
+        const created = res?.project || res?.data || data;
+        dispatch(addProjectAction(created));
+        return created;
+      } catch (err) {
+        // Fall back to local dispatch if server is offline
+        const localProject = { ...data, id: `p-${Date.now()}` };
+        dispatch(addProjectAction(localProject));
+        return localProject;
+      }
+    })();
+
+    return showToast.promise(projectPromise, {
+      loading: "Creating project...",
+      success: "Project created.",
+      error: (err) => extractErrorMessage(err, "Failed to create project"),
+    });
   };
 
-  const handleUpdateProject = async (id, data) => {
-    try {
-      const res = await projectService.updateProject(id, data);
-      const updated = res?.project || res?.data || { id, ...data };
+  const handleUpdateProject = async (id, data, options = {}) => {
+    if (options.silent) {
+      try {
+        if (!String(id).startsWith("p-")) {
+          await projectService.updateProject(id, data);
+        }
+      } catch (err) {
+        console.warn("Could not sync project update:", err.message);
+      }
+      dispatch(updateProjectAction({ id, ...data }));
+      return { id, ...data };
+    }
+
+    const updatePromise = (async () => {
+      let updated = { id, ...data };
+      if (!String(id).startsWith("p-")) {
+        const res = await projectService.updateProject(id, data);
+        updated = res?.project || res?.data || { id, ...data };
+      }
       dispatch(updateProjectAction(updated));
       return updated;
-    } catch (err) {
-      dispatch(updateProjectAction({ id, ...data }));
-    }
+    })();
+
+    return showToast.promise(updatePromise, {
+      loading: "Updating project...",
+      success: "Project updated.",
+      error: (err) => extractErrorMessage(err, "Failed to update project"),
+    });
   };
 
   const handleDeleteProject = async (id) => {
-    try {
-      await projectService.deleteProject(id);
+    const deletePromise = (async () => {
+      if (!String(id).startsWith("p-")) {
+        await projectService.deleteProject(id);
+      }
       dispatch(deleteProjectAction(id));
       return true;
-    } catch (err) {
-      dispatch(deleteProjectAction(id));
-      return false;
-    }
+    })();
+
+    return showToast.promise(deletePromise, {
+      loading: "Deleting project...",
+      success: "Project deleted.",
+      error: (err) => extractErrorMessage(err, "Failed to delete project"),
+    });
   };
 
   const handleTagMember = async (projectId, member, projectRole = "Contributor", role = "Member") => {
