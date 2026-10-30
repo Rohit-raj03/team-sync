@@ -62,7 +62,10 @@ export const TaskStatusSelector = ({ value, onChange }) => {
                 isSelected ? s.activeClass : s.idleClass
               }`}
             >
-              <Icon size={14} className={isSelected ? "text-white" : ""} />
+              <Icon
+                size={14}
+                className={`shrink-0 ${isSelected ? "text-white" : ""}`}
+              />
               <span>{s.label}</span>
             </button>
           );

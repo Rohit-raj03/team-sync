@@ -580,6 +580,10 @@ export const CreateTaskForm = ({
               onChange={(newTags) =>
                 setFormData({ ...formData, tags: newTags })
               }
+              projectColor={
+                selectedProject?.themeColor || selectedProject?.color
+              }
+              projectId={formData.projectId}
             />
           </div>
         </div>

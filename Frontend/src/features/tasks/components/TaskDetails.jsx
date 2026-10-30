@@ -30,6 +30,7 @@ import { formatDate } from "../../../shared/utils/formatDate.js";
 import { useTasks } from "../hooks/useTasks.js";
 import { useTeam } from "../../team/hooks/useTeam.js";
 import { useProjects } from "../../projects/hooks/useProjects.js";
+import { deriveProjectColorTokens } from "../../timeline/utils/timelineColors.js";
 import { MentionTextarea } from "./MentionTextarea.jsx";
 import { MentionRenderer } from "./MentionRenderer.jsx";
 import { TaskComments } from "./TaskComments.jsx";
@@ -984,30 +985,44 @@ export const TaskDetails = ({
       )}
 
       {/* 7. Tags (Metadata) */}
-      {task.tags && task.tags.length > 0 && (
-        <div className="space-y-1.5">
-          <div className="flex items-center gap-1.5">
-            <Tag size={13} className="text-amber-500" />
-            <span className="block text-xs font-bold uppercase tracking-wider text-slate-700">
-              Tags & Labels
-            </span>
+      {task.tags && task.tags.length > 0 && (() => {
+        const projColor =
+          project?.themeColor ||
+          project?.color ||
+          task?.project?.themeColor ||
+          task?.project?.color ||
+          "#4361EE";
+        const tokens = deriveProjectColorTokens(projColor);
+        return (
+          <div className="space-y-1.5">
+            <div className="flex items-center gap-1.5">
+              <Tag size={13} style={{ color: tokens.primary }} />
+              <span className="block text-xs font-bold uppercase tracking-wider text-slate-700">
+                Tags & Labels
+              </span>
+            </div>
+            <div className="flex flex-wrap gap-1.5">
+              {task.tags.map((t) => {
+                const label = t.startsWith("#") ? t.slice(1) : t;
+                return (
+                  <span
+                    key={t}
+                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold border shadow-2xs"
+                    style={{
+                      backgroundColor: tokens.bgLight,
+                      color: tokens.badgeText,
+                      borderColor: tokens.border,
+                    }}
+                  >
+                    <Tag size={10} style={{ color: tokens.primary }} />
+                    <span>#{label}</span>
+                  </span>
+                );
+              })}
+            </div>
           </div>
-          <div className="flex flex-wrap gap-1.5">
-            {task.tags.map((t) => {
-              const label = t.startsWith("#") ? t.slice(1) : t;
-              return (
-                <span
-                  key={t}
-                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold bg-amber-50 text-amber-900 border border-amber-200/80 shadow-2xs"
-                >
-                  <Tag size={10} className="text-amber-500" />
-                  <span>#{label}</span>
-                </span>
-              );
-            })}
-          </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* 8. Handover Note */}
       {task.comment && (
