@@ -91,7 +91,7 @@ export const uploadImage = async ({
       width: response.width,
     };
   } catch (error) {
-    console.error("❌ ImageKit Upload Failure:", error?.message || error);
+    console.error("ImageKit Upload Failure:", error?.message || error);
     const customError = new Error(
       `ImageKit upload failed: ${error?.message || "Internal third-party media error"}`,
     );
@@ -131,7 +131,7 @@ export const deleteImage = async (fileId) => {
       error?.name === "NotFoundError"
     ) {
       console.warn(
-        `ℹ️ ImageKit fileId ${fileId} was already deleted or not found.`,
+        `ℹImageKit fileId ${fileId} was already deleted or not found.`,
       );
       return {
         success: true,

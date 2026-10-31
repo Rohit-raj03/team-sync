@@ -135,7 +135,10 @@ export function generateTimelineRange(anchorDate = new Date(), mode = "Day") {
         id: `week-${toISODate(wStart)}`,
         date: wStart,
         label: `W${Math.ceil((wStart.getDate() + 6) / 7)}`,
-        subLabel: `${monthNames[wStart.getMonth()]} ${wStart.getDate()} - ${wEnd.getDate()}`,
+        subLabel:
+          wStart.getMonth() === wEnd.getMonth()
+            ? `${monthNames[wStart.getMonth()]} ${wStart.getDate()} - ${wEnd.getDate()}`
+            : `${monthNames[wStart.getMonth()]} ${wStart.getDate()} - ${monthNames[wEnd.getMonth()]} ${wEnd.getDate()}`,
         monthLabel: fullMonthNames[wStart.getMonth()],
         isToday: hasToday,
         isWeekend: false,

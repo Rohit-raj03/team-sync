@@ -79,7 +79,7 @@ export const TimelineTaskBar = ({
         color: colorTokens.textColor,
         boxShadow: colorTokens.glow,
       }}
-      className="absolute h-9.5 rounded-xl cursor-pointer select-none px-3 flex items-center justify-between gap-2 overflow-hidden transition-all duration-200 transform hover:-translate-y-0.5 hover:shadow-lg focus:outline-hidden focus:ring-2 focus:ring-offset-1 focus:ring-indigo-500 group"
+      className="absolute inset-y-0 rounded-xl cursor-pointer select-none px-3 flex items-center justify-between gap-2 overflow-hidden transition-all duration-150 hover:brightness-105 hover:shadow-lg active:scale-[0.99] focus:outline-hidden focus:ring-2 focus:ring-offset-1 focus:ring-indigo-500 group z-10 hover:z-20"
     >
       {/* Subtle Progress Fill Indicator */}
       {progress > 0 && (
@@ -93,7 +93,7 @@ export const TimelineTaskBar = ({
       )}
 
       {/* Left: Completed Icon or Mini Status + Title */}
-      <div className="relative z-10 flex items-center gap-1.5 min-w-0 flex-1">
+      <div className="relative z-10 flex items-center gap-1.5 min-w-0 flex-1 pointer-events-none">
         {isCompleted ? (
           <Check
             size={13}
@@ -105,14 +105,13 @@ export const TimelineTaskBar = ({
         <p
           className="text-xs font-bold truncate tracking-tight"
           style={{ color: colorTokens.textColor }}
-          title={task.title}
         >
           {task.title}
         </p>
       </div>
 
       {/* Right: Progress % + Assignee Avatar */}
-      <div className="relative z-10 flex items-center gap-1.5 shrink-0">
+      <div className="relative z-10 flex items-center gap-1.5 shrink-0 pointer-events-none">
         {task.widthPercent > 12 && (
           <span
             className="text-[10px] font-semibold tracking-tighter opacity-90 hidden sm:inline-block"

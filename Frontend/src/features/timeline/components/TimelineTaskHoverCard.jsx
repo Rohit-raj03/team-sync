@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useMemo, useRef } from "react";
 import {
   Calendar,
   Clock,
@@ -33,24 +33,22 @@ export const TimelineTaskHoverCard = ({
   onMouseLeave,
 }) => {
   const cardRef = useRef(null);
-  const [coords, setCoords] = useState({ top: 0, left: 0 });
 
-  useEffect(() => {
-    if (!anchorRect) return;
+  const coords = useMemo(() => {
+    if (!anchorRect) return { top: -9999, left: -9999 };
 
     const CARD_WIDTH = 340;
     const CARD_HEIGHT = 280;
-    const GAP = 10;
+    const GAP = 12;
     const padding = 12;
 
-    const viewportW = window.innerWidth;
-    const viewportH = window.innerHeight;
+    const viewportW =
+      typeof window !== "undefined" ? window.innerWidth : 1200;
+    const viewportH =
+      typeof window !== "undefined" ? window.innerHeight : 800;
 
-    // Ideal: position centered above anchorRect
+    // Ideal: position centered horizontally above anchorRect
     let left = anchorRect.left + anchorRect.width / 2 - CARD_WIDTH / 2;
-    let top = anchorRect.top - CARD_HEIGHT - GAP;
-
-    // Viewport horizontal clamping
     if (left + CARD_WIDTH > viewportW - padding) {
       left = viewportW - CARD_WIDTH - padding;
     }
@@ -58,16 +56,27 @@ export const TimelineTaskHoverCard = ({
       left = padding;
     }
 
-    // Viewport vertical clamping: if not enough room on top, flip to below anchor
-    if (top < padding) {
+    // Determine vertical position: prefer above, flip below if not enough space
+    const spaceAbove = anchorRect.top - padding;
+    const spaceBelow = viewportH - anchorRect.bottom - padding;
+
+    let top;
+    if (spaceAbove >= CARD_HEIGHT + GAP) {
+      top = anchorRect.top - CARD_HEIGHT - GAP;
+    } else if (spaceBelow >= CARD_HEIGHT + GAP) {
       top = anchorRect.bottom + GAP;
-    }
-    // If still off screen bottom, clamp
-    if (top + CARD_HEIGHT > viewportH - padding) {
-      top = Math.max(padding, viewportH - CARD_HEIGHT - padding);
+    } else {
+      if (spaceAbove >= spaceBelow) {
+        top = Math.max(padding, anchorRect.top - CARD_HEIGHT - GAP);
+      } else {
+        top = Math.min(
+          viewportH - CARD_HEIGHT - padding,
+          anchorRect.bottom + GAP
+        );
+      }
     }
 
-    setCoords({ top, left });
+    return { top, left };
   }, [anchorRect]);
 
   if (!task) return null;

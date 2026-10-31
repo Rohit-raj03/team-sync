@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef } from "react";
+import React, { useState, useMemo, useRef, useEffect } from "react";
 import {
   Calendar,
   FolderKanban,
@@ -166,6 +166,26 @@ export const TimelineCalendarGrid = ({
     handleHoverEnd();
   };
 
+  // Close floating hover card immediately on scroll or resize to prevent orphaned tooltips
+  useEffect(() => {
+    const handleScrollOrResize = () => {
+      if (hoverTimeoutRef.current) {
+        clearTimeout(hoverTimeoutRef.current);
+      }
+      setHoveredData(null);
+    };
+
+    window.addEventListener("scroll", handleScrollOrResize, true);
+    window.addEventListener("resize", handleScrollOrResize);
+    return () => {
+      window.removeEventListener("scroll", handleScrollOrResize, true);
+      window.removeEventListener("resize", handleScrollOrResize);
+      if (hoverTimeoutRef.current) {
+        clearTimeout(hoverTimeoutRef.current);
+      }
+    };
+  }, []);
+
   // Skeleton loading state
   if (loading && tracks.length === 0) {
     return (
@@ -244,15 +264,27 @@ export const TimelineCalendarGrid = ({
                     >
                       {interval.label}
                     </p>
-                    <div
-                      className={`mt-0.5 inline-flex w-6.5 h-6.5 items-center justify-center rounded-full text-xs font-bold transition-all ${
-                        interval.isToday
-                          ? "bg-[#4361EE] text-white shadow-xs"
-                          : "text-slate-700"
-                      }`}
-                    >
-                      {interval.subLabel}
-                    </div>
+                    {viewMode === "Day" ? (
+                      <div
+                        className={`mt-0.5 inline-flex w-6.5 h-6.5 items-center justify-center rounded-full text-xs font-bold transition-all ${
+                          interval.isToday
+                            ? "bg-[#4361EE] text-white shadow-xs"
+                            : "text-slate-700"
+                        }`}
+                      >
+                        {interval.subLabel}
+                      </div>
+                    ) : (
+                      <div
+                        className={`mt-0.5 inline-flex items-center justify-center px-2 py-0.5 rounded-lg text-xs font-semibold transition-all whitespace-nowrap ${
+                          interval.isToday
+                            ? "bg-[#4361EE] text-white shadow-xs"
+                            : "text-slate-700"
+                        }`}
+                      >
+                        {interval.subLabel}
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
@@ -270,7 +302,7 @@ export const TimelineCalendarGrid = ({
                 return (
                   <div
                     key={track.id}
-                    className="grid grid-cols-12 hover:bg-slate-50/30 transition-colors group"
+                    className="grid grid-cols-12 hover:bg-slate-50/30 transition-colors group relative"
                   >
                     {/* Left: Project Header & Metadata */}
                     <div className="col-span-3 lg:col-span-3 p-3.5 px-5 flex items-center justify-between border-r border-slate-200/80 bg-white">
@@ -306,7 +338,7 @@ export const TimelineCalendarGrid = ({
                       {track.taskCount > 0 && (
                         <button
                           onClick={() => toggleTrackCollapse(track.id)}
-                          className="p-1 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors ml-2"
+                          className="p-1 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors ml-2 cursor-pointer"
                           title={
                             isCollapsed ? "Expand track" : "Collapse track"
                           }
@@ -331,7 +363,7 @@ export const TimelineCalendarGrid = ({
                     >
                       {/* Vertical Grid Columns (Dashed hairline borders) */}
                       <div
-                        className="absolute inset-0 grid divide-x divide-slate-100/90 pointer-events-none"
+                        className="absolute inset-0 grid divide-x divide-slate-100/90 pointer-events-none z-0"
                         style={{
                           gridTemplateColumns: `repeat(${intervals.length}, minmax(0, 1fr))`,
                         }}
@@ -353,44 +385,39 @@ export const TimelineCalendarGrid = ({
                       {/* Visible Today Marker Line */}
                       {todayPositionPercent !== null && (
                         <div
-                          className="absolute inset-y-0 w-0.5 bg-[#4361EE] z-20 pointer-events-none shadow-xs"
+                          className="absolute inset-y-0 w-0.5 bg-[#4361EE] z-5 pointer-events-none shadow-xs"
                           style={{ left: `${todayPositionPercent}%` }}
                         />
                       )}
 
                       {/* Render Task Bars inside their respective packed sub-rows */}
                       {!isCollapsed && track.taskCount > 0 ? (
-                        <div className="relative w-full h-full p-2">
-                          {track.subRows.map((rowTasks, rIdx) => {
-                            const topPx = rIdx * subRowHeight + 5;
-
-                            return (
-                              <div
-                                key={rIdx}
-                                className="relative w-full"
-                                style={{ height: "38px", top: `${topPx}px` }}
-                              >
-                                {rowTasks.map((task) => (
-                                  <TimelineTaskBar
-                                    key={task.id || task._id}
-                                    task={task}
-                                    colorTokens={track.colorTokens}
-                                    projectName={track.title}
-                                    onClick={onTaskClick}
-                                    onHoverStart={handleHoverStart}
-                                    onHoverEnd={handleHoverEnd}
-                                  />
-                                ))}
-                              </div>
-                            );
-                          })}
+                        <div className="relative z-10 w-full py-2.5 px-2 flex flex-col gap-2">
+                          {track.subRows.map((rowTasks, rIdx) => (
+                            <div
+                              key={rIdx}
+                              className="relative w-full h-9"
+                            >
+                              {rowTasks.map((task) => (
+                                <TimelineTaskBar
+                                  key={task.id || task._id}
+                                  task={task}
+                                  colorTokens={track.colorTokens}
+                                  projectName={track.title}
+                                  onClick={onTaskClick}
+                                  onHoverStart={handleHoverStart}
+                                  onHoverEnd={handleHoverEnd}
+                                />
+                              ))}
+                            </div>
+                          ))}
                         </div>
                       ) : isCollapsed ? (
-                        <div className="flex items-center px-4 h-full text-[11px] text-slate-400 italic">
+                        <div className="flex items-center px-4 h-full min-h-[36px] text-[11px] text-slate-400 italic">
                           Track collapsed ({track.taskCount} tasks hidden)
                         </div>
                       ) : (
-                        <div className="flex items-center px-4 h-full text-[11px] text-slate-400 italic">
+                        <div className="flex items-center px-4 h-full min-h-[52px] text-[11px] text-slate-400 italic">
                           No scheduled deliverables in this project
                         </div>
                       )}
