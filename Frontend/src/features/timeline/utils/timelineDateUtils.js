@@ -281,7 +281,9 @@ export function calculateTaskPosition(task, timelineStart, timelineEnd) {
  * Uses greedy interval packing to ensure tasks never visually collide or obscure each other.
  */
 export function packTasksIntoSubRows(tasks, timelineStart, timelineEnd) {
-  if (!tasks || tasks.length === 0) return [];
+  if (!tasks || tasks.length === 0) {
+    return { subRows: [], subRowCount: 0, allPositionedTasks: [] };
+  }
 
   // 1. Calculate positions for all tasks
   const positioned = tasks.map((task) => {

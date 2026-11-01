@@ -297,12 +297,12 @@ export const TimelineCalendarGrid = ({
                 const subRowHeight = 44; // height of each stacked task bar row in px
                 const trackContentHeight = isCollapsed
                   ? 0
-                  : Math.max(1, track.subRowCount) * subRowHeight + 14;
+                  : Math.max(1, track.subRowCount || 1) * subRowHeight + 14;
 
                 return (
                   <div
                     key={track.id}
-                    className="grid grid-cols-12 hover:bg-slate-50/30 transition-colors group relative"
+                    className="grid grid-cols-12 hover:bg-slate-50/30 transition-colors group relative overflow-hidden"
                   >
                     {/* Left: Project Header & Metadata */}
                     <div className="col-span-3 lg:col-span-3 p-3.5 px-5 flex items-center justify-between border-r border-slate-200/80 bg-white">
@@ -394,10 +394,7 @@ export const TimelineCalendarGrid = ({
                       {!isCollapsed && track.taskCount > 0 ? (
                         <div className="relative z-10 w-full py-2.5 px-2 flex flex-col gap-2">
                           {track.subRows.map((rowTasks, rIdx) => (
-                            <div
-                              key={rIdx}
-                              className="relative w-full h-9"
-                            >
+                            <div key={rIdx} className="relative w-full h-9">
                               {rowTasks.map((task) => (
                                 <TimelineTaskBar
                                   key={task.id || task._id}
@@ -413,11 +410,11 @@ export const TimelineCalendarGrid = ({
                           ))}
                         </div>
                       ) : isCollapsed ? (
-                        <div className="flex items-center px-4 h-full min-h-[36px] text-[11px] text-slate-400 italic">
+                        <div className="flex items-center px-4 h-full min-h-9 text-[11px] text-slate-400 italic">
                           Track collapsed ({track.taskCount} tasks hidden)
                         </div>
                       ) : (
-                        <div className="flex items-center px-4 h-full min-h-[52px] text-[11px] text-slate-400 italic">
+                        <div className="flex items-center px-4 h-full min-h-13 text-[11px] text-slate-400 italic">
                           No scheduled deliverables in this project
                         </div>
                       )}
