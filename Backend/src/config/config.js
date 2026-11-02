@@ -21,6 +21,11 @@ export const config = {
   IMAGEKIT_URL_ENDPOINT: process.env.IMAGEKIT_URL_ENDPOINT,
   MAX_FILE_SIZE_BYTES:
     Number(process.env.MAX_FILE_SIZE_BYTES) || 5 * 1024 * 1024, // 5 MB
+  GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID,
+  GOOGLE_CLIENT_SECRET: process.env.GOOGLE_CLIENT_SECRET,
+  GOOGLE_CALLBACK_URL:
+    process.env.GOOGLE_CALLBACK_URL ||
+    "http://localhost:5173/auth/google/callback",
 };
 
 export default config;

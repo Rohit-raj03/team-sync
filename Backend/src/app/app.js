@@ -22,9 +22,6 @@ const app = express();
 const allowedOrigins = [
   config.CLIENT_URL?.replace(/\/$/, ""),
   "http://localhost:5173",
-  "http://127.0.0.1:5173",
-  "http://localhost:3000",
-  "http://localhost:5050",
   "https://team-sync-liart-ten.vercel.app/",
 ].filter(Boolean);
 
