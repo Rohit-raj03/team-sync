@@ -4,9 +4,6 @@ import { storage } from '../utils/localStorage.js';
 
 const axiosInstance = axios.create({
   baseURL: env.API_BASE_URL,
-  headers: {
-    'Content-Type': 'application/json',
-  },
 });
 
 axiosInstance.interceptors.request.use(
@@ -15,6 +12,18 @@ axiosInstance.interceptors.request.use(
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+
+    // Ensure FormData payloads do not inherit an explicit application/json Content-Type,
+    // allowing Axios and the browser to set 'multipart/form-data; boundary=...'
+    if (config.data instanceof FormData) {
+      if (config.headers?.delete) {
+        config.headers.delete('Content-Type');
+      } else if (config.headers) {
+        delete config.headers['Content-Type'];
+        delete config.headers['content-type'];
+      }
+    }
+
     return config;
   },
   (error) => Promise.reject(error)

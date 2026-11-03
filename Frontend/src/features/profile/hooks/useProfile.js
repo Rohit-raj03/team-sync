@@ -2,6 +2,9 @@ import { useState, useMemo, useEffect } from 'react';
 import { useAuth } from '../../auth/hooks/useAuth.js';
 import { profileService } from '../services/profile.service.js';
 
+const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+const MAX_IMAGE_SIZE_BYTES = 5 * 1024 * 1024; // 5MB
+
 /**
  * Feature Hook: useProfile
  * Layer: features/profile/hooks/
@@ -32,6 +35,7 @@ export function useProfile() {
   const [isLoading, setIsLoading] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [serverError, setServerError] = useState(null);
+  const [photoUpdated, setPhotoUpdated] = useState(false);
 
   // Sync profile data from server on mount
   useEffect(() => {
@@ -86,23 +90,34 @@ export function useProfile() {
 
   const handlePhotoUpload = async (file) => {
     if (!file) return;
+
+    // Client-side validation: file type
+    if (file.type && !ALLOWED_IMAGE_TYPES.includes(file.type.toLowerCase())) {
+      setServerError('Unsupported file format. Please upload a JPEG, PNG, or WebP image.');
+      return;
+    }
+
+    // Client-side validation: file size (max 5MB)
+    if (file.size > MAX_IMAGE_SIZE_BYTES) {
+      setServerError('File size limit exceeded. Maximum allowed size is 5MB.');
+      return;
+    }
+
     try {
       setIsSaving(true);
+      setServerError(null);
+
       const res = await profileService.uploadAvatar(file);
       const avatarUrl = res?.data?.url || res?.user?.avatar;
+
       if (avatarUrl) {
-        handleChange('avatar', avatarUrl);
+        setFormData((prev) => ({ ...prev, avatar: avatarUrl }));
         updateProfile({ avatar: avatarUrl });
-        setSaveSuccess(true);
-        setTimeout(() => setSaveSuccess(false), 3000);
+        setPhotoUpdated(true);
       }
     } catch (err) {
-      console.warn('Backend image upload failed, falling back to local preview:', err.message);
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        handleChange('avatar', e.target.result);
-      };
-      reader.readAsDataURL(file);
+      console.error('Backend image upload failed:', err.message);
+      setServerError(err.message || 'Failed to upload profile photo. Please try again.');
     } finally {
       setIsSaving(false);
     }
@@ -111,14 +126,16 @@ export function useProfile() {
   const handlePhotoRemove = async () => {
     try {
       setIsSaving(true);
+      setServerError(null);
+
       await profileService.deleteAvatar();
-      handleChange('avatar', '');
+
+      setFormData((prev) => ({ ...prev, avatar: '' }));
       updateProfile({ avatar: '' });
-      setSaveSuccess(true);
-      setTimeout(() => setSaveSuccess(false), 3000);
+      setPhotoUpdated(true);
     } catch (err) {
-      console.warn('Backend delete avatar failed:', err.message);
-      handleChange('avatar', '');
+      console.error('Backend delete avatar failed:', err.message);
+      setServerError(err.message || 'Failed to remove profile photo. Please try again.');
     } finally {
       setIsSaving(false);
     }
@@ -159,6 +176,7 @@ export function useProfile() {
       updateProfile(updatedUser);
 
       setSavedData(formData);
+      setPhotoUpdated(false);
       setIsSaving(false);
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 3500);
@@ -170,10 +188,24 @@ export function useProfile() {
     }
   };
 
-  const cancelChanges = () => {
+  const cancelChanges = async () => {
+    const previousAvatar = savedData.avatar;
+    const currentAvatar = formData.avatar;
+
     setFormData(savedData);
+    setPhotoUpdated(false);
     setErrors({});
     setServerError(null);
+
+    // If avatar was changed on server during this session and user canceled, revert avatar in DB
+    if (currentAvatar !== previousAvatar) {
+      try {
+        await profileService.updateProfile({ avatar: previousAvatar });
+        updateProfile({ avatar: previousAvatar });
+      } catch (err) {
+        console.warn('Could not revert avatar on cancel:', err.message);
+      }
+    }
   };
 
   const toggle2FA = () => {
@@ -185,10 +217,11 @@ export function useProfile() {
     savedData,
     errors,
     serverError,
-    isDirty,
+    isDirty: isDirty || photoUpdated,
     isSaving,
     isLoading,
     saveSuccess,
+    photoUpdated,
     handleChange,
     handlePhotoUpload,
     handlePhotoRemove,

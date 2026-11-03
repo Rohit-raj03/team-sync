@@ -12,6 +12,7 @@ export const ProfilePhotoSection = ({
   fullName,
   onUpload,
   onRemove,
+  isSaving = false,
 }) => {
   const fileInputRef = useRef(null);
 
@@ -30,6 +31,8 @@ export const ProfilePhotoSection = ({
     if (file) {
       onUpload(file);
     }
+    // Reset file input so selecting the same file again triggers onChange
+    e.target.value = "";
   };
 
   return (
@@ -54,7 +57,8 @@ export const ProfilePhotoSection = ({
           <button
             type="button"
             onClick={() => fileInputRef.current?.click()}
-            className="absolute bottom-1 right-1 w-8 h-8 rounded-full bg-white shadow-md border border-slate-200 text-slate-700 hover:text-[#4361EE] hover:bg-slate-50 flex items-center justify-center transition-all"
+            disabled={isSaving}
+            className="absolute bottom-1 right-1 w-8 h-8 rounded-full bg-white shadow-md border border-slate-200 text-slate-700 hover:text-[#4361EE] hover:bg-slate-50 flex items-center justify-center transition-all disabled:opacity-50"
             title="Upload photo"
           >
             <Camera size={15} />
@@ -78,14 +82,15 @@ export const ProfilePhotoSection = ({
               type="file"
               ref={fileInputRef}
               onChange={handleFileChange}
-              accept="image/png, image/jpeg, image/gif, image/webp"
+              accept="image/png, image/jpeg, image/webp"
               className="hidden"
             />
 
             <button
               type="button"
               onClick={() => fileInputRef.current?.click()}
-              className="px-4 py-2 rounded-2xl bg-[#F4F7FB] hover:bg-slate-100 text-slate-700 text-xs font-semibold flex items-center gap-2 border border-slate-200/80 transition-colors"
+              disabled={isSaving}
+              className="px-4 py-2 rounded-2xl bg-[#F4F7FB] hover:bg-slate-100 text-slate-700 text-xs font-semibold flex items-center gap-2 border border-slate-200/80 transition-colors disabled:opacity-50"
             >
               <UploadCloud size={15} className="text-[#4361EE]" />
               <span>Change Photo</span>
@@ -95,7 +100,8 @@ export const ProfilePhotoSection = ({
               <button
                 type="button"
                 onClick={onRemove}
-                className="px-3.5 py-2 rounded-2xl bg-white hover:bg-rose-50 text-rose-600 hover:text-rose-700 text-xs font-semibold flex items-center gap-1.5 border border-slate-200/80 hover:border-rose-200 transition-colors"
+                disabled={isSaving}
+                className="px-3.5 py-2 rounded-2xl bg-white hover:bg-rose-50 text-rose-600 hover:text-rose-700 text-xs font-semibold flex items-center gap-1.5 border border-slate-200/80 hover:border-rose-200 transition-colors disabled:opacity-50"
               >
                 <Trash2 size={14} />
                 <span>Remove</span>
@@ -104,7 +110,7 @@ export const ProfilePhotoSection = ({
           </div>
 
           <p className="text-[11px] text-slate-400 font-medium pt-1">
-            Supported formats: JPG, PNG, GIF, or WebP. Maximum file size: 5MB.
+            Supported formats: JPG, PNG, or WebP. Maximum file size: 5MB.
           </p>
         </div>
       </div>

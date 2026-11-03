@@ -1,4 +1,4 @@
-import { apiClient } from '../../../shared/api/apiClient.js';
+import { apiClient } from "../../../shared/api/apiClient.js";
 
 /**
  * Profile Feature Service
@@ -9,17 +9,17 @@ import { apiClient } from '../../../shared/api/apiClient.js';
  */
 export const profileService = {
   getProfile: async () => {
-    const response = await apiClient.get('/users/profile');
+    const response = await apiClient.get("/users/profile");
     return response;
   },
 
   updateProfile: async (data) => {
-    const response = await apiClient.put('/users/profile', data);
+    const response = await apiClient.put("/users/profile", data);
     return response;
   },
 
   changePassword: async ({ currentPassword, newPassword }) => {
-    const response = await apiClient.put('/users/change-password', {
+    const response = await apiClient.put("/users/change-password", {
       currentPassword,
       newPassword,
     });
@@ -28,18 +28,17 @@ export const profileService = {
 
   uploadAvatar: async (file) => {
     const formData = new FormData();
-    formData.append('image', file);
-    const response = await apiClient.patch('/users/profile/image', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    });
+    formData.append("image", file);
+
+    const response = await apiClient.patch("/users/profile/image", formData);
+
     return response;
   },
 
   deleteAvatar: async () => {
-    const response = await apiClient.delete('/users/profile/image');
+    const response = await apiClient.delete("/users/profile/image");
     return response;
   },
 };
 
 export default profileService;
-

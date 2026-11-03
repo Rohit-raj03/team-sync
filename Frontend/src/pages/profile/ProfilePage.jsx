@@ -108,6 +108,7 @@ export const ProfilePage = () => {
           fullName={formData.fullName}
           onUpload={handlePhotoUpload}
           onRemove={handlePhotoRemove}
+          isSaving={isSaving}
         />
 
         {/* Section 2: Personal Information */}

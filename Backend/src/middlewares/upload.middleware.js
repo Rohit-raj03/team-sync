@@ -6,6 +6,7 @@ import config from "../config/config.js";
  */
 export const ALLOWED_MIME_TYPES = Object.freeze([
   "image/jpeg",
+  "image/jpg",
   "image/png",
   "image/webp",
 ]);
@@ -167,4 +168,3 @@ export default {
   detectImageSignature,
   uploadSingleImage,
 };
-
