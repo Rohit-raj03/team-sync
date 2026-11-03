@@ -45,6 +45,21 @@ export function useAuth() {
     }
   };
 
+  const loginWithGoogle = async (credential) => {
+    try {
+      dispatch(loginStart());
+      const data = await authService.googleLogin(credential);
+      dispatch(loginSuccess(data));
+      showToast.auth.loginSuccess();
+      return data;
+    } catch (err) {
+      const errMsg = err.message || 'Google sign in failed';
+      dispatch(loginFailure(errMsg));
+      showToast.auth.loginError(err);
+      throw err;
+    }
+  };
+
   const checkAuth = async () => {
     if (!token) return null;
     try {
@@ -84,9 +99,12 @@ export function useAuth() {
     error,
     login,
     register,
+    loginWithGoogle,
     checkAuth,
     updateProfile,
     clearAuthError,
     logout,
   };
 }
+
+export default useAuth;

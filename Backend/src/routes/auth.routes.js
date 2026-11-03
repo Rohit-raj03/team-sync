@@ -2,6 +2,7 @@ import express from "express";
 import {
   registerUser,
   loginUser,
+  googleAuthUser,
   refreshAccessToken,
   logoutUser,
   getMe,
@@ -12,16 +13,17 @@ import { protect } from "../middlewares/auth.middleware.js";
 
 const router = express.Router();
 
-// Public routes
+// Public Authentication Routes
 router.post("/register", registerUser);
 router.post("/login", loginUser);
+router.post("/google", googleAuthUser);
 router.post("/refresh-token", refreshAccessToken);
-router.post("/refresh", refreshAccessToken); // Convenient alias
+router.post("/refresh", refreshAccessToken); // Alias
 router.post("/logout", logoutUser);
 router.post("/forgot-password", forgotPassword);
 router.post("/reset-password", resetPassword);
 
-// Protected routes
+// Protected Authentication Routes
 router.get("/me", protect, getMe);
 
 export default router;

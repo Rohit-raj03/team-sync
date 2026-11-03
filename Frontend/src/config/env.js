@@ -13,6 +13,10 @@ const API_BASE_URL = cleanUrl.endsWith("/api") ? cleanUrl : `${cleanUrl}/api`;
 export const env = {
   API_BASE_URL,
   APP_NAME: (import.meta.env.VITE_APP_NAME || "Team Sync").trim(),
+  GOOGLE_CLIENT_ID: (
+    import.meta.env.VITE_GOOGLE_CLIENT_ID ||
+    "579849600986-538stk5hoe6gij2b43806eajvgsqeprf.apps.googleusercontent.com"
+  ).trim(),
 };
 
 export default env;

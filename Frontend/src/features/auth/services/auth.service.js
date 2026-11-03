@@ -31,6 +31,21 @@ export const authService = {
     }
   },
 
+  googleLogin: async (credential) => {
+    try {
+      const response = await apiClient.post("/auth/google", { credential });
+      return response;
+    } catch (error) {
+      if (error.status === 401 || error.status === 400 || error.status === 403) {
+        throw error;
+      }
+      if (error.message?.includes("Network Error") || !error.status) {
+        throw new Error("Unable to connect to the server. Please check your network or server status.");
+      }
+      throw error;
+    }
+  },
+
   requestPasswordReset: async (email) => {
     const response = await apiClient.post("/auth/forgot-password", { email });
     return response;
@@ -53,3 +68,5 @@ export const authService = {
     }
   },
 };
+
+export default authService;

@@ -26,8 +26,21 @@ const userSchema = new mongoose.Schema(
 
     password: {
       type: String,
-      required: [true, "Password is required"],
+      required: function () {
+        return !this.googleId;
+      },
       minlength: [6, "Password must be at least 6 characters long"],
+    },
+
+    googleId: {
+      type: String,
+      unique: true,
+      sparse: true,
+    },
+
+    isEmailVerified: {
+      type: Boolean,
+      default: false,
     },
 
     role: {
@@ -77,7 +90,6 @@ const userSchema = new mongoose.Schema(
       default: "",
     },
 
-
     twoFactorEnabled: {
       type: Boolean,
       default: false,
@@ -111,9 +123,9 @@ const userSchema = new mongoose.Schema(
   },
 );
 
-// Password hash
+// Hash password with bcrypt before saving (only if modified and present)
 userSchema.pre("save", async function (next) {
-  if (!this.isModified("password")) {
+  if (!this.isModified("password") || !this.password) {
     return next();
   }
 
@@ -123,6 +135,7 @@ userSchema.pre("save", async function (next) {
 
 // Compare password for login verification
 userSchema.methods.comparePassword = function (plainPassword) {
+  if (!this.password) return false;
   return bcrypt.compare(plainPassword, this.password);
 };
 
