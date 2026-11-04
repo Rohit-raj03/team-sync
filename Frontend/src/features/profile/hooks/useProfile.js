@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { useAuth } from '../../auth/hooks/useAuth.js';
 import { profileService } from '../services/profile.service.js';
 
@@ -8,7 +8,7 @@ const MAX_IMAGE_SIZE_BYTES = 5 * 1024 * 1024; // 5MB
 /**
  * Feature Hook: useProfile
  * Layer: features/profile/hooks/
- * Responsibility: Manages profile form state, dirty tracking, image uploads, validation,
+ * Responsibility: Manages profile form state, dirty tracking, deferred image uploads, validation,
  * communicates with the real backend API, and synchronizes with Redux.
  */
 export function useProfile() {
@@ -30,12 +30,24 @@ export function useProfile() {
 
   const [savedData, setSavedData] = useState(() => mapUserToProfile(user));
   const [formData, setFormData] = useState(() => mapUserToProfile(user));
+  const [pendingAvatarFile, setPendingAvatarFile] = useState(null);
+  const [isAvatarRemoved, setIsAvatarRemoved] = useState(false);
   const [errors, setErrors] = useState({});
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [serverError, setServerError] = useState(null);
-  const [photoUpdated, setPhotoUpdated] = useState(false);
+
+  const previewUrlRef = useRef(null);
+
+  // Clean up any lingering object URL on unmount
+  useEffect(() => {
+    return () => {
+      if (previewUrlRef.current) {
+        URL.revokeObjectURL(previewUrlRef.current);
+      }
+    };
+  }, []);
 
   // Sync profile data from server on mount
   useEffect(() => {
@@ -66,7 +78,7 @@ export function useProfile() {
 
   // Sync when user prop in Redux changes if form is not dirty
   useEffect(() => {
-    if (user && JSON.stringify(formData) === JSON.stringify(savedData)) {
+    if (user && JSON.stringify(formData) === JSON.stringify(savedData) && !pendingAvatarFile && !isAvatarRemoved) {
       const mapped = mapUserToProfile(user);
       setFormData(mapped);
       setSavedData(mapped);
@@ -75,8 +87,11 @@ export function useProfile() {
 
   // Check if form has unsaved modifications
   const isDirty = useMemo(() => {
-    return JSON.stringify(formData) !== JSON.stringify(savedData);
-  }, [formData, savedData]);
+    const isFormModified = JSON.stringify(formData) !== JSON.stringify(savedData);
+    const hasPendingFile = Boolean(pendingAvatarFile);
+    const hasAvatarRemoval = isAvatarRemoved && Boolean(savedData.avatar);
+    return isFormModified || hasPendingFile || hasAvatarRemoval;
+  }, [formData, savedData, pendingAvatarFile, isAvatarRemoved]);
 
   const handleChange = (field, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -88,7 +103,11 @@ export function useProfile() {
     }
   };
 
-  const handlePhotoUpload = async (file) => {
+  /**
+   * Only updates the local preview when a file is selected.
+   * NO API call is dispatched here. API is called only on Save Changes.
+   */
+  const handlePhotoSelect = (file) => {
     if (!file) return;
 
     // Client-side validation: file type
@@ -103,42 +122,36 @@ export function useProfile() {
       return;
     }
 
-    try {
-      setIsSaving(true);
-      setServerError(null);
+    setServerError(null);
 
-      const res = await profileService.uploadAvatar(file);
-      const avatarUrl = res?.data?.url || res?.user?.avatar;
-
-      if (avatarUrl) {
-        setFormData((prev) => ({ ...prev, avatar: avatarUrl }));
-        updateProfile({ avatar: avatarUrl });
-        setPhotoUpdated(true);
-      }
-    } catch (err) {
-      console.error('Backend image upload failed:', err.message);
-      setServerError(err.message || 'Failed to upload profile photo. Please try again.');
-    } finally {
-      setIsSaving(false);
+    // Revoke previous preview URL if any
+    if (previewUrlRef.current) {
+      URL.revokeObjectURL(previewUrlRef.current);
     }
+
+    // Create local preview URL without triggering any API request
+    const previewUrl = URL.createObjectURL(file);
+    previewUrlRef.current = previewUrl;
+
+    // Update pending file and preview
+    setPendingAvatarFile(file);
+    setIsAvatarRemoved(false);
+    setFormData((prev) => ({ ...prev, avatar: previewUrl }));
   };
 
-  const handlePhotoRemove = async () => {
-    try {
-      setIsSaving(true);
-      setServerError(null);
-
-      await profileService.deleteAvatar();
-
-      setFormData((prev) => ({ ...prev, avatar: '' }));
-      updateProfile({ avatar: '' });
-      setPhotoUpdated(true);
-    } catch (err) {
-      console.error('Backend delete avatar failed:', err.message);
-      setServerError(err.message || 'Failed to remove profile photo. Please try again.');
-    } finally {
-      setIsSaving(false);
+  /**
+   * Only updates local state when avatar is removed.
+   * NO API call is dispatched here. API is called only on Save Changes.
+   */
+  const handlePhotoRemove = () => {
+    setServerError(null);
+    if (previewUrlRef.current) {
+      URL.revokeObjectURL(previewUrlRef.current);
+      previewUrlRef.current = null;
     }
+    setPendingAvatarFile(null);
+    setIsAvatarRemoved(true);
+    setFormData((prev) => ({ ...prev, avatar: '' }));
   };
 
   const validate = () => {
@@ -150,6 +163,9 @@ export function useProfile() {
     return Object.keys(errs).length === 0;
   };
 
+  /**
+   * Dispatches upload API and updates profile when user clicks Save Changes.
+   */
   const saveChanges = async () => {
     if (!validate()) return false;
 
@@ -157,10 +173,29 @@ export function useProfile() {
     setServerError(null);
 
     try {
+      let finalAvatarUrl = formData.avatar;
+
+      // 1. If an image file was selected, upload it to the server now
+      if (pendingAvatarFile) {
+        const uploadRes = await profileService.uploadAvatar(pendingAvatarFile);
+        finalAvatarUrl = uploadRes?.data?.url || uploadRes?.user?.avatar || finalAvatarUrl;
+
+        // Clean up preview URL
+        if (previewUrlRef.current) {
+          URL.revokeObjectURL(previewUrlRef.current);
+          previewUrlRef.current = null;
+        }
+      } else if (isAvatarRemoved && savedData.avatar) {
+        // 2. If avatar was marked for removal, call delete avatar endpoint now
+        await profileService.deleteAvatar();
+        finalAvatarUrl = '';
+      }
+
+      // 3. Update the rest of the profile
       const payload = {
         name: formData.fullName.trim(),
         username: formData.username.trim(),
-        avatar: formData.avatar,
+        avatar: finalAvatarUrl,
         jobTitle: formData.jobTitle.trim(),
         bio: formData.bio.trim(),
         phone: formData.phoneNumber.trim(),
@@ -170,13 +205,20 @@ export function useProfile() {
       };
 
       const response = await profileService.updateProfile(payload);
-      const updatedUser = response?.user || payload;
+      const updatedUser = response?.user || { ...payload, avatar: finalAvatarUrl };
 
       // Sync with Redux Auth State & localStorage
       updateProfile(updatedUser);
 
-      setSavedData(formData);
-      setPhotoUpdated(false);
+      const syncedProfile = {
+        ...formData,
+        avatar: finalAvatarUrl,
+      };
+
+      setFormData(syncedProfile);
+      setSavedData(syncedProfile);
+      setPendingAvatarFile(null);
+      setIsAvatarRemoved(false);
       setIsSaving(false);
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 3500);
@@ -188,24 +230,16 @@ export function useProfile() {
     }
   };
 
-  const cancelChanges = async () => {
-    const previousAvatar = savedData.avatar;
-    const currentAvatar = formData.avatar;
-
+  const cancelChanges = () => {
+    if (previewUrlRef.current) {
+      URL.revokeObjectURL(previewUrlRef.current);
+      previewUrlRef.current = null;
+    }
+    setPendingAvatarFile(null);
+    setIsAvatarRemoved(false);
     setFormData(savedData);
-    setPhotoUpdated(false);
     setErrors({});
     setServerError(null);
-
-    // If avatar was changed on server during this session and user canceled, revert avatar in DB
-    if (currentAvatar !== previousAvatar) {
-      try {
-        await profileService.updateProfile({ avatar: previousAvatar });
-        updateProfile({ avatar: previousAvatar });
-      } catch (err) {
-        console.warn('Could not revert avatar on cancel:', err.message);
-      }
-    }
   };
 
   const toggle2FA = () => {
@@ -215,15 +249,17 @@ export function useProfile() {
   return {
     formData,
     savedData,
+    pendingAvatarFile,
+    isAvatarRemoved,
     errors,
     serverError,
-    isDirty: isDirty || photoUpdated,
+    isDirty,
     isSaving,
     isLoading,
     saveSuccess,
-    photoUpdated,
     handleChange,
-    handlePhotoUpload,
+    handlePhotoSelect,
+    handlePhotoUpload: handlePhotoSelect, // backward compatibility
     handlePhotoRemove,
     saveChanges,
     cancelChanges,
