@@ -20,6 +20,7 @@ import { Modal } from "../../shared/components/ui/Modal.jsx";
 import { ProjectMembers } from "../../features/projects/components/ProjectMembers.jsx";
 import { ProjectTaskList } from "../../features/projects/components/ProjectTaskList.jsx";
 import { ProjectForm } from "../../features/projects/components/ProjectForm.jsx";
+import { CreateProjectModal } from "../../features/projects/components/CreateProjectModal.jsx";
 import { CreateTaskModal } from "../../features/tasks/components/CreateTaskModal.jsx";
 import { TaskDetails } from "../../features/tasks/components/TaskDetails.jsx";
 import { useProjects } from "../../features/projects/hooks/useProjects.js";
@@ -218,7 +219,7 @@ export const ProjectDetailsPage = () => {
               Target Deadline
             </span>
             <span className="font-semibold text-slate-700 mt-0.5 block">
-              {project.dueDate ? formatDate(project.dueDate) : "No due date"}
+              {project.dueDate || project.endDate ? formatDate(project.dueDate || project.endDate) : "No due date"}
             </span>
           </div>
 
@@ -294,18 +295,13 @@ export const ProjectDetailsPage = () => {
       />
 
       {/* 6. Edit Project Modal */}
-      <Modal
+      <CreateProjectModal
         isOpen={isEditProjectOpen}
         onClose={() => setIsEditProjectOpen(false)}
-        title="Edit Project Details"
-        maxWidth="max-w-2xl"
-      >
-        <ProjectForm
-          initialData={project}
-          onSubmit={handleEditProject}
-          onCancel={() => setIsEditProjectOpen(false)}
-        />
-      </Modal>
+        onSubmit={handleEditProject}
+        initialData={project}
+        mode="edit"
+      />
 
       {/* 7. Task Details Modal */}
       <Modal

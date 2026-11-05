@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   FolderKanban,
   Calendar,
@@ -13,6 +13,7 @@ import {
   X,
 } from "lucide-react";
 import { ProjectMemberTagSelector } from "./ProjectMemberTagSelector.jsx";
+import { formatDateForInput } from "../../../shared/utils/formatDate.js";
 
 const PROJECT_CATEGORIES = [
   "Web Application",
@@ -33,37 +34,111 @@ const COLOR_PALETTES = [
 ];
 
 /**
+ * Resolves project attributes with date formatting strictly matching HTML5 <input type="date" /> (YYYY-MM-DD).
+ * Preserves the exact date portion of ISO strings without timezone shifting.
+ */
+const resolveInitialProjectData = (init = {}, isEditMode = false) => {
+  const isEdit = isEditMode || Boolean(init?.id || init?._id);
+  const rawStartDate =
+    init?.startDate || init?.start_date || (isEdit ? init?.createdAt : null);
+  const rawDueDate =
+    init?.dueDate ||
+    init?.due_date ||
+    init?.endDate ||
+    init?.end_date ||
+    init?.targetDate ||
+    init?.deadline;
+
+  return {
+    name: init?.name || "",
+    description: init?.description || "",
+    category: init?.category || "Web Application",
+    status: (init?.status || "ACTIVE").toUpperCase().replace(/\s+/g, "_"),
+    priority: (init?.priority || "MEDIUM").toUpperCase(),
+    color: init?.color || init?.themeColor || "#4361EE",
+    startDate:
+      formatDateForInput(rawStartDate) ||
+      (isEdit ? "" : formatDateForInput(new Date())),
+    dueDate:
+      formatDateForInput(rawDueDate) ||
+      (isEdit
+        ? ""
+        : formatDateForInput(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000))),
+    members: Array.isArray(init?.members)
+      ? init.members.map((m) => {
+          if (m?.user && typeof m.user === "object") {
+            const uId = m.user._id || m.user.id;
+            return {
+              id: uId,
+              _id: uId,
+              name: m.user.name,
+              email: m.user.email,
+              avatar: m.user.avatar,
+              role: m.role || "Member",
+              projectRole: m.projectRole || "Contributor",
+              tags:
+                Array.isArray(m.tags) && m.tags.length > 0
+                  ? m.tags
+                  : m.projectRole
+                  ? [m.projectRole]
+                  : ["Contributor"],
+            };
+          }
+          return m;
+        })
+      : [],
+  };
+};
+
+/**
  * Feature Component: ProjectForm
  * Layer: features/projects/components/
  * Responsibility: Complete project creation and edit form with member tagging, schedule configuration, category classification, and validation.
  */
 export const ProjectForm = ({
   initialData = {},
+  mode = "create",
   onSubmit,
   onCancel,
   isSubmitting = false,
 }) => {
-  const [formData, setFormData] = useState({
-    name: initialData.name || "",
-    description: initialData.description || "",
-    category: initialData.category || "Web Application",
-    status: initialData.status || "ACTIVE",
-    priority: initialData.priority || "MEDIUM",
-    color: initialData.color || "#4361EE",
-    startDate: initialData.startDate || new Date().toISOString().split("T")[0],
-    dueDate:
-      initialData.dueDate ||
-      new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
-        .toISOString()
-        .split("T")[0],
-    members: initialData.members || [],
-  });
+  const isEdit =
+    mode === "edit" || Boolean(initialData?.id || initialData?._id);
+
+  const [formData, setFormData] = useState(() =>
+    resolveInitialProjectData(initialData, isEdit)
+  );
+  const [internalSubmitting, setInternalSubmitting] = useState(false);
+  const submitting = isSubmitting || internalSubmitting;
 
   const [errors, setErrors] = useState({});
 
+  // Safely synchronize form state when initialData changes without infinite loops
+  const prevInitialDataIdRef = useRef(initialData?.id || initialData?._id);
+  const prevInitialDataRef = useRef(initialData);
+
+  useEffect(() => {
+    const currentId = initialData?.id || initialData?._id;
+    const prevId = prevInitialDataIdRef.current;
+    const prev = prevInitialDataRef.current;
+
+    const hasProjectChanged =
+      currentId !== prevId ||
+      initialData?.updatedAt !== prev?.updatedAt ||
+      initialData?.startDate !== prev?.startDate ||
+      initialData?.dueDate !== prev?.dueDate ||
+      initialData?.name !== prev?.name;
+
+    if (hasProjectChanged) {
+      prevInitialDataIdRef.current = currentId;
+      prevInitialDataRef.current = initialData;
+      setFormData(resolveInitialProjectData(initialData, isEdit));
+    }
+  }, [initialData, isEdit]);
+
   const validate = () => {
     const errs = {};
-    if (!formData.name.trim()) {
+    if (!formData.name?.trim()) {
       errs.name = "Project name is required.";
     } else if (formData.name.trim().length < 3) {
       errs.name = "Project name must be at least 3 characters.";
@@ -79,10 +154,27 @@ export const ProjectForm = ({
     return Object.keys(errs).length === 0;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validate()) return;
-    onSubmit(formData);
+
+    const payload = {
+      ...formData,
+      name: formData.name.trim(),
+      description: formData.description.trim(),
+      startDate: formData.startDate || null,
+      dueDate: formData.dueDate || null,
+      endDate: formData.dueDate || null,
+    };
+
+    if (onSubmit) {
+      try {
+        setInternalSubmitting(true);
+        await onSubmit(payload);
+      } finally {
+        setInternalSubmitting(false);
+      }
+    }
   };
 
   return (
@@ -107,8 +199,8 @@ export const ProjectForm = ({
             placeholder="e.g. Next-Gen Client Portal"
             value={formData.name}
             onChange={(e) => {
-              setFormData({ ...formData, name: e.target.value });
-              if (errors.name) setErrors({ ...errors, name: null });
+              setFormData((prev) => ({ ...prev, name: e.target.value }));
+              if (errors.name) setErrors((prev) => ({ ...prev, name: null }));
             }}
             className={`w-full px-3.5 py-2 rounded-2xl border text-sm font-semibold transition-all ${
               errors.name
@@ -135,7 +227,10 @@ export const ProjectForm = ({
                   placeholder="Type category or select a tag below..."
                   value={formData.category}
                   onChange={(e) =>
-                    setFormData({ ...formData, category: e.target.value })
+                    setFormData((prev) => ({
+                      ...prev,
+                      category: e.target.value,
+                    }))
                   }
                   className="w-full pl-8 pr-8 py-2 rounded-xl border border-slate-200 text-xs font-semibold bg-white text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#4361EE] focus:border-transparent shadow-2xs"
                 />
@@ -146,7 +241,9 @@ export const ProjectForm = ({
                 {formData.category && (
                   <button
                     type="button"
-                    onClick={() => setFormData({ ...formData, category: "" })}
+                    onClick={() =>
+                      setFormData((prev) => ({ ...prev, category: "" }))
+                    }
                     className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-300 hover:text-slate-600 p-0.5 rounded cursor-pointer"
                     title="Clear category"
                   >
@@ -167,7 +264,10 @@ export const ProjectForm = ({
                     type="button"
                     key={palette.value}
                     onClick={() =>
-                      setFormData({ ...formData, color: palette.value })
+                      setFormData((prev) => ({
+                        ...prev,
+                        color: palette.value,
+                      }))
                     }
                     style={{ backgroundColor: palette.value }}
                     title={palette.label}
@@ -200,10 +300,10 @@ export const ProjectForm = ({
                     key={cat}
                     type="button"
                     onClick={() =>
-                      setFormData({
-                        ...formData,
+                      setFormData((prev) => ({
+                        ...prev,
                         category: isSelected ? "" : cat,
-                      })
+                      }))
                     }
                     className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
                       isSelected
@@ -230,7 +330,10 @@ export const ProjectForm = ({
             placeholder="Outline the core goals, deliverable scope, and technical roadmap for this project..."
             value={formData.description}
             onChange={(e) =>
-              setFormData({ ...formData, description: e.target.value })
+              setFormData((prev) => ({
+                ...prev,
+                description: e.target.value,
+              }))
             }
             className="w-full px-3 py-2 rounded-2xl border border-slate-200 text-xs text-slate-800 placeholder-slate-400 bg-white focus:outline-none focus:ring-2 focus:ring-[#4361EE] shadow-2xs resize-none leading-relaxed"
           />
@@ -247,14 +350,16 @@ export const ProjectForm = ({
             <select
               value={formData.status}
               onChange={(e) =>
-                setFormData({ ...formData, status: e.target.value })
+                setFormData((prev) => ({ ...prev, status: e.target.value }))
               }
               className="w-full px-2.5 py-1.5 rounded-xl border border-slate-200 text-xs font-semibold bg-white text-slate-800 focus:ring-2 focus:ring-[#4361EE]"
             >
               <option value="PLANNING">Planning</option>
               <option value="ACTIVE">Active</option>
               <option value="IN_PROGRESS">In Progress</option>
+              <option value="ON_HOLD">On Hold</option>
               <option value="COMPLETED">Completed</option>
+              <option value="ARCHIVED">Archived</option>
             </select>
           </div>
 
@@ -265,7 +370,7 @@ export const ProjectForm = ({
             <select
               value={formData.priority}
               onChange={(e) =>
-                setFormData({ ...formData, priority: e.target.value })
+                setFormData((prev) => ({ ...prev, priority: e.target.value }))
               }
               className="w-full px-2.5 py-1.5 rounded-xl border border-slate-200 text-xs font-semibold bg-white text-slate-800 focus:ring-2 focus:ring-[#4361EE]"
             >
@@ -282,9 +387,13 @@ export const ProjectForm = ({
             </label>
             <input
               type="date"
-              value={formData.startDate}
+              name="startDate"
+              value={formData.startDate || ""}
               onChange={(e) =>
-                setFormData({ ...formData, startDate: e.target.value })
+                setFormData((prev) => ({
+                  ...prev,
+                  startDate: e.target.value,
+                }))
               }
               className="w-full px-2 py-1.5 rounded-xl border border-slate-200 text-xs bg-white text-slate-800 focus:ring-2 focus:ring-[#4361EE]"
             />
@@ -296,10 +405,13 @@ export const ProjectForm = ({
             </label>
             <input
               type="date"
-              value={formData.dueDate}
+              name="dueDate"
+              value={formData.dueDate || ""}
               onChange={(e) => {
-                setFormData({ ...formData, dueDate: e.target.value });
-                if (errors.dueDate) setErrors({ ...errors, dueDate: null });
+                const val = e.target.value;
+                setFormData((prev) => ({ ...prev, dueDate: val }));
+                if (errors.dueDate)
+                  setErrors((prev) => ({ ...prev, dueDate: null }));
               }}
               className={`w-full px-2 py-1.5 rounded-xl border text-xs bg-white text-slate-800 focus:ring-2 ${
                 errors.dueDate
@@ -321,7 +433,7 @@ export const ProjectForm = ({
         <ProjectMemberTagSelector
           taggedMembers={formData.members}
           onChange={(newMembers) =>
-            setFormData({ ...formData, members: newMembers })
+            setFormData((prev) => ({ ...prev, members: newMembers }))
           }
         />
       </div>
@@ -332,7 +444,7 @@ export const ProjectForm = ({
           <button
             type="button"
             onClick={onCancel}
-            disabled={isSubmitting}
+            disabled={submitting}
             className="px-4 py-2 rounded-xl border border-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-50 transition-colors disabled:opacity-50 cursor-pointer"
           >
             Cancel
@@ -340,10 +452,10 @@ export const ProjectForm = ({
         )}
         <button
           type="submit"
-          disabled={isSubmitting}
+          disabled={submitting}
           className="px-6 py-2 rounded-xl bg-[#4361EE] hover:bg-[#3451DE] active:scale-98 text-white text-xs font-bold shadow-md shadow-indigo-100 transition-all flex items-center gap-2 disabled:opacity-60 cursor-pointer"
         >
-          {isSubmitting ? (
+          {submitting ? (
             <>
               <Loader2 size={14} className="animate-spin" />
               <span>Saving Project...</span>
@@ -351,11 +463,7 @@ export const ProjectForm = ({
           ) : (
             <>
               <Check size={14} strokeWidth={2.5} />
-              <span>
-                {initialData.id || initialData._id
-                  ? "Update Project"
-                  : "Create Project"}
-              </span>
+              <span>{isEdit ? "Update Project" : "Create Project"}</span>
             </>
           )}
         </button>

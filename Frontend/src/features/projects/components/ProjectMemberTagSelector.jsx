@@ -61,9 +61,15 @@ export const ProjectMemberTagSelector = ({
 
   // Find tagged record by member id
   const getTaggedRecord = (memberId) => {
-    return taggedMembers.find(
-      (m) => (m.id || m._id)?.toString() === memberId?.toString(),
-    );
+    return taggedMembers.find((m) => {
+      const id =
+        m.id ||
+        m._id ||
+        m.user?._id ||
+        m.user?.id ||
+        (typeof m.user === "string" ? m.user : null);
+      return id?.toString() === memberId?.toString();
+    });
   };
 
   const isTagged = (memberId) => Boolean(getTaggedRecord(memberId));
