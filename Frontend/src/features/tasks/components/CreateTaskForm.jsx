@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
+
 import {
   Calendar,
   Clock,
@@ -12,7 +13,6 @@ import {
   List,
   Link as LinkIcon,
   MessageSquare,
-  Sparkles,
   Loader2,
 } from "lucide-react";
 import {
@@ -28,6 +28,7 @@ import { TaskTagsInput } from "./TaskTagsInput.jsx";
 import { MentionTextarea } from "./MentionTextarea.jsx";
 import { useProjects } from "../../projects/hooks/useProjects.js";
 import { useTeam } from "../../team/hooks/useTeam.js";
+import { taskService } from "../services/task.service.js";
 
 const ESTIMATION_PRESETS = ["2h", "4h", "1d", "2d", "3d", "1w"];
 
@@ -101,6 +102,46 @@ export const CreateTaskForm = ({
   const [internalSubmitting, setInternalSubmitting] = useState(false);
   const submitting = isSubmitting || internalSubmitting;
 
+  // Track if task is successfully saved to prevent cleanup on unmount
+  const isSavedRef = useRef(false);
+  const currentAttachmentsRef = useRef(formData.attachments);
+  const cleanedUpFileIdsRef = useRef(new Set());
+
+  useEffect(() => {
+    currentAttachmentsRef.current = formData.attachments;
+  }, [formData.attachments]);
+
+  // Clean up any files uploaded during this session from ImageKit if task is cancelled / not saved
+  const deleteSessionUploadedFiles = () => {
+    if (isSavedRef.current) return;
+    const initialFileIds = new Set(
+      (initialData?.attachments || [])
+        .map((a) => a.fileId || a._id || a.id)
+        .filter(Boolean),
+    );
+    const newlyAdded = (currentAttachmentsRef.current || []).filter(
+      (a) => a.fileId && !initialFileIds.has(a.fileId),
+    );
+    for (const item of newlyAdded) {
+      if (item.fileId && !cleanedUpFileIdsRef.current.has(item.fileId)) {
+        cleanedUpFileIdsRef.current.add(item.fileId);
+        taskService.deleteImageKitFile(item.fileId).catch(() => {});
+      }
+    }
+  };
+
+  const deleteSessionUploadedFilesRef = useRef(deleteSessionUploadedFiles);
+  useEffect(() => {
+    deleteSessionUploadedFilesRef.current = deleteSessionUploadedFiles;
+  });
+
+  useEffect(() => {
+    return () => {
+      // Trigger deletion for all uploaded fileIds from the current session if closed without saving
+      deleteSessionUploadedFilesRef.current?.();
+    };
+  }, []);
+
   useEffect(() => {
     if (
       initialData &&
@@ -168,6 +209,7 @@ export const CreateTaskForm = ({
         };
 
         await onSubmit(submissionData);
+        isSavedRef.current = true;
       } catch (err) {
         console.error("Task submission error:", err);
         setServerError(
@@ -179,6 +221,12 @@ export const CreateTaskForm = ({
         setInternalSubmitting(false);
       }
     }
+  };
+
+  const handleCancel = async () => {
+    // Delete all files uploaded in this session from ImageKit
+    deleteSessionUploadedFiles();
+    onCancel?.();
   };
 
   const applyTimePreset = (preset) => {
@@ -336,6 +384,7 @@ export const CreateTaskForm = ({
               onChange={(newAttachments) =>
                 setFormData({ ...formData, attachments: newAttachments })
               }
+              disabled={submitting}
             />
           </div>
 
@@ -594,7 +643,7 @@ export const CreateTaskForm = ({
         {onCancel && (
           <button
             type="button"
-            onClick={onCancel}
+            onClick={handleCancel}
             disabled={submitting}
             className="w-full sm:w-auto px-6 py-2.5 rounded-2xl border border-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-100 hover:text-slate-800 transition-colors disabled:opacity-50"
           >

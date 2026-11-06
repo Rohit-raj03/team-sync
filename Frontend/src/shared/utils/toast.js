@@ -59,6 +59,29 @@ export const showToast = {
     error: (err) => toast.error(extractErrorMessage(err, 'Something went wrong.')),
   },
 
+  // Attachment Notifications
+  attachments: {
+    uploadStarted: (count = 1) =>
+      toast.loading(`Uploading ${count} attachment${count > 1 ? 's' : ''}...`, {
+        id: 'upload-attachment-toast',
+      }),
+    uploadCompleted: (count = 1) => {
+      toast.dismiss('upload-attachment-toast');
+      return toast.success(
+        `${count} attachment${count > 1 ? 's' : ''} uploaded.`
+      );
+    },
+    uploadFailed: (err) => {
+      toast.dismiss('upload-attachment-toast');
+      return toast.error(
+        extractErrorMessage(err, 'Failed to upload attachment.')
+      );
+    },
+    removed: () => toast.success('Attachment removed.'),
+    removeFailed: (err) =>
+      toast.error(extractErrorMessage(err, 'Failed to remove attachment.')),
+  },
+
   // Project Notifications
   projects: {
     created: () => toast.success('Project created.'),

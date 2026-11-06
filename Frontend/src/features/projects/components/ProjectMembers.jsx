@@ -3,8 +3,6 @@ import {
   Users,
   UserPlus,
   X,
-  Shield,
-  ShieldAlert,
   ShieldCheck,
   Mail,
   Check,
@@ -85,7 +83,8 @@ export const ProjectMembers = ({
   const [loadingEligible, setLoadingEligible] = useState(false);
   const [selectedUserToAdd, setSelectedUserToAdd] = useState(null);
   const [newMemberRole, setNewMemberRole] = useState("Member");
-  const [newMemberProjectRole, setNewMemberProjectRole] = useState("Contributor");
+  const [newMemberProjectRole, setNewMemberProjectRole] =
+    useState("Contributor");
   const [addError, setAddError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -99,7 +98,7 @@ export const ProjectMembers = ({
         (m.email || "").toLowerCase().includes(q) ||
         (m.username || "").toLowerCase().includes(q) ||
         (m.role || "").toLowerCase().includes(q) ||
-        (m.projectRole || "").toLowerCase().includes(q)
+        (m.projectRole || "").toLowerCase().includes(q),
     );
   }, [members, memberSearchQuery]);
 
@@ -113,7 +112,7 @@ export const ProjectMembers = ({
       try {
         const res = await projectService.getEligibleMembers(
           projectId,
-          eligibleSearch.trim()
+          eligibleSearch.trim(),
         );
         if (isMounted) {
           const list = res?.users || res?.data || [];
@@ -151,7 +150,7 @@ export const ProjectMembers = ({
         await onTagMember(
           selectedUserToAdd,
           newMemberProjectRole,
-          newMemberRole
+          newMemberRole,
         );
       }
       setSelectedUserToAdd(null);
@@ -190,11 +189,17 @@ export const ProjectMembers = ({
                 Project Team ({members.length})
               </h3>
               <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">
-                {members.filter((m) => m.role === "Admin" || m.role === "Owner").length} Leads
+                {
+                  members.filter(
+                    (m) => m.role === "Admin" || m.role === "Owner",
+                  ).length
+                }{" "}
+                Leads
               </span>
             </div>
             <p className="text-[11px] text-slate-400">
-              Manage team members, assign access privileges, and allocate project responsibilities.
+              Manage team members, assign access privileges, and allocate
+              project responsibilities.
             </p>
           </div>
         </div>
@@ -285,7 +290,8 @@ export const ProjectMembers = ({
               </div>
             ) : eligibleUsers.length > 0 ? (
               eligibleUsers.map((user) => {
-                const isSelected = selectedUserToAdd?.id === (user.id || user._id);
+                const isSelected =
+                  selectedUserToAdd?.id === (user.id || user._id);
                 return (
                   <div
                     key={user.id || user._id}
@@ -457,7 +463,8 @@ export const ProjectMembers = ({
                         {member.name}
                       </p>
                       <p className="text-[11px] text-slate-400 truncate">
-                        {member.email || (member.username ? `@${member.username}` : "Member")}
+                        {member.email ||
+                          (member.username ? `@${member.username}` : "Member")}
                       </p>
                     </div>
                   </div>
@@ -553,7 +560,7 @@ export const ProjectMembers = ({
                           onClick={() => {
                             if (
                               window.confirm(
-                                `Remove ${member.name} from this project? They will also be removed from assigned tasks.`
+                                `Remove ${member.name} from this project? They will also be removed from assigned tasks.`,
                               )
                             ) {
                               onUntagMember(member.id);

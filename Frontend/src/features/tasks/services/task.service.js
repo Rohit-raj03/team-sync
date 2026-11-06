@@ -19,6 +19,33 @@ export const taskService = {
     apiClient.delete(`/tasks/${taskId}/comments/${commentId}`),
   clearTaskComments: async (taskId) =>
     apiClient.delete(`/tasks/${taskId}/comments`),
+  // Task Attachments
+  uploadAttachments: async (formData, options = {}) => {
+    const config = {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+      ...(typeof options === "function" ? { onUploadProgress: options } : options),
+    };
+    return apiClient.post("/tasks/attachments/upload", formData, config);
+  },
+  attachFilesToTask: async (taskId, formData, options = {}) => {
+    const config = {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+      ...(typeof options === "function" ? { onUploadProgress: options } : options),
+    };
+    return apiClient.post(`/tasks/${taskId}/attachments`, formData, config);
+  },
+  getTaskAttachments: async (taskId) =>
+    apiClient.get(`/tasks/${taskId}/attachments`),
+  deleteTaskAttachment: async (taskId, attachmentId) =>
+    apiClient.delete(`/tasks/${taskId}/attachments/${attachmentId}`),
+  deleteOrphanAttachment: async (fileId) =>
+    apiClient.delete(`/imagekit/file/${fileId}`),
+  deleteImageKitFile: async (fileId) =>
+    apiClient.delete(`/imagekit/file/${fileId}`),
 };
 
 export default taskService;

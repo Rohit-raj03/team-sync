@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { ArrowLeft, CheckCircle2, ChevronRight, Sparkles } from "lucide-react";
+import { ArrowLeft, CheckCircle2, ChevronRight } from "lucide-react";
 import { PageHeader } from "../../shared/components/layout/PageHeader.jsx";
 import { Card } from "../../shared/components/ui/Card.jsx";
 import { CreateTaskForm } from "../../features/tasks/components/CreateTaskForm.jsx";
@@ -20,15 +20,17 @@ export const CreateTaskPage = () => {
 
   const handleSubmit = async (taskData) => {
     setIsSubmitting(true);
-    // Simulate brief network delay for polish
-    await new Promise((resolve) => setTimeout(resolve, 400));
-    addTask(taskData);
-    setIsSubmitting(false);
-    setCreatedSuccess(true);
-
-    setTimeout(() => {
-      navigate(ROUTES.TASKS);
-    }, 900);
+    try {
+      await addTask(taskData);
+      setCreatedSuccess(true);
+      setTimeout(() => {
+        navigate(ROUTES.TASKS);
+      }, 700);
+    } catch (err) {
+      console.error("Create task failed:", err);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleCancel = () => {

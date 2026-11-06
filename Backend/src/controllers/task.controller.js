@@ -5,6 +5,12 @@ import UserModel from "../models/user.model.js";
 import CommentModel from "../models/comment.model.js";
 import NotificationModel from "../models/notification.model.js";
 import AuditLogModel from "../models/auditLog.model.js";
+import {
+  uploadImage,
+  deleteImage,
+  safeCleanupFile,
+  MEDIA_FOLDERS,
+} from "../services/imagekit.service.js";
 
 /**
  * Helper to parse @mentions from text and return matched member IDs
@@ -359,6 +365,34 @@ export const createTask = async (req, res) => {
         }))
       : [];
 
+    // Format & sanitize attachments
+    const sanitizedAttachments = [];
+    if (Array.isArray(attachments)) {
+      for (const att of attachments) {
+        if (!att || typeof att !== "object") continue;
+        const fileId = att.fileId || att.id;
+        const fileName = att.fileName || att.name;
+        const fileUrl = att.fileUrl || att.url;
+        if (!fileId || !fileName || !fileUrl) continue;
+
+        sanitizedAttachments.push({
+          fileId: String(fileId).trim(),
+          fileName: String(fileName).trim(),
+          name: String(fileName).trim(),
+          fileUrl: String(fileUrl).trim(),
+          url: String(fileUrl).trim(),
+          fileType: att.fileType || att.type || "document",
+          type: att.fileType || att.type || "document",
+          mimeType: att.mimeType || "",
+          fileSize: Number(att.fileSize) || 0,
+          thumbnailUrl:
+            att.thumbnailUrl || (att.fileType === "image" ? fileUrl : ""),
+          uploadedBy: att.uploadedBy || req.user._id,
+          uploadedAt: att.uploadedAt || new Date(),
+        });
+      }
+    }
+
     const task = await TaskModel.create({
       title: title.trim(),
       description: description || "",
@@ -375,7 +409,7 @@ export const createTask = async (req, res) => {
       assignedTo: assignedNames,
       tags: Array.isArray(tags) ? tags : [],
       subtasks: formattedSubtasks,
-      attachments: Array.isArray(attachments) ? attachments : [],
+      attachments: sanitizedAttachments,
       comment: comment || "",
       mentions: Array.from(combinedMentions),
     });
@@ -430,6 +464,17 @@ export const createTask = async (req, res) => {
       data: populated,
     });
   } catch (error) {
+    // Two-phase rollback: Clean up newly uploaded files from ImageKit if task creation fails
+    const rawAttachments = req.body?.attachments;
+    if (Array.isArray(rawAttachments)) {
+      for (const att of rawAttachments) {
+        const fileId = att?.fileId || att?.id;
+        if (fileId && typeof fileId === "string" && !fileId.startsWith("att-")) {
+          safeCleanupFile(fileId).catch(() => {});
+        }
+      }
+    }
+
     console.error("createTask error:", error.message);
     return res.status(500).json({
       success: false,
@@ -625,6 +670,44 @@ export const updateTask = async (req, res) => {
       }
     }
 
+    // Process & track attachments modification
+    let removedAttachmentFileIds = [];
+    if (req.body.attachments !== undefined) {
+      const oldAttachments = task.attachments || [];
+      const oldFileIds = oldAttachments.map((a) => a.fileId).filter(Boolean);
+
+      const sanitizedAttachments = [];
+      if (Array.isArray(req.body.attachments)) {
+        for (const att of req.body.attachments) {
+          if (!att || typeof att !== "object") continue;
+          const fileId = att.fileId || att.id;
+          const fileName = att.fileName || att.name;
+          const fileUrl = att.fileUrl || att.url;
+          if (!fileId || !fileName || !fileUrl) continue;
+
+          sanitizedAttachments.push({
+            fileId: String(fileId).trim(),
+            fileName: String(fileName).trim(),
+            name: String(fileName).trim(),
+            fileUrl: String(fileUrl).trim(),
+            url: String(fileUrl).trim(),
+            fileType: att.fileType || att.type || "document",
+            type: att.fileType || att.type || "document",
+            mimeType: att.mimeType || "",
+            fileSize: Number(att.fileSize) || 0,
+            thumbnailUrl:
+              att.thumbnailUrl || (att.fileType === "image" ? fileUrl : ""),
+            uploadedBy: att.uploadedBy || req.user._id,
+            uploadedAt: att.uploadedAt || new Date(),
+          });
+        }
+      }
+
+      const newFileIds = new Set(sanitizedAttachments.map((a) => a.fileId));
+      removedAttachmentFileIds = oldFileIds.filter((fId) => !newFileIds.has(fId));
+      task.attachments = sanitizedAttachments;
+    }
+
     const simpleFields = [
       "description",
       "status",
@@ -634,7 +717,6 @@ export const updateTask = async (req, res) => {
       "estimatedTime",
       "tags",
       "subtasks",
-      "attachments",
       "comment",
     ];
 
@@ -673,6 +755,24 @@ export const updateTask = async (req, res) => {
     }
 
     await task.save();
+
+    // Clean up removed ImageKit files only after DB save succeeds, and verify no other task references it
+    for (const fId of removedAttachmentFileIds) {
+      try {
+        const refCount = await TaskModel.countDocuments({
+          _id: { $ne: task._id },
+          "attachments.fileId": fId,
+        });
+        if (refCount === 0) {
+          await safeCleanupFile(fId);
+        }
+      } catch (cleanErr) {
+        console.warn(
+          `Could not verify/clean removed ImageKit file ${fId}:`,
+          cleanErr.message
+        );
+      }
+    }
 
     const populated = await TaskModel.findById(task._id)
       .populate("project", "name key color themeColor status category")
@@ -766,8 +866,29 @@ export const deleteTask = async (req, res) => {
       timestamp: new Date(),
     });
 
+    const taskAttachments = [...(task.attachments || [])];
+
     await CommentModel.deleteMany({ task: taskId });
     await TaskModel.findByIdAndDelete(taskId);
+
+    // Safely delete associated files from ImageKit if not referenced elsewhere
+    for (const att of taskAttachments) {
+      if (att.fileId) {
+        try {
+          const refCount = await TaskModel.countDocuments({
+            "attachments.fileId": att.fileId,
+          });
+          if (refCount === 0) {
+            await safeCleanupFile(att.fileId);
+          }
+        } catch (delErr) {
+          console.warn(
+            `Could not delete ImageKit file ${att.fileId} on task delete:`,
+            delErr.message
+          );
+        }
+      }
+    }
 
     return res.status(200).json({
       success: true,
@@ -1097,6 +1218,469 @@ export const clearTaskComments = async (req, res) => {
     return res.status(500).json({
       success: false,
       message: error.message || "Server error clearing comments",
+    });
+  }
+};
+
+/**
+ * @desc    Upload attachments to ImageKit (used by Create Task and Edit Task)
+ * @route   POST /api/tasks/attachments/upload
+ * @access  Private
+ */
+export const uploadTaskAttachments = async (req, res) => {
+  try {
+    const files =
+      req.uploadedAttachments ||
+      (req.files
+        ? Array.isArray(req.files)
+          ? req.files
+          : Object.values(req.files).flat()
+        : req.file
+          ? [req.file]
+          : []);
+
+    if (!files || files.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "No files uploaded. Please upload files using field name 'files' or 'file'.",
+      });
+    }
+
+    const uploadedResults = [];
+    const createdFileIds = [];
+
+    try {
+      for (const file of files) {
+        const result = await uploadImage({
+          buffer: file.buffer,
+          originalName: file.originalname,
+          mimeType: file.verifiedMimeType || file.mimetype,
+          folder: MEDIA_FOLDERS.ATTACHMENTS,
+          tags: ["attachment", "task", req.user._id.toString()],
+        });
+
+        createdFileIds.push(result.fileId);
+
+        uploadedResults.push({
+          fileId: result.fileId,
+          fileName: file.originalname,
+          name: file.originalname,
+          fileUrl: result.url,
+          url: result.url,
+          fileType: file.fileCategory || "document",
+          type: file.fileCategory || "document",
+          mimeType: file.verifiedMimeType || file.mimetype,
+          fileSize: file.size || result.size,
+          thumbnailUrl:
+            result.thumbnailUrl ||
+            (file.fileCategory === "image" ? result.url : ""),
+          uploadedBy: req.user._id,
+          uploadedAt: new Date(),
+        });
+      }
+
+      return res.status(200).json({
+        success: true,
+        message: `${uploadedResults.length} file(s) uploaded successfully`,
+        data: uploadedResults,
+        attachments: uploadedResults,
+      });
+    } catch (uploadError) {
+      // Clean up any files successfully uploaded during this batch before failure occurred
+      for (const fId of createdFileIds) {
+        await safeCleanupFile(fId);
+      }
+      throw uploadError;
+    }
+  } catch (error) {
+    console.error("uploadTaskAttachments error:", error.message);
+    const statusCode = error.statusCode || 500;
+    return res.status(statusCode).json({
+      success: false,
+      message: error.message || "Failed to upload attachments",
+    });
+  }
+};
+
+/**
+ * @desc    Get all attachments for a specific task
+ * @route   GET /api/tasks/:taskId/attachments
+ * @access  Private
+ */
+export const getTaskAttachments = async (req, res) => {
+  try {
+    const { taskId } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(taskId)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid task ID format",
+      });
+    }
+
+    const task = await TaskModel.findById(taskId)
+      .populate("project", "manager owner members")
+      .populate("attachments.uploadedBy", "name email avatar username");
+
+    if (!task) {
+      return res.status(404).json({
+        success: false,
+        message: "Task not found",
+      });
+    }
+
+    // Access authorization
+    if (task.project && !task.project.isProjectMember(req.user._id, req.user.role)) {
+      return res.status(403).json({
+        success: false,
+        message: "You are not authorized to view this task's attachments",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      count: task.attachments?.length || 0,
+      attachments: task.attachments || [],
+      data: task.attachments || [],
+    });
+  } catch (error) {
+    console.error("getTaskAttachments error:", error.message);
+    return res.status(500).json({
+      success: false,
+      message: "Server error retrieving task attachments",
+    });
+  }
+};
+
+/**
+ * @desc    Upload & attach files directly to an existing task
+ * @route   POST /api/tasks/:taskId/attachments
+ * @access  Private (Task Assignee, Creator, Project Manager, or Admin)
+ */
+export const attachFilesToTask = async (req, res) => {
+  let createdFileIds = [];
+
+  try {
+    const { taskId } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(taskId)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid task ID format",
+      });
+    }
+
+    const task = await TaskModel.findById(taskId);
+    if (!task) {
+      return res.status(404).json({
+        success: false,
+        message: "Task not found",
+      });
+    }
+
+    let project = null;
+    if (task.project) {
+      project = await ProjectModel.findById(task.project);
+      if (!project || !project.isProjectMember(req.user._id, req.user.role)) {
+        return res.status(403).json({
+          success: false,
+          message: "You are not authorized to modify tasks in this project",
+        });
+      }
+    }
+
+    const isCreator = task.creator?.toString() === req.user._id.toString();
+    const isAdmin = req.user.role === "admin";
+    const canManage = project ? project.canManageProject(req.user._id, req.user.role) : false;
+    const isAssignee = (task.assignees || []).some(
+      (a) => (a?._id || a)?.toString() === req.user._id.toString()
+    );
+
+    if (!isAdmin && !canManage && !isCreator && !isAssignee) {
+      return res.status(403).json({
+        success: false,
+        message: "You are not authorized to attach files to this task",
+      });
+    }
+
+    const files =
+      req.uploadedAttachments ||
+      (req.files
+        ? Array.isArray(req.files)
+          ? req.files
+          : Object.values(req.files).flat()
+        : req.file
+          ? [req.file]
+          : []);
+
+    if (!files || files.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: "No files provided to attach",
+      });
+    }
+
+    const newAttachments = [];
+
+    for (const file of files) {
+      const result = await uploadImage({
+        buffer: file.buffer,
+        originalName: file.originalname,
+        mimeType: file.verifiedMimeType || file.mimetype,
+        folder: MEDIA_FOLDERS.ATTACHMENTS,
+        tags: ["attachment", "task", taskId, req.user._id.toString()],
+      });
+
+      createdFileIds.push(result.fileId);
+
+      newAttachments.push({
+        fileId: result.fileId,
+        fileName: file.originalname,
+        name: file.originalname,
+        fileUrl: result.url,
+        url: result.url,
+        fileType: file.fileCategory || "document",
+        type: file.fileCategory || "document",
+        mimeType: file.verifiedMimeType || file.mimetype,
+        fileSize: file.size || result.size,
+        thumbnailUrl:
+          result.thumbnailUrl ||
+          (file.fileCategory === "image" ? result.url : ""),
+        uploadedBy: req.user._id,
+        uploadedAt: new Date(),
+      });
+    }
+
+    // Persist new attachments to Task in database atomically to avoid concurrent save VersionErrors
+    if (typeof TaskModel.findByIdAndUpdate === "function") {
+      try {
+        await TaskModel.findByIdAndUpdate(task._id, {
+          $push: { attachments: { $each: newAttachments } },
+        });
+      } catch {
+        task.attachments.push(...newAttachments);
+        await task.save();
+      }
+    } else {
+      task.attachments.push(...newAttachments);
+      await task.save();
+    }
+
+    const populated = await TaskModel.findById(task._id)
+      .populate("project", "name key color themeColor status category")
+      .populate("creator", "name email avatar username jobTitle")
+      .populate("assignees", "name email avatar username jobTitle role")
+      .populate("mentions", "name email avatar username")
+      .populate("attachments.uploadedBy", "name email avatar username");
+
+    return res.status(200).json({
+      success: true,
+      message: `${newAttachments.length} file(s) attached successfully`,
+      attachments: populated.attachments,
+      task: populated,
+    });
+  } catch (error) {
+    // Two-Phase Rollback: delete ImageKit files if DB save fails
+    for (const fId of createdFileIds) {
+      await safeCleanupFile(fId);
+    }
+
+    console.error("attachFilesToTask error:", error.message);
+    const statusCode = error.statusCode || 500;
+    return res.status(statusCode).json({
+      success: false,
+      message: error.message || "Failed to attach files to task",
+    });
+  }
+};
+
+/**
+ * @desc    Delete a single attachment from a task
+ * @route   DELETE /api/tasks/:taskId/attachments/:attachmentId
+ * @access  Private (Task Creator, Attachment Uploader, Project Manager, or Admin)
+ */
+export const deleteTaskAttachment = async (req, res) => {
+  try {
+    const { taskId, attachmentId } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(taskId)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid task ID format",
+      });
+    }
+
+    const task = await TaskModel.findById(taskId);
+    if (!task) {
+      return res.status(404).json({
+        success: false,
+        message: "Task not found",
+      });
+    }
+
+    // Find attachment by MongoDB _id or ImageKit fileId
+    const targetAttachment = (task.attachments || []).find(
+      (a) =>
+        a._id?.toString() === attachmentId ||
+        a.fileId === attachmentId ||
+        a.id === attachmentId
+    );
+
+    if (!targetAttachment) {
+      return res.status(404).json({
+        success: false,
+        message: "Attachment not found on this task",
+      });
+    }
+
+    // Authorization: Platform Admin, Task Creator, Project Manager/Owner, or the user who uploaded the attachment
+    let project = null;
+    if (task.project) {
+      project = await ProjectModel.findById(task.project);
+    }
+
+    const isAdmin = req.user.role === "admin";
+    const isTaskCreator = task.creator?.toString() === req.user._id.toString();
+    const isProjectManager =
+      project &&
+      (project.manager?.toString() === req.user._id.toString() ||
+        project.owner?.toString() === req.user._id.toString() ||
+        (project.canManageProject &&
+          project.canManageProject(req.user._id, req.user.role)));
+    const isUploader =
+      targetAttachment.uploadedBy?.toString() === req.user._id.toString();
+
+    if (!isAdmin && !isTaskCreator && !isProjectManager && !isUploader) {
+      return res.status(403).json({
+        success: false,
+        message:
+          "You are not authorized to remove this attachment. Only the uploader, task creator, project manager, or admin can delete it.",
+      });
+    }
+
+    const fileIdToDelete = targetAttachment.fileId;
+
+    // Remove attachment from task document
+    task.attachments = task.attachments.filter(
+      (a) => a._id?.toString() !== targetAttachment._id?.toString()
+    );
+
+    await task.save();
+
+    // Verify no other task references this ImageKit file before deleting
+    if (fileIdToDelete) {
+      try {
+        const refCount = await TaskModel.countDocuments({
+          _id: { $ne: task._id },
+          "attachments.fileId": fileIdToDelete,
+        });
+        if (refCount === 0) {
+          await deleteImage(fileIdToDelete);
+        }
+      } catch (imgKitErr) {
+        console.warn(
+          `ImageKit deletion failed for attachment ${fileIdToDelete}:`,
+          imgKitErr.message
+        );
+      }
+    }
+
+    const populated = await TaskModel.findById(task._id)
+      .populate("project", "name key color themeColor status category")
+      .populate("creator", "name email avatar username jobTitle")
+      .populate("assignees", "name email avatar username jobTitle role")
+      .populate("mentions", "name email avatar username")
+      .populate("attachments.uploadedBy", "name email avatar username");
+
+    return res.status(200).json({
+      success: true,
+      message: "Attachment removed successfully",
+      attachments: populated.attachments,
+      task: populated,
+    });
+  } catch (error) {
+    console.error("deleteTaskAttachment error:", error.message);
+    return res.status(500).json({
+      success: false,
+      message: error.message || "Server error deleting attachment",
+    });
+  }
+};
+
+/**
+ * @desc    Delete orphan or pre-uploaded attachment by fileId (e.g. removed in Create Task form before submission)
+ * @route   DELETE /api/tasks/attachments/:fileId
+ * @access  Private
+ */
+export const deleteOrphanAttachment = async (req, res) => {
+  try {
+    const { fileId } = req.params;
+
+    if (!fileId) {
+      return res.status(400).json({
+        success: false,
+        message: "File ID is required",
+      });
+    }
+
+    // Check if file is linked to any task
+    const referencingTask = await TaskModel.findOne({
+      "attachments.fileId": fileId,
+    });
+
+    if (referencingTask) {
+      let project = null;
+      if (referencingTask.project) {
+        project = await ProjectModel.findById(referencingTask.project);
+      }
+
+      const isAdmin = req.user.role === "admin";
+      const isTaskCreator =
+        referencingTask.creator?.toString() === req.user._id.toString();
+      const isProjectManager =
+        project &&
+        (project.manager?.toString() === req.user._id.toString() ||
+          project.owner?.toString() === req.user._id.toString() ||
+          (project.canManageProject &&
+            project.canManageProject(req.user._id, req.user.role)));
+      const targetAtt = referencingTask.attachments.find(
+        (a) => a.fileId === fileId
+      );
+      const isUploader =
+        targetAtt?.uploadedBy?.toString() === req.user._id.toString();
+
+      if (!isAdmin && !isTaskCreator && !isProjectManager && !isUploader) {
+        return res.status(403).json({
+          success: false,
+          message: "You are not authorized to delete this attachment",
+        });
+      }
+
+      referencingTask.attachments = referencingTask.attachments.filter(
+        (a) => a.fileId !== fileId
+      );
+      await referencingTask.save();
+    }
+
+    // If not referenced in any other task, clean up from ImageKit
+    const otherRefCount = await TaskModel.countDocuments({
+      "attachments.fileId": fileId,
+    });
+
+    if (otherRefCount === 0) {
+      await deleteImage(fileId);
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Attachment deleted successfully from ImageKit",
+    });
+  } catch (error) {
+    console.error("deleteOrphanAttachment error:", error.message);
+    return res.status(500).json({
+      success: false,
+      message: error.message || "Failed to delete attachment",
     });
   }
 };

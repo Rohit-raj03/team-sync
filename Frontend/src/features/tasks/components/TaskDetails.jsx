@@ -19,7 +19,10 @@ import {
   Search,
   ChevronDown,
   Save,
-  AlertCircle,
+  Image as ImageIcon,
+  ExternalLink,
+  Eye,
+  Loader2,
 } from "lucide-react";
 import { Badge } from "../../../shared/components/ui/Badge.jsx";
 import {
@@ -28,6 +31,9 @@ import {
 } from "../utils/taskHelpers.js";
 import { formatDate } from "../../../shared/utils/formatDate.js";
 import { useTasks } from "../hooks/useTasks.js";
+import { useAuth } from "../../auth/hooks/useAuth.js";
+import { taskService } from "../services/task.service.js";
+import { showToast } from "../../../shared/utils/toast.js";
 import { useTeam } from "../../team/hooks/useTeam.js";
 import { useProjects } from "../../projects/hooks/useProjects.js";
 import { deriveProjectColorTokens } from "../../timeline/utils/timelineColors.js";
@@ -37,6 +43,12 @@ import { TaskComments } from "./TaskComments.jsx";
 import { CreateTaskModal } from "./CreateTaskModal.jsx";
 import { DeleteTaskModal } from "./DeleteTaskModal.jsx";
 import { Avatar } from "../../../shared/components/ui/Avatar.jsx";
+import {
+  TaskAttachmentsUploader,
+  formatFileSize,
+  isImageFile,
+  getDocumentBadge,
+} from "./TaskAttachmentsUploader.jsx";
 import {
   TASK_STATUS,
   TASK_PRIORITY,
@@ -94,6 +106,42 @@ export const TaskDetails = ({
   const [editEstimatedTime, setEditEstimatedTime] = useState(
     task?.estimatedTime || "8h",
   );
+
+  // Attachment state & viewer modal
+  const [isUploaderOpen, setIsUploaderOpen] = useState(false);
+  const [previewModalUrl, setPreviewModalUrl] = useState(null);
+  const [removingAttachmentId, setRemovingAttachmentId] = useState(null);
+
+  // Current authenticated user for RBAC permission enforcement
+  const { user: currentUser } = useAuth();
+  const currentUserId = (currentUser?._id || currentUser?.id)?.toString();
+  const creatorId = (task?.creator?._id || task?.creator?.id || task?.creator)?.toString();
+  const isAdmin = currentUser?.role === "admin";
+  const isCreator = Boolean(currentUserId && creatorId && currentUserId === creatorId);
+  const isProjectManager = Boolean(
+    project &&
+      currentUserId &&
+      ((project.manager?._id || project.manager)?.toString() === currentUserId ||
+        (project.owner?._id || project.owner)?.toString() === currentUserId ||
+        project.canManageProject?.(currentUser?._id, currentUser?.role))
+  );
+  const isAssignee = (task?.assignees || []).some((a) => {
+    const aId = (a?._id || a?.id || a)?.toString();
+    return aId === currentUserId;
+  });
+
+  const canManageTask = isAdmin || isCreator || isProjectManager;
+  const canAttachFiles = canManageTask || isAssignee;
+
+  const canRemoveAttachment = (attachment) => {
+    if (canManageTask) return true;
+    const uploaderId = (
+      attachment.uploadedBy?._id ||
+      attachment.uploadedBy?.id ||
+      attachment.uploadedBy
+    )?.toString();
+    return Boolean(uploaderId && currentUserId && uploaderId === currentUserId);
+  };
 
   // Assignee picker dropdown state
   const [isAssigneePickerOpen, setIsAssigneePickerOpen] = useState(false);
@@ -319,6 +367,53 @@ export const TaskDetails = ({
     setEditDueDate(task.dueDate || "");
     setEditEstimatedTime(task.estimatedTime || "8h");
     setIsEditingMeta(false);
+  };
+
+  // 9. REMOVE ATTACHMENT FROM OVERVIEW
+  const handleRemoveTaskAttachment = async (attachment, e) => {
+    e?.stopPropagation();
+    const attId = attachment.fileId || attachment._id || attachment.id;
+    if (!attId) return;
+
+    if (!canRemoveAttachment(attachment)) {
+      showToast.error("You are not authorized to remove this attachment.");
+      return;
+    }
+
+    setRemovingAttachmentId(attId);
+    try {
+      const taskIdVal = task.id || task._id || currentId;
+      const res = await taskService.deleteTaskAttachment(taskIdVal, attId);
+      const updatedAttachments =
+        res?.attachments ||
+        (task.attachments || []).filter(
+          (a) => (a.fileId || a._id || a.id) !== attId
+        );
+
+      const updatedTask = {
+        ...task,
+        attachments: updatedAttachments,
+      };
+
+      updateTask(updatedTask, { silent: true });
+      onUpdate?.(updatedTask);
+      showToast.attachments.removed();
+    } catch (err) {
+      console.error("Failed to delete attachment:", err);
+      showToast.attachments.removeFailed(err);
+    } finally {
+      setRemovingAttachmentId(null);
+    }
+  };
+
+  // 10. REAL-TIME ATTACHMENT SYNC
+  const handleAttachmentsChange = (newAttachments) => {
+    const updatedTask = {
+      ...task,
+      attachments: newAttachments,
+    };
+    updateTask(updatedTask, { silent: true });
+    onUpdate?.(updatedTask);
   };
 
   // Filter project members for assignee search
@@ -956,33 +1051,174 @@ export const TaskDetails = ({
         )}
       </div>
 
-      {/* 6. Attachments */}
-      {task.attachments && task.attachments.length > 0 && (
-        <div className="space-y-2">
-          <div className="flex items-center gap-1.5">
-            <Paperclip size={14} className="text-slate-500" />
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-700">
-              Attachments ({task.attachments.length})
+      {/* 6. Attachments Section (Interactive Overview) */}
+      <div className="space-y-3 p-4 rounded-2xl bg-slate-50/60 border border-slate-100">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Paperclip size={15} className="text-[#4361EE]" />
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-800">
+              Attachments ({task.attachments?.length || 0})
             </span>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-            {task.attachments.map((file) => (
-              <div
-                key={file.id}
-                className="flex items-center gap-2 p-2 rounded-xl border border-slate-200 text-xs bg-white"
-              >
-                <FileText size={16} className="text-indigo-500 shrink-0" />
-                <div className="min-w-0 flex-1">
-                  <p className="font-semibold text-slate-800 truncate">
-                    {file.name}
-                  </p>
-                  <p className="text-[10px] text-slate-400">{file.size}</p>
-                </div>
-              </div>
-            ))}
-          </div>
+
+          {canAttachFiles && (
+            <button
+              type="button"
+              onClick={() => setIsUploaderOpen((prev) => !prev)}
+              className="inline-flex items-center gap-1.5 text-xs font-bold text-[#4361EE] hover:text-[#3451DE] transition-colors cursor-pointer"
+            >
+              <Plus size={13} />
+              <span>{isUploaderOpen ? "Close Uploader" : "Add Attachments"}</span>
+            </button>
+          )}
         </div>
-      )}
+
+        {/* Inline Attachment Uploader for Direct Uploads to this Task */}
+        {isUploaderOpen && (
+          <div className="p-3.5 bg-white rounded-2xl border border-indigo-100 shadow-xs animate-in fade-in duration-150">
+            <TaskAttachmentsUploader
+              taskId={task.id || task._id}
+              attachments={task.attachments || []}
+              onChange={handleAttachmentsChange}
+            />
+          </div>
+        )}
+
+        {/* Attachments Cards Grid */}
+        {task.attachments && task.attachments.length > 0 ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+            {task.attachments.map((file, idx) => {
+              const fileName = file.fileName || file.name || "Attachment";
+              const fileUrl = file.fileUrl || file.url || "";
+              const fileId = file.fileId || file._id || file.id || `att-${idx}`;
+              const isImage = isImageFile(fileName, file.mimeType || file.fileType);
+              const badge = getDocumentBadge(fileName);
+              const formattedSize =
+                file.size || (file.fileSize ? formatFileSize(file.fileSize) : "");
+              const isRemoving = removingAttachmentId === fileId;
+              const canRemove = canRemoveAttachment(file);
+
+              return (
+                <div
+                  key={fileId}
+                  className="flex items-center justify-between p-2.5 rounded-xl border border-slate-200/90 bg-white hover:border-indigo-200 hover:shadow-xs transition-all group"
+                >
+                  <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                    {/* Thumbnail / File Icon */}
+                    {isImage && (file.thumbnailUrl || fileUrl) ? (
+                      <div
+                        className="relative cursor-pointer group/thumb shrink-0"
+                        onClick={() => setPreviewModalUrl(fileUrl || file.thumbnailUrl)}
+                        title="Click to view full preview"
+                      >
+                        <img
+                          src={file.thumbnailUrl || fileUrl}
+                          alt={fileName}
+                          className="w-10 h-10 rounded-lg object-cover ring-1 ring-slate-200"
+                          onError={(e) => {
+                            e.target.style.display = "none";
+                            e.target.nextSibling.style.display = "flex";
+                          }}
+                        />
+                        <div className="hidden w-10 h-10 rounded-lg bg-emerald-50 text-emerald-600 border border-emerald-100 items-center justify-center">
+                          <ImageIcon size={18} />
+                        </div>
+                        <div className="absolute inset-0 bg-slate-900/40 rounded-lg opacity-0 group-hover/thumb:opacity-100 flex items-center justify-center text-white transition-opacity">
+                          <Eye size={13} />
+                        </div>
+                      </div>
+                    ) : (
+                      <div
+                        className={`w-10 h-10 rounded-lg border flex items-center justify-center shrink-0 ${badge.bg}`}
+                      >
+                        <FileText size={18} className={badge.iconColor} />
+                      </div>
+                    )}
+
+                    {/* Metadata */}
+                    <div className="min-w-0 flex-1">
+                      <p
+                        className="text-xs font-bold text-slate-800 truncate"
+                        title={fileName}
+                      >
+                        {fileName}
+                      </p>
+                      <div className="flex items-center gap-1.5 text-[10px] text-slate-400 mt-0.5">
+                        <span className="font-semibold text-slate-500 uppercase">
+                          {badge.label}
+                        </span>
+                        {formattedSize && (
+                          <>
+                            <span>•</span>
+                            <span>{formattedSize}</span>
+                          </>
+                        )}
+                        {file.uploadedBy?.name && (
+                          <>
+                            <span>•</span>
+                            <span className="truncate">by {file.uploadedBy.name}</span>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Actions: Open & Remove */}
+                  <div className="flex items-center gap-1 shrink-0 ml-2">
+                    {fileUrl && (
+                      <a
+                        href={fileUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="p-1.5 rounded-lg text-slate-400 hover:text-[#4361EE] hover:bg-indigo-50 transition-colors"
+                        title="Open attachment in new tab"
+                        aria-label={`Open ${fileName}`}
+                      >
+                        <ExternalLink size={13} />
+                      </a>
+                    )}
+
+                    {canRemove && (
+                      <button
+                        type="button"
+                        onClick={(e) => handleRemoveTaskAttachment(file, e)}
+                        disabled={isRemoving}
+                        className="p-1.5 rounded-lg text-slate-300 hover:text-rose-500 hover:bg-rose-50 transition-colors disabled:opacity-50"
+                        title={`Remove ${fileName}`}
+                        aria-label={`Remove ${fileName}`}
+                      >
+                        {isRemoving ? (
+                          <Loader2 size={13} className="animate-spin text-rose-500" />
+                        ) : (
+                          <Trash2 size={13} />
+                        )}
+                      </button>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          !isUploaderOpen && (
+            <div className="p-4 bg-white rounded-xl text-center border border-dashed border-slate-200">
+              <p className="text-xs text-slate-400 font-medium">
+                No attachments uploaded for this task.
+              </p>
+              {canAttachFiles && (
+                <button
+                  type="button"
+                  onClick={() => setIsUploaderOpen(true)}
+                  className="text-xs font-bold text-[#4361EE] hover:underline mt-1 inline-flex items-center gap-1"
+                >
+                  <Plus size={12} />
+                  <span>Attach resources now</span>
+                </button>
+              )}
+            </div>
+          )
+        )}
+      </div>
 
       {/* 7. Tags (Metadata) */}
       {task.tags && task.tags.length > 0 && (() => {
@@ -1079,6 +1315,32 @@ export const TaskDetails = ({
         isDeleting={isDeleting}
         apiError={deleteError}
       />
+
+      {/* Lightbox Modal for Image Attachment Previews */}
+      {previewModalUrl && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-xs animate-in fade-in"
+          onClick={() => setPreviewModalUrl(null)}
+        >
+          <div
+            className="relative max-w-4xl max-h-[90vh] bg-white rounded-2xl overflow-hidden shadow-2xl p-2"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              type="button"
+              onClick={() => setPreviewModalUrl(null)}
+              className="absolute top-4 right-4 z-10 p-1.5 rounded-xl bg-slate-900/60 text-white hover:bg-slate-900 transition-colors"
+            >
+              <X size={18} />
+            </button>
+            <img
+              src={previewModalUrl}
+              alt="Preview"
+              className="max-h-[84vh] w-auto rounded-xl object-contain mx-auto"
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -15,15 +15,107 @@ const subtaskSchema = new mongoose.Schema(
   { _id: true, timestamps: true }
 );
 
+const formatBytesHelper = (bytes) => {
+  if (!bytes || isNaN(bytes)) return "";
+  const k = 1024;
+  const sizes = ["B", "KB", "MB", "GB"];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return `${parseFloat((bytes / Math.pow(k, i)).toFixed(1))} ${sizes[i] || "B"}`;
+};
+
 const attachmentSchema = new mongoose.Schema(
   {
-    name: { type: String, required: true },
-    size: { type: String, default: "" },
-    url: { type: String, default: "" },
-    type: { type: String, default: "document" },
+    fileId: {
+      type: String,
+      required: [true, "ImageKit fileId is required"],
+      trim: true,
+    },
+    fileName: {
+      type: String,
+      required: [true, "Attachment fileName is required"],
+      trim: true,
+    },
+    fileUrl: {
+      type: String,
+      required: [true, "Attachment fileUrl is required"],
+      trim: true,
+    },
+    fileType: {
+      type: String,
+      default: "document",
+    },
+    mimeType: {
+      type: String,
+      default: "",
+    },
+    fileSize: {
+      type: Number,
+      default: 0,
+    },
+    thumbnailUrl: {
+      type: String,
+      default: "",
+    },
+    uploadedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      default: null,
+    },
+    uploadedAt: {
+      type: Date,
+      default: Date.now,
+    },
+    // Backwards compatibility legacy fields
+    name: {
+      type: String,
+      trim: true,
+    },
+    url: {
+      type: String,
+      trim: true,
+    },
+    size: {
+      type: String,
+      default: "",
+    },
+    type: {
+      type: String,
+      default: "document",
+    },
   },
-  { _id: true }
+  {
+    _id: true,
+    timestamps: false,
+    toJSON: { virtuals: true },
+    toObject: { virtuals: true },
+  }
 );
+
+// Pre-validate hook to sync modern and legacy fields
+attachmentSchema.pre("validate", function (next) {
+  if (!this.fileName && this.name) {
+    this.fileName = this.name;
+  }
+  if (!this.name && this.fileName) {
+    this.name = this.fileName;
+  }
+  if (!this.fileUrl && this.url) {
+    this.fileUrl = this.url;
+  }
+  if (!this.url && this.fileUrl) {
+    this.url = this.fileUrl;
+  }
+  if (!this.fileType && this.type) {
+    this.fileType = this.type;
+  }
+  if (!this.type && this.fileType) {
+    this.type = this.fileType;
+  }
+  if (this.fileSize && !this.size) {
+    this.size = formatBytesHelper(this.fileSize);
+  }
+  next();
+});
 
 const taskSchema = new mongoose.Schema(
   {
@@ -190,6 +282,33 @@ taskSchema.set("toJSON", {
           };
         }
         return a;
+      });
+    }
+    if (Array.isArray(ret.attachments)) {
+      ret.attachments = ret.attachments.map((att, idx) => {
+        const attId = att._id ? att._id.toString() : att.id || `att-${idx}`;
+        const fSize = typeof att.fileSize === "number" ? att.fileSize : 0;
+        const formattedSize = att.size || (fSize ? formatBytesHelper(fSize) : "");
+        const fName = att.fileName || att.name || "attachment";
+        const fUrl = att.fileUrl || att.url || "";
+        const fType = att.fileType || att.type || "document";
+        return {
+          id: attId,
+          _id: attId,
+          fileId: att.fileId || "",
+          fileName: fName,
+          name: fName,
+          fileUrl: fUrl,
+          url: fUrl,
+          fileType: fType,
+          type: fType,
+          mimeType: att.mimeType || "",
+          fileSize: fSize,
+          size: formattedSize,
+          thumbnailUrl: att.thumbnailUrl || (fType === "image" ? fUrl : ""),
+          uploadedBy: att.uploadedBy,
+          uploadedAt: att.uploadedAt || new Date(),
+        };
       });
     }
     return ret;

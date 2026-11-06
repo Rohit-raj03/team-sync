@@ -10,6 +10,7 @@ import projectRoutes from "../routes/project.routes.js";
 import taskRoutes from "../routes/task.routes.js";
 import notificationRoutes from "../routes/notification.routes.js";
 import mediaRoutes from "../routes/media.routes.js";
+import imagekitRoutes from "../routes/imagekit.routes.js";
 import {
   notFoundHandler,
   errorHandler,
@@ -55,6 +56,7 @@ app.use("/api/projects", projectRoutes);
 app.use("/api/tasks", taskRoutes);
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/media", mediaRoutes);
+app.use("/api/imagekit", imagekitRoutes);
 
 // 4. Test & Health Check Routes
 app.get("/", (req, res) => {
