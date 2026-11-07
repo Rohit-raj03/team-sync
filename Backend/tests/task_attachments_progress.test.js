@@ -2,6 +2,10 @@ import { test, describe } from "node:test";
 import assert from "node:assert/strict";
 import { deleteImageKitFile } from "../src/controllers/imagekit.controller.js";
 import { getImageKitClient } from "../src/config/imagekit.js";
+import {
+  calculateDynamicStep,
+  createSmoothProgressTracker,
+} from "../../Frontend/src/features/tasks/utils/attachmentProgress.js";
 
 // Extracted from TaskAttachmentsUploader for headless Node unit testing
 export const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024;
@@ -55,68 +59,92 @@ describe("=== Attachment Upload Progress & Lifecycle Verification ===", () => {
     assert.equal(formatFileSize(5 * 1024 * 1024), "5 MB");
   });
 
-  test("3. Upload Progress with 95% Cap and 'Uploaded' (100%) on ImageKit response", () => {
-    const item = {
-      id: "test-item-1",
-      name: "small_contract.pdf",
-      size: 62 * 1024, // 62 KB small file
-      progress: 0,
-      status: "uploading",
-      error: null,
-    };
+  test("3. File-Size-Based Smooth Progress Loop (0% to 100%, 90% soft ceiling, rapid completion)", async () => {
+    // Dynamic step speed based on file size
+    assert.equal(calculateDynamicStep(62 * 1024), 2.0); // Small file (62 KB) -> 2.0% per tick
+    assert.equal(calculateDynamicStep(500 * 1024), 1.5); // Medium file (500 KB) -> 1.5% per tick
+    assert.equal(calculateDynamicStep(3 * 1024 * 1024), 1.0); // Large file (3 MB) -> 1.0% per tick
 
-    // State 1: File selected, starts at 0%
-    assert.equal(item.progress, 0);
-    assert.equal(item.status, "uploading");
+    const ticks = [];
+    let completed = false;
 
-    // State 2: Progress updates dynamically with Math.round((loaded/total) * 100)
-    const calculateProgress = (loaded, total) => {
-      const percent = Math.round((loaded / total) * 100);
-      return Math.min(percent, 95); // Capped at 95% until promise resolves
-    };
+    const tracker = createSmoothProgressTracker({
+      fileSize: 62 * 1024,
+      onTick: (val) => ticks.push(val),
+      onComplete: () => {
+        completed = true;
+      },
+    });
 
-    assert.equal(calculateProgress(30000, 62000), 48);
+    // Run for 120ms (several 25ms ticks) while upload is in-flight
+    await new Promise((resolve) => setTimeout(resolve, 130));
 
-    // State 3: Buffer hits 100% before ImageKit responds -> must cap at 95%!
-    const cappedProgress = calculateProgress(62000, 62000);
-    assert.equal(cappedProgress, 95);
-    item.progress = cappedProgress;
-    assert.equal(item.progress, 95);
-    assert.notEqual(item.progress, 100);
+    // Progress should start at low values and increment smoothly (e.g., 2, 4, 6, 8...)
+    assert.ok(ticks.length >= 3, "Tracker should record smooth interval ticks");
+    assert.ok(ticks[0] < 15, "First tick should not jump directly to 90% or 95%");
+    for (let i = 1; i < ticks.length; i++) {
+      assert.ok(
+        ticks[i] >= ticks[i - 1],
+        "Ticks must monotonically increase smoothly"
+      );
+    }
+    // Should stay within in-flight soft ceiling
+    assert.ok(
+      ticks[ticks.length - 1] <= 90,
+      "In-flight progress must not exceed 90% soft ceiling"
+    );
 
-    // State 4: ImageKit API returns response with fileId and url
+    // ImageKit upload completes with fileId and url -> resolve target to 100%
     const mockImageKitResponse = {
       fileId: "ik_file_contract_123",
       fileUrl: "https://ik.imagekit.io/team-sync/contract.pdf",
     };
 
-    // Only set status to "Uploaded" and progress to 100% after response resolves
-    if (mockImageKitResponse.fileId && mockImageKitResponse.fileUrl) {
-      item.status = "completed"; // Renders as "Uploaded"
-      item.progress = 100;
-      item.fileId = mockImageKitResponse.fileId;
-      item.fileUrl = mockImageKitResponse.fileUrl;
-    }
+    assert.ok(mockImageKitResponse.fileId && mockImageKitResponse.fileUrl);
+    tracker.resolveTarget();
 
-    assert.equal(item.status, "completed");
-    assert.equal(item.progress, 100);
-    assert.equal(item.fileId, "ik_file_contract_123");
-    assert.equal(item.fileUrl, "https://ik.imagekit.io/team-sync/contract.pdf");
+    // Await rapid animation to 100%
+    await new Promise((resolve) => {
+      const check = setInterval(() => {
+        if (completed) {
+          clearInterval(check);
+          resolve();
+        }
+      }, 10);
+    });
+
+    assert.equal(completed, true, "Tracker should fire onComplete upon reaching 100%");
+    assert.equal(ticks[ticks.length - 1], 100, "Final tick must reach 100%");
   });
 
-  test("4. AbortController cancels in-flight upload on 'X' click or task cancellation", () => {
+  test("4. AbortController and smooth progress tracker cancellation on 'X' click", async () => {
     const abortController = new AbortController();
     let aborted = false;
-
     abortController.signal.addEventListener("abort", () => {
       aborted = true;
     });
 
-    assert.equal(aborted, false);
-    // User clicks X or cancels task creation
+    let ticksCount = 0;
+    const tracker = createSmoothProgressTracker({
+      fileSize: 100 * 1024,
+      onTick: () => ticksCount++,
+    });
+
+    await new Promise((r) => setTimeout(r, 60));
+    const capturedTicks = ticksCount;
+    assert.ok(capturedTicks > 0, "Ticks should have started");
+
+    // User clicks 'X' to abort upload
     abortController.abort();
-    assert.equal(aborted, true);
+    tracker.abort();
     assert.equal(abortController.signal.aborted, true);
+
+    await new Promise((r) => setTimeout(r, 60));
+    assert.equal(
+      ticksCount,
+      capturedTicks,
+      "No more progress ticks should occur after tracker.abort()"
+    );
   });
 
   test("5. Duplicate Detection Logic", () => {

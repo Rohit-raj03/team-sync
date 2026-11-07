@@ -14,6 +14,9 @@ import {
 } from "lucide-react";
 import { taskService } from "../services/task.service.js";
 import { showToast } from "../../../shared/utils/toast.js";
+import { createSmoothProgressTracker } from "../utils/attachmentProgress.js";
+
+export { createSmoothProgressTracker };
 
 // 5MB maximum file size limit (matching Backend config.MAX_FILE_SIZE_BYTES)
 export const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024;
@@ -118,6 +121,8 @@ export const TaskAttachmentsUploader = ({
 
   // Active abort controllers map: key = queueId, value = AbortController
   const activeControllersRef = useRef(new Map());
+  // Active smooth progress animation trackers: key = queueId, value = tracker
+  const activeProgressTrackersRef = useRef(new Map());
 
   // Keep fresh reference to attachments to avoid stale closures during concurrent uploads
   const attachmentsRef = useRef(attachments);
@@ -130,10 +135,20 @@ export const TaskAttachmentsUploader = ({
     uploadQueueRef.current = uploadQueue;
   }, [uploadQueue]);
 
-  // Clean up object URLs and abort pending requests on unmount
+  // Clean up object URLs, smooth progress intervals, and abort pending requests on unmount
   useEffect(() => {
     const controllers = activeControllersRef.current;
+    const trackers = activeProgressTrackersRef.current;
     return () => {
+      trackers.forEach((tracker) => {
+        try {
+          tracker.abort();
+        } catch {
+          // ignore
+        }
+      });
+      trackers.clear();
+
       controllers.forEach((controller) => {
         try {
           controller.abort();
@@ -196,6 +211,10 @@ export const TaskAttachmentsUploader = ({
   };
 
   const uploadSingleFile = async (queueId, file) => {
+    // 1. Abort and clean up any existing controller/tracker for this queueId
+    activeControllersRef.current.get(queueId)?.abort();
+    activeProgressTrackersRef.current.get(queueId)?.abort();
+
     const abortController = new AbortController();
     activeControllersRef.current.set(queueId, abortController);
 
@@ -211,21 +230,32 @@ export const TaskAttachmentsUploader = ({
       )
     );
 
+    // 2. Set up smooth progress tracker loop (runs every 25ms based on file size)
+    let onCompletionResolve;
+    const completionPromise = new Promise((resolve) => {
+      onCompletionResolve = resolve;
+    });
+
+    const tracker = createSmoothProgressTracker({
+      fileSize: file.size,
+      onTick: (progress) => {
+        setUploadQueue((prev) =>
+          prev.map((item) =>
+            item.id === queueId
+              ? { ...item, status: "uploading", progress }
+              : item
+          )
+        );
+      },
+      onComplete: () => {
+        onCompletionResolve?.();
+      },
+    });
+
+    activeProgressTrackersRef.current.set(queueId, tracker);
+
     const onUploadProgress = (progressEvent) => {
-      if (!progressEvent.total) return;
-      const percent = Math.round((progressEvent.loaded * 100) / progressEvent.total);
-
-      // If the file is small (e.g., 62 KB) and network buffer hits 100% before ImageKit responds,
-      // cap the progress bar at 95% until the response promise resolves, then set it to 100%.
-      const progress = Math.min(percent, 95);
-
-      setUploadQueue((prev) =>
-        prev.map((item) =>
-          item.id === queueId
-            ? { ...item, status: "uploading", progress }
-            : item
-        )
-      );
+      tracker.setNetworkProgress(progressEvent.loaded, progressEvent.total);
     };
 
     try {
@@ -267,6 +297,14 @@ export const TaskAttachmentsUploader = ({
       if (!fileId || !fileUrl) {
         throw new Error("ImageKit upload response missing fileId or url");
       }
+
+      // Signal tracker that upload succeeded, and rapidly animate displayProgress to 100%
+      tracker.resolveTarget();
+
+      // Await rapid progress animation to finish reaching 100% before marking completed
+      await completionPromise;
+
+      activeProgressTrackersRef.current.delete(queueId);
 
       // Completed state: stop spinner, mark 100%, and status "completed" (renders as "Uploaded")
       setUploadQueue((prev) =>
@@ -327,6 +365,8 @@ export const TaskAttachmentsUploader = ({
         activeControllersRef.current.delete(queueId);
       }, 700);
     } catch (err) {
+      tracker.abort();
+      activeProgressTrackersRef.current.delete(queueId);
       activeControllersRef.current.delete(queueId);
 
       // User cancelled/aborted the upload
@@ -484,7 +524,13 @@ export const TaskAttachmentsUploader = ({
 
   const handleRemoveQueueItem = (tempId, e) => {
     e?.stopPropagation();
-    // 1. Abort network request if active
+    // 1. Abort network request and smooth progress animation if active
+    const tracker = activeProgressTrackersRef.current.get(tempId);
+    if (tracker) {
+      tracker.abort();
+      activeProgressTrackersRef.current.delete(tempId);
+    }
+
     const controller = activeControllersRef.current.get(tempId);
     if (controller) {
       try {
