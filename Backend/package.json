@@ -1,7 +1,7 @@
 {
-  "name": "team-sync-backend",
+  "name": "agentrateam-backend",
   "version": "1.0.0",
-  "description": "REST API Backend for Team Sync Project Management Application",
+  "description": "REST API Backend for AgentraTeam Project Management Application",
   "main": "src/server.js",
   "type": "module",
   "scripts": {

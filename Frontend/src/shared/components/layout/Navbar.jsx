@@ -33,14 +33,14 @@ export const Navbar = ({ onToggleSidebar }) => {
         </button>
 
         <img
-          src="/logo.png"
-          alt="Team Sync"
+          src="/CloudAgentra_logo.png"
+          alt="AgentraTeam"
           className="w-10 h-10 object-contain drop-shadow-sm cursor-pointer"
           onClick={() => navigate(ROUTES.DASHBOARD)}
         />
         <div className="hidden sm:block">
           <span className="font-extrabold text-slate-900 text-lg tracking-tight block leading-tight">
-            Team Sync
+            AgentraTeam
           </span>
         </div>
       </div>

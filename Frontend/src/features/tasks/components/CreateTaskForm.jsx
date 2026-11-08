@@ -279,7 +279,7 @@ export const CreateTaskForm = ({
               id="task-title"
               type="text"
               maxLength={100}
-              placeholder="e.g. Implement Figma design for Team Sync project dashboard"
+              placeholder="e.g. Implement Figma design for AgentraTeam project dashboard"
               value={formData.title}
               onChange={(e) => {
                 setFormData({ ...formData, title: e.target.value });

@@ -17,8 +17,8 @@ import {
  */
 export const AdminOrgSettings = ({ onSaveSettings }) => {
   const [settings, setSettings] = useState({
-    orgName: 'Team Sync Enterprise Inc.',
-    domain: 'teamsync.io',
+    orgName: 'AgentraTeam Enterprise Inc.',
+    domain: 'agentrateam.io',
     timezone: 'Asia/Kolkata (GMT+05:30)',
     enforce2FA: true,
     sessionTimeout: '12 Hours',

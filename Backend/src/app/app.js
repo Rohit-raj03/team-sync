@@ -60,7 +60,7 @@ app.use("/api/imagekit", imagekitRoutes);
 
 // 4. Test & Health Check Routes
 app.get("/", (req, res) => {
-  res.send("TeamSync Backend API is running!");
+  res.send("AgentraTeam Backend API is running!");
 });
 
 app.get("/api/health", (req, res) => {

@@ -158,7 +158,7 @@ export const AdminUserManagement = ({
       title: isActivating ? `Activate ${user.name}?` : `Deactivate ${user.name}?`,
       message: isActivating
         ? `This user will regain access to their projects, tasks, and system permissions.`
-        : `This user will be suspended immediately and cannot log into Team Sync until reactivated.`,
+        : `This user will be suspended immediately and cannot log into AgentraTeam until reactivated.`,
       confirmLabel: isActivating ? 'Activate Account' : 'Deactivate User',
       confirmVariant: isActivating ? 'warning' : 'danger',
       onConfirm: () => onToggleStatus(user.id),

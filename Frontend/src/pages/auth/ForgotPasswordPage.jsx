@@ -6,7 +6,7 @@ import { ForgotPasswordForm } from "../../features/auth/components/ForgotPasswor
 /**
  * Presentation Layer: ForgotPasswordPage
  * Layer: pages/auth/
- * Responsibility: Centered authentication card for requesting password resets, matching Team Sync's SaaS visual identity with logo, clear typography, and support access.
+ * Responsibility: Centered authentication card for requesting password resets, matching AgentraTeam's SaaS visual identity with logo, clear typography, and support access.
  */
 export const ForgotPasswordPage = () => {
   return (
@@ -20,8 +20,8 @@ export const ForgotPasswordPage = () => {
         <div className="mb-6">
           <Link to="/" className="inline-block group focus:outline-none">
             <img
-              src="/logo.png"
-              alt="Team Sync Logo"
+              src="/CloudAgentra_logo.png"
+              alt="AgentraTeam Logo"
               className="w-14 h-14 object-contain mx-auto mb-3.5 drop-shadow-md group-hover:scale-105 transition-transform"
             />
           </Link>

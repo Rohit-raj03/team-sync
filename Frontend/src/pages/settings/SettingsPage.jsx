@@ -174,7 +174,7 @@ export const SettingsPage = () => {
                 Notification Preferences
               </h3>
               <p className="text-xs text-slate-400">
-                Choose when and how Team Sync notifies you of activity.
+                Choose when and how AgentraTeam notifies you of activity.
               </p>
             </div>
           </div>

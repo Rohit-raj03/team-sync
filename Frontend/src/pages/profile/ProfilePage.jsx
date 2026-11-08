@@ -9,7 +9,7 @@ import { CheckCircle2, AlertCircle, RefreshCw } from "lucide-react";
 /**
  * Presentation Layer: ProfilePage
  * Layer: pages/profile/
- * Responsibility: Complete modern Profile Update page for Team Sync, divided into Personal Information and Account & Security sections with unsaved changes tracking.
+ * Responsibility: Complete modern Profile Update page for AgentraTeam, divided into Personal Information and Account & Security sections with unsaved changes tracking.
  */
 export const ProfilePage = () => {
   const {

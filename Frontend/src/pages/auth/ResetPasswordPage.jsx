@@ -59,8 +59,8 @@ export const ResetPasswordPage = () => {
         <div className="mb-6">
           <Link to="/" className="inline-block group focus:outline-none">
             <img
-              src="/logo.png"
-              alt="Team Sync Logo"
+              src="/CloudAgentra_logo.png"
+              alt="AgentraTeam Logo"
               className="w-14 h-14 object-contain mx-auto mb-3.5 drop-shadow-md group-hover:scale-105 transition-transform"
             />
           </Link>
@@ -68,7 +68,7 @@ export const ResetPasswordPage = () => {
             Set New Password
           </h1>
           <p className="text-xs text-slate-500 mt-1.5 leading-relaxed max-w-xs mx-auto">
-            Choose a strong, secure new password for your Team Sync account.
+            Choose a strong, secure new password for your AgentraTeam account.
           </p>
         </div>
 
