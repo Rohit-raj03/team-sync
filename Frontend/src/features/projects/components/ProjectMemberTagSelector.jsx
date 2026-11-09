@@ -1,397 +1,544 @@
-import React, { useState, useMemo } from "react";
-import {
-  Search,
-  X,
-  Check,
-  Users,
-  Plus,
-  Tag,
-  Sparkles,
-  ChevronRight,
-  UserCheck,
-  SlidersHorizontal,
-} from "lucide-react";
+import React, { useState, useMemo, useRef, useEffect } from "react";
+import { createPortal } from "react-dom";
+import { Search, X, Check, Plus, ChevronDown, Trash2, Tag } from "lucide-react";
 import { useTeam } from "../../team/hooks/useTeam.js";
 import { Avatar } from "../../../shared/components/ui/Avatar.jsx";
+import {
+  ASSIGNED_TAGS,
+  getAssignedTagStyle,
+} from "../../../shared/data/assignedTags.js";
 
-export const DEFAULT_PRESET_TAGS = [
-  "Project Lead",
-  "Frontend Developer",
-  "Backend Developer",
-  "Full Stack Developer",
-  "UI/UX Designer",
-  "QA Reviewer",
-  "DevOps Engineer",
-  "Product Manager",
-  "Contributor",
-];
+const QUICK_ROLES = Object.values(ASSIGNED_TAGS);
 
 /**
  * Feature Component: ProjectMemberTagSelector
  * Layer: features/projects/components/
- * Responsibility:
- * 1. User selects a member first from the list.
- * 2. An interactive tagging panel activates for the selected member to assign multiple default/custom tags.
- * 3. Member can have custom tags typed on the fly.
- * 4. Tagged members are shown with all assigned tags and can be edited or next member selected.
+ * Responsibility: Multi-select role & tag assignment for project contributors.
+ * Allows multiple simultaneous roles per member with removable chips and popover checkboxes.
  */
 export const ProjectMemberTagSelector = ({
   taggedMembers = [],
   onChange,
   error,
 }) => {
-  const { members } = useTeam();
+  const { members = [] } = useTeam();
   const [searchQuery, setSearchQuery] = useState("");
-  // Currently active/focused member for tagging
-  const [selectedMemberId, setSelectedMemberId] = useState(null);
-  // Custom tag input field state
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [openPopoverMemberId, setOpenPopoverMemberId] = useState(null);
+  const [popoverCoords, setPopoverCoords] = useState(null);
   const [customTagInput, setCustomTagInput] = useState("");
 
-  const filteredMembers = useMemo(() => {
-    const q = searchQuery.trim().toLowerCase();
-    if (!q) return members;
-    return members.filter(
-      (m) =>
-        m.name?.toLowerCase().includes(q) ||
-        (m.username && m.username.toLowerCase().includes(q)) ||
-        (m.role && m.role.toLowerCase().includes(q)) ||
-        (m.email && m.email.toLowerCase().includes(q)),
-    );
-  }, [members, searchQuery]);
+  const searchContainerRef = useRef(null);
+  const popoverRef = useRef(null);
+  const triggerButtonRef = useRef(null);
 
-  // Find tagged record by member id
-  const getTaggedRecord = (memberId) => {
-    return taggedMembers.find((m) => {
-      const id =
-        m.id ||
-        m._id ||
-        m.user?._id ||
-        m.user?.id ||
-        (typeof m.user === "string" ? m.user : null);
-      return id?.toString() === memberId?.toString();
-    });
-  };
+  // Close search dropdown or active role popover on click outside
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (
+        searchContainerRef.current &&
+        !searchContainerRef.current.contains(e.target)
+      ) {
+        setIsSearchOpen(false);
+      }
+      if (
+        popoverRef.current &&
+        !popoverRef.current.contains(e.target) &&
+        !triggerButtonRef.current?.contains(e.target)
+      ) {
+        setOpenPopoverMemberId(null);
+        setPopoverCoords(null);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
 
-  const isTagged = (memberId) => Boolean(getTaggedRecord(memberId));
+  // Reposition popover on window resize or modal scroll; preserve popover when scrolling inside it
+  useEffect(() => {
+    if (!openPopoverMemberId) return;
 
-  // Retrieve current member object selected in the active panel
-  const activeMember = useMemo(() => {
-    if (!selectedMemberId) return null;
-    const tagged = getTaggedRecord(selectedMemberId);
-    if (tagged) return tagged;
-    return (
-      members.find(
-        (m) => (m.id || m._id)?.toString() === selectedMemberId?.toString(),
-      ) || null
-    );
-  }, [selectedMemberId, taggedMembers, members]);
+    const updatePosition = () => {
+      if (!triggerButtonRef.current) return;
+      const rect = triggerButtonRef.current.getBoundingClientRect();
+      if (rect.bottom < 0 || rect.top > window.innerHeight) {
+        setOpenPopoverMemberId(null);
+        setPopoverCoords(null);
+        return;
+      }
+      const spaceBelow = window.innerHeight - rect.bottom;
+      const openUp = spaceBelow < 280;
 
-  // Get list of tags for a member (from tagged record or default suggestion)
-  const getMemberTags = (memberId) => {
-    const tagged = getTaggedRecord(memberId);
-    if (tagged?.tags && Array.isArray(tagged.tags) && tagged.tags.length > 0) {
-      return tagged.tags;
-    }
-    if (tagged?.projectRole) {
-      return [tagged.projectRole];
-    }
-    return [];
-  };
-
-  // Toggle or add a tag for a member
-  const handleToggleTag = (member, tagToAdd) => {
-    const mId = member.id || member._id;
-    const currentTags = getMemberTags(mId);
-    let updatedTags;
-
-    if (currentTags.includes(tagToAdd)) {
-      // Remove tag
-      updatedTags = currentTags.filter((t) => t !== tagToAdd);
-    } else {
-      // Add tag
-      updatedTags = [...currentTags, tagToAdd];
-    }
-
-    if (updatedTags.length === 0) {
-      // If no tags left, fallback to Contributor or keep member with Contributor
-      updatedTags = ["Contributor"];
-    }
-
-    const updatedMemberObj = {
-      ...member,
-      id: mId,
-      _id: mId,
-      role: member.role || "Member",
-      projectRole: updatedTags[0] || "Contributor",
-      tags: updatedTags,
+      setPopoverCoords({
+        top: openUp ? undefined : rect.bottom + 6,
+        bottom: openUp ? window.innerHeight - rect.top + 6 : undefined,
+        right: window.innerWidth - rect.right,
+      });
     };
 
-    if (isTagged(mId)) {
-      onChange(
-        taggedMembers.map((m) =>
-          (m.id || m._id)?.toString() === mId?.toString()
-            ? updatedMemberObj
-            : m,
-        ),
-      );
-    } else {
-      onChange([...taggedMembers, updatedMemberObj]);
-    }
+    const handleScroll = (e) => {
+      // Allow scrolling inside the roles popover without closing or resetting
+      if (popoverRef.current && popoverRef.current.contains(e.target)) {
+        return;
+      }
+      updatePosition();
+    };
+
+    window.addEventListener("scroll", handleScroll, true);
+    window.addEventListener("resize", updatePosition);
+    return () => {
+      window.removeEventListener("scroll", handleScroll, true);
+      window.removeEventListener("resize", updatePosition);
+    };
+  }, [openPopoverMemberId]);
+
+  const getMemberId = (member) => {
+    return (
+      member.id ||
+      member._id ||
+      member.user?._id ||
+      member.user?.id ||
+      (typeof member.user === "string" ? member.user : null)
+    );
   };
 
-  // Add custom typed tag for active member
-  const handleAddCustomTag = (e) => {
-    e?.preventDefault();
-    if (!customTagInput.trim() || !activeMember) return;
-    const newTag = customTagInput.trim();
+  const isTagged = (memberId) => {
+    return taggedMembers.some(
+      (m) => getMemberId(m)?.toString() === memberId?.toString(),
+    );
+  };
 
-    handleToggleTag(activeMember, newTag);
+  const getMemberTags = (member) => {
+    if (Array.isArray(member.tags) && member.tags.length > 0) {
+      return member.tags;
+    }
+    if (member.projectRole) {
+      return [member.projectRole];
+    }
+    return ["Contributor"];
+  };
+
+  const filteredSearchResults = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return [];
+    return members.filter((m) => {
+      const name = (m.name || "").toLowerCase();
+      const username = (m.username || "").toLowerCase();
+      const email = (m.email || "").toLowerCase();
+      const role = (m.role || m.jobTitle || "").toLowerCase();
+      return (
+        name.includes(q) ||
+        username.includes(q) ||
+        email.includes(q) ||
+        role.includes(q)
+      );
+    });
+  }, [members, searchQuery]);
+
+  const handleAddMember = (user) => {
+    const uId = user.id || user._id;
+    if (isTagged(uId)) return;
+
+    // Smart initial role tag based on member's title if matched, else Contributor
+    const initialRole = (() => {
+      const title = (user.role || user.jobTitle || "").toLowerCase();
+      if (
+        title.includes("design") ||
+        title.includes("ui") ||
+        title.includes("ux")
+      )
+        return ASSIGNED_TAGS.UI_UX || "UI/UX";
+      if (title.includes("frontend"))
+        return ASSIGNED_TAGS.FRONTEND || "Frontend";
+      if (title.includes("backend"))
+        return ASSIGNED_TAGS.BACKEND || "Backend";
+      if (title.includes("full") || title.includes("stack"))
+        return ASSIGNED_TAGS.FULL_STACK || "Full Stack";
+      if (title.includes("qa") || title.includes("test"))
+        return ASSIGNED_TAGS.QA_REVIEWER || ASSIGNED_TAGS.TESTING || "Testing";
+      if (title.includes("lead") || title.includes("manager"))
+        return ASSIGNED_TAGS.PROJECT_LEAD || "Project Lead";
+      if (title.includes("devops") || title.includes("cloud"))
+        return ASSIGNED_TAGS.DEVOPS || "DevOps";
+      return ASSIGNED_TAGS.CONTRIBUTOR || "Contributor";
+    })();
+
+    const newMember = {
+      id: uId,
+      _id: uId,
+      name: user.name,
+      email: user.email,
+      username: user.username,
+      avatar: user.avatar,
+      role: "Member",
+      projectRole: initialRole,
+      tags: [initialRole],
+    };
+
+    onChange([...taggedMembers, newMember]);
+    setSearchQuery("");
+    setIsSearchOpen(false);
+  };
+
+  const handleToggleTag = (memberId, role) => {
+    onChange(
+      taggedMembers.map((m) => {
+        const id = getMemberId(m);
+        if (id?.toString() === memberId?.toString()) {
+          const currentTags = getMemberTags(m);
+          let newTags;
+          if (currentTags.includes(role)) {
+            newTags = currentTags.filter((t) => t !== role);
+          } else {
+            newTags = [...currentTags, role];
+          }
+          return {
+            ...m,
+            projectRole: newTags[0] || "Contributor",
+            tags: newTags,
+          };
+        }
+        return m;
+      }),
+    );
+  };
+
+  const handleRemoveTag = (memberId, roleToRemove) => {
+    onChange(
+      taggedMembers.map((m) => {
+        const id = getMemberId(m);
+        if (id?.toString() === memberId?.toString()) {
+          const currentTags = getMemberTags(m);
+          const newTags = currentTags.filter((t) => t !== roleToRemove);
+          return {
+            ...m,
+            projectRole: newTags[0] || "Contributor",
+            tags: newTags,
+          };
+        }
+        return m;
+      }),
+    );
+  };
+
+  const handleAddCustomTag = (memberId) => {
+    const trimmed = customTagInput.trim();
+    if (!trimmed) return;
+
+    onChange(
+      taggedMembers.map((m) => {
+        const id = getMemberId(m);
+        if (id?.toString() === memberId?.toString()) {
+          const currentTags = getMemberTags(m);
+          if (currentTags.includes(trimmed)) return m;
+          const newTags = [...currentTags, trimmed];
+          return {
+            ...m,
+            projectRole: newTags[0] || trimmed,
+            tags: newTags,
+          };
+        }
+        return m;
+      }),
+    );
     setCustomTagInput("");
   };
 
-  // Untag member completely from project
-  const handleRemoveMember = (memberId, e) => {
-    e?.stopPropagation();
+  const handleRemoveMember = (memberId) => {
     onChange(
       taggedMembers.filter(
-        (m) => (m.id || m._id)?.toString() !== memberId?.toString(),
+        (m) => getMemberId(m)?.toString() !== memberId?.toString(),
       ),
     );
-    if (selectedMemberId?.toString() === memberId?.toString()) {
-      setSelectedMemberId(null);
+    if (openPopoverMemberId?.toString() === memberId?.toString()) {
+      setOpenPopoverMemberId(null);
+      setPopoverCoords(null);
     }
   };
 
-  // When clicking on a member from the list: select them first
-  const handleSelectMember = (member) => {
-    const mId = member.id || member._id;
-
-    // If not yet tagged, initialize them with a smart default role tag
-    if (!isTagged(mId)) {
-      const defaultRole = (() => {
-        const title = (member.role || "").toLowerCase();
-        if (
-          title.includes("design") ||
-          title.includes("ui") ||
-          title.includes("ux")
-        )
-          return "UI/UX Designer";
-        if (title.includes("frontend")) return "Frontend Developer";
-        if (title.includes("backend")) return "Backend Developer";
-        if (title.includes("full") || title.includes("stack"))
-          return "Full Stack Developer";
-        if (title.includes("qa") || title.includes("test"))
-          return "QA Reviewer";
-        if (title.includes("lead") || title.includes("manager"))
-          return "Project Lead";
-        if (title.includes("devops") || title.includes("cloud"))
-          return "DevOps Engineer";
-        return "Contributor";
-      })();
-
-      const newMemberObj = {
-        ...member,
-        id: mId,
-        _id: mId,
-        role: "Member",
-        projectRole: defaultRole,
-        tags: [defaultRole],
-      };
-      onChange([...taggedMembers, newMemberObj]);
+  const handleOpenPopover = (e, mId) => {
+    e.stopPropagation();
+    if (openPopoverMemberId?.toString() === mId?.toString()) {
+      setOpenPopoverMemberId(null);
+      setPopoverCoords(null);
+      return;
     }
+    triggerButtonRef.current = e.currentTarget;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const spaceBelow = window.innerHeight - rect.bottom;
+    const openUp = spaceBelow < 280;
 
-    setSelectedMemberId(mId);
+    setPopoverCoords({
+      top: openUp ? undefined : rect.bottom + 6,
+      bottom: openUp ? window.innerHeight - rect.top + 6 : undefined,
+      right: window.innerWidth - rect.right,
+    });
+    setOpenPopoverMemberId(mId);
+    setCustomTagInput("");
   };
-
-  const activeMemberTags = activeMember
-    ? getMemberTags(activeMember.id || activeMember._id)
-    : [];
 
   return (
-    <div className="space-y-3.5">
-      {/* Header */}
+    <div className="space-y-3">
+      {/* Section Header */}
       <div className="flex items-center justify-between">
-        <div>
-          <label className="block text-xs font-bold uppercase tracking-wider text-slate-700">
-            Project Contributors & Member Tagging{" "}
-            <span className="text-slate-400 font-normal">
-              ({taggedMembers.length} tagged)
+        <label className="block text-xs font-bold uppercase tracking-wider text-slate-700">
+          Team Members
+          {taggedMembers.length > 0 && (
+            <span className="ml-1.5 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-indigo-50 text-[#4361EE]">
+              {taggedMembers.length} added
             </span>
-          </label>
-          <p className="text-[11px] text-slate-400 font-medium">
-            Select a member from the list below to define their tags and custom
-            roles.
-          </p>
-        </div>
+          )}
+        </label>
       </div>
 
-      {/* 1. Tagged Members Overview Section */}
-      {taggedMembers.length > 0 && (
-        <div className="space-y-1.5">
-          <div className="flex items-center justify-between text-[11px] font-semibold text-slate-500">
-            <span>Tagged in Project ({taggedMembers.length}):</span>
-            <span className="text-slate-400 font-normal text-[10px]">
-              Click any member card to adjust tags
-            </span>
-          </div>
+      {/* 1. Search Bar at the TOP of the Team Members section */}
+      <div ref={searchContainerRef} className="relative">
+        <div className="relative">
+          <Search
+            size={14}
+            className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"
+          />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => {
+              setSearchQuery(e.target.value);
+              setIsSearchOpen(true);
+            }}
+            onFocus={() => setIsSearchOpen(true)}
+            placeholder="Search team members by name, email, or role to add..."
+            className="w-full pl-9 pr-8 py-2 rounded-xl border border-slate-200 text-xs bg-white placeholder-slate-400 text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#4361EE] shadow-2xs"
+          />
+          {searchQuery && (
+            <button
+              type="button"
+              onClick={() => {
+                setSearchQuery("");
+                setIsSearchOpen(false);
+              }}
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-0.5 cursor-pointer"
+            >
+              <X size={13} />
+            </button>
+          )}
+        </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 p-2.5 bg-slate-50/90 rounded-2xl border border-slate-200/80 max-h-36 overflow-y-auto">
+        {/* Autocomplete Search Dropdown */}
+        {isSearchOpen && searchQuery.trim().length > 0 && (
+          <div className="absolute left-0 right-0 top-full mt-1.5 bg-white rounded-2xl border border-slate-200 shadow-xl max-h-48 overflow-y-auto z-20 divide-y divide-slate-100">
+            {filteredSearchResults.length > 0 ? (
+              filteredSearchResults.map((user) => {
+                const uId = user.id || user._id;
+                const alreadyTagged = isTagged(uId);
+
+                return (
+                  <div
+                    key={uId}
+                    onClick={() => {
+                      if (!alreadyTagged) handleAddMember(user);
+                    }}
+                    className={`flex items-center justify-between p-2.5 transition-colors ${
+                      alreadyTagged
+                        ? "bg-slate-50/80 cursor-default"
+                        : "hover:bg-indigo-50/50 cursor-pointer"
+                    }`}
+                  >
+                    <div className="flex items-center gap-2.5 min-w-0 pr-2">
+                      <Avatar
+                        src={user.avatar}
+                        name={user.name}
+                        size="xs"
+                        className="w-6 h-6 rounded-full shrink-0 ring-1 ring-slate-100"
+                      />
+                      <div className="min-w-0">
+                        <p className="text-xs font-bold text-slate-800 truncate">
+                          {user.name}
+                        </p>
+                        <p className="text-[10px] text-slate-400 truncate">
+                          {user.email ||
+                            (user.username
+                              ? `@${user.username}`
+                              : user.role || "")}
+                        </p>
+                      </div>
+                    </div>
+
+                    {alreadyTagged ? (
+                      <span className="text-[10px] font-semibold text-emerald-600 flex items-center gap-1 shrink-0">
+                        <Check size={12} strokeWidth={2.5} />
+                        <span>Added</span>
+                      </span>
+                    ) : (
+                      <span className="text-[11px] font-bold text-[#4361EE] flex items-center gap-1 hover:underline shrink-0">
+                        <Plus size={12} strokeWidth={2.5} />
+                        <span>Add</span>
+                      </span>
+                    )}
+                  </div>
+                );
+              })
+            ) : (
+              <div className="p-3 text-center text-xs text-slate-400">
+                No team members found matching "{searchQuery}"
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* 2. Added Members List: Compact, Inline Rows with Multi-Select Tag Badges & Popover */}
+      <div className="space-y-1.5">
+        {taggedMembers.length > 0 ? (
+          <div className="space-y-1.5">
             {taggedMembers.map((member) => {
-              const mId = member.id || member._id;
-              const isSelected =
-                selectedMemberId?.toString() === mId?.toString();
-              const tags = getMemberTags(mId);
+              const mId = getMemberId(member);
+              const tags = getMemberTags(member);
+              const isPopoverOpen =
+                openPopoverMemberId?.toString() === mId?.toString();
 
               return (
                 <div
                   key={mId}
-                  onClick={() => setSelectedMemberId(mId)}
-                  className={`flex items-center justify-between p-2 rounded-xl border transition-all cursor-pointer ${
-                    isSelected
-                      ? "bg-indigo-50/70 border-indigo-300 ring-2 ring-indigo-200 shadow-xs"
-                      : "bg-white border-slate-200/90 hover:border-indigo-200 shadow-2xs"
-                  }`}
+                  className="flex items-center justify-between p-2 sm:px-2.5 rounded-xl border border-slate-200/80 bg-white hover:border-slate-300 transition-colors shadow-2xs gap-2 min-h-11"
                 >
-                  <div className="flex items-center gap-2 min-w-0 pr-1">
+                  {/* Left: Avatar + Name + Subtitle */}
+                  <div className="flex items-center gap-2 min-w-30 sm:min-w-37.5 max-w-40 sm:max-w-50 shrink-0">
                     <Avatar
-                      src={member.avatar}
-                      name={member.name}
+                      src={member.avatar || member.user?.avatar}
+                      name={member.name || member.user?.name}
                       size="xs"
-                      className="w-6 h-6 rounded-full shrink-0"
+                      className="w-7 h-7 rounded-full shrink-0 ring-1 ring-slate-100"
                     />
                     <div className="min-w-0">
                       <p className="text-xs font-bold text-slate-800 truncate leading-tight">
-                        {member.name}
+                        {member.name || member.user?.name}
                       </p>
-                      <div className="flex flex-wrap gap-1 mt-0.5">
-                        {tags.map((t) => (
-                          <span
-                            key={t}
-                            className="text-[9.5px] font-bold px-1.5 py-0.2 rounded-md bg-indigo-50 text-[#4361EE] border border-indigo-100"
-                          >
-                            {t}
-                          </span>
-                        ))}
-                      </div>
+                      <p className="text-[10px] text-slate-400 truncate">
+                        {member.email ||
+                          member.user?.email ||
+                          (member.username ? `@${member.username}` : "")}
+                      </p>
                     </div>
                   </div>
 
-                  <button
-                    type="button"
-                    onClick={(e) => handleRemoveMember(mId, e)}
-                    className="p-1 rounded-lg text-slate-400 hover:text-rose-500 hover:bg-rose-50 transition-colors shrink-0"
-                    title={`Untag ${member.name}`}
-                  >
-                    <X size={13} />
-                  </button>
+                  {/* Middle: Assigned Tag Badges with 'x' */}
+                  <div className="flex flex-wrap items-center gap-1 flex-1 min-w-0 pr-1">
+                    {tags.length > 0 ? (
+                      tags.map((tag) => (
+                        <span
+                          key={tag}
+                          className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-semibold border shadow-2xs shrink-0 transition-all ${getAssignedTagStyle(tag)}`}
+                        >
+                          <span className="truncate max-w-22.5 sm:max-w-30">
+                            {tag}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveTag(mId, tag)}
+                            className="opacity-70 hover:opacity-100 rounded p-0.5 transition-opacity cursor-pointer"
+                            title={`Remove ${tag} role`}
+                            aria-label={`Remove ${tag} role`}
+                          >
+                            <X size={9} strokeWidth={2.5} />
+                          </button>
+                        </span>
+                      ))
+                    ) : (
+                      <span className="text-[10.5px] text-slate-400 italic">
+                        No roles
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Right Actions: [+ Add Role ▾] & [Delete Member Button] */}
+                  <div className="flex items-center gap-1.5 shrink-0 ml-auto">
+                    {/* Add Role Popover Trigger */}
+                    <button
+                      type="button"
+                      onClick={(e) => handleOpenPopover(e, mId)}
+                      className={`inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-semibold border transition-all cursor-pointer ${
+                        isPopoverOpen
+                          ? "bg-[#4361EE] text-white border-[#4361EE] shadow-xs"
+                          : "bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200/90 hover:border-slate-300"
+                      }`}
+                      title="Add or toggle roles"
+                    >
+                      <Plus size={11} strokeWidth={2.5} />
+                      <span>Role</span>
+                      <ChevronDown
+                        size={11}
+                        className={`transition-transform duration-150 ${
+                          isPopoverOpen ? "rotate-180" : ""
+                        }`}
+                      />
+                    </button>
+
+                    {/* Delete Member Button */}
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveMember(mId)}
+                      className="p-1 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
+                      title={`Remove ${member.name || member.user?.name} from project`}
+                      aria-label={`Remove ${member.name || member.user?.name} from project`}
+                    >
+                      <Trash2 size={13} />
+                    </button>
+                  </div>
                 </div>
               );
             })}
           </div>
-        </div>
-      )}
-
-      {/* 2. Interactive Tagging Panel for the Currently Selected Member */}
-      {activeMember && (
-        <div className="p-3.5 rounded-2xl bg-indigo-50/60 border border-indigo-200/80 space-y-3 animate-in fade-in zoom-in-98 duration-150 shadow-2xs">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Avatar
-                src={activeMember.avatar}
-                name={activeMember.name}
-                size="sm"
-                className="w-7 h-7 ring-2 ring-indigo-300"
-              />
-              <div>
-                <div className="flex items-center gap-1.5">
-                  <span className="text-xs font-bold text-slate-900">
-                    {activeMember.name}
-                  </span>
-                  <span className="text-[10px] font-semibold px-1.5 py-0.2 rounded-md bg-indigo-100 text-[#4361EE]">
-                    Selected for Tagging
-                  </span>
-                </div>
-                <p className="text-[10px] text-slate-500">
-                  Select predefined tags or enter custom role tags for this
-                  member.
-                </p>
-              </div>
-            </div>
-
-            <button
-              type="button"
-              onClick={() => setSelectedMemberId(null)}
-              className="p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-white/80 transition-colors"
-              title="Close tagging panel"
-            >
-              <X size={14} />
-            </button>
+        ) : (
+          <div className="p-3 text-center rounded-xl border border-dashed border-slate-200 bg-slate-50/50 text-slate-400 text-xs font-medium">
+            No team members added yet. Search above to add contributors.
           </div>
+        )}
+      </div>
 
-          {/* Current Active Tags for this Member */}
-          <div className="flex flex-wrap items-center gap-1.5 pt-1">
-            <span className="text-[11px] font-bold text-slate-600 mr-1 flex items-center gap-1">
-              <Tag size={12} className="text-[#4361EE]" />
-              <span>Assigned Tags:</span>
-            </span>
-            {activeMemberTags.length > 0 ? (
-              activeMemberTags.map((tag) => (
-                <span
-                  key={tag}
-                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[11px] font-bold bg-[#4361EE] text-white shadow-2xs animate-in fade-in"
-                >
-                  <span>{tag}</span>
-                  <button
-                    type="button"
-                    onClick={() => handleToggleTag(activeMember, tag)}
-                    className="hover:bg-white/20 rounded p-0.5 transition-colors"
-                    title={`Remove ${tag} tag`}
-                  >
-                    <X size={10} />
-                  </button>
-                </span>
-              ))
-            ) : (
-              <span className="text-[11px] text-slate-400 italic">
-                No tags assigned yet. Select options below.
+      {/* Portaled Multi-Select Roles Popover to escape all scroll and overflow clipping */}
+      {openPopoverMemberId &&
+        popoverCoords &&
+        typeof document !== "undefined" &&
+        createPortal(
+          <div
+            ref={popoverRef}
+            style={{
+              position: "fixed",
+              top:
+                popoverCoords.top !== undefined
+                  ? `${popoverCoords.top}px`
+                  : "auto",
+              bottom:
+                popoverCoords.bottom !== undefined
+                  ? `${popoverCoords.bottom}px`
+                  : "auto",
+              right: `${popoverCoords.right}px`,
+              zIndex: 9999,
+            }}
+            className="w-56 sm:w-60 bg-white rounded-2xl border border-slate-200 shadow-2xl p-2.5 space-y-2 animate-in fade-in zoom-in-95 duration-100"
+          >
+            {/* Popover Header */}
+            <div className="flex items-center justify-between pb-1.5 border-b border-slate-100 text-[11px] font-bold text-slate-700">
+              <span className="flex items-center gap-1">
+                <Tag size={12} className="text-[#4361EE]" />
+                <span>Select Roles</span>
               </span>
-            )}
-          </div>
-
-          {/* Predefined Tag Pills */}
-          <div className="space-y-1.5">
-            <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500">
-              Quick Tag Options (Click to toggle)
-            </label>
-            <div className="flex flex-wrap gap-1.5">
-              {DEFAULT_PRESET_TAGS.map((tag) => {
-                const isSelected = activeMemberTags.includes(tag);
-                return (
-                  <button
-                    key={tag}
-                    type="button"
-                    onClick={() => handleToggleTag(activeMember, tag)}
-                    className={`px-2.5 py-1 rounded-xl text-xs font-semibold transition-all flex items-center gap-1 cursor-pointer ${
-                      isSelected
-                        ? "bg-indigo-600 text-white shadow-xs scale-102 ring-1 ring-indigo-400"
-                        : "bg-white hover:bg-indigo-50/80 text-slate-700 border border-slate-200/90"
-                    }`}
-                  >
-                    {isSelected && <Check size={11} strokeWidth={3} />}
-                    <span>{tag}</span>
-                  </button>
-                );
-              })}
+              <button
+                type="button"
+                onClick={() => {
+                  setOpenPopoverMemberId(null);
+                  setPopoverCoords(null);
+                }}
+                className="text-slate-400 hover:text-slate-600 p-0.5 rounded cursor-pointer"
+              >
+                <X size={12} />
+              </button>
             </div>
-          </div>
 
-          {/* Custom Role Tag Input */}
-          <div className="flex items-center gap-2 pt-1">
-            <div className="relative flex-1">
-              <Tag
-                size={13}
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"
-              />
+            {/* Custom Role Input */}
+            <div className="flex items-center gap-1">
               <input
                 type="text"
                 value={customTagInput}
@@ -399,158 +546,69 @@ export const ProjectMemberTagSelector = ({
                 onKeyDown={(e) => {
                   if (e.key === "Enter") {
                     e.preventDefault();
-                    handleAddCustomTag();
+                    handleAddCustomTag(openPopoverMemberId);
                   }
                 }}
-                placeholder="Type custom tag (e.g. Scrum Master, SEO Specialist, Tech Lead)..."
-                className="w-full pl-8 pr-3 py-1.5 rounded-xl border border-slate-200 bg-white text-xs font-medium text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#4361EE]"
+                placeholder="Custom role..."
+                className="flex-1 px-2 py-1 text-xs rounded-lg border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#4361EE] text-slate-800 placeholder-slate-400"
               />
+              <button
+                type="button"
+                onClick={() => handleAddCustomTag(openPopoverMemberId)}
+                disabled={!customTagInput.trim()}
+                className="p-1.5 rounded-lg bg-[#4361EE] hover:bg-[#3451DE] text-white disabled:opacity-40 transition-colors cursor-pointer shrink-0"
+                title="Add custom role"
+              >
+                <Plus size={11} strokeWidth={2.5} />
+              </button>
             </div>
-            <button
-              type="button"
-              onClick={handleAddCustomTag}
-              disabled={!customTagInput.trim()}
-              className="px-3 py-1.5 rounded-xl bg-[#4361EE] hover:bg-[#3451DE] active:scale-95 text-white text-xs font-bold shadow-xs transition-all disabled:opacity-50 flex items-center gap-1 cursor-pointer shrink-0"
-            >
-              <Plus size={12} strokeWidth={2.5} />
-              <span>Add Custom Tag</span>
-            </button>
-          </div>
 
-          {/* Prompt / Helper text for next member */}
-          <div className="flex items-center justify-between pt-1 border-t border-indigo-100 text-[10px] text-slate-500 font-medium">
-            <span>Tags saved automatically for this member.</span>
-            <button
-              type="button"
-              onClick={() => setSelectedMemberId(null)}
-              className="text-[#4361EE] font-bold hover:underline flex items-center gap-0.5"
-            >
-              <span>Done (Select Next Member Below)</span>
-              <ChevronRight size={11} />
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* 3. Search Bar for Team Members */}
-      <div className="relative">
-        <Search
-          size={14}
-          className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"
-        />
-        <input
-          type="text"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          placeholder="Search team members by name, email, or title to select..."
-          className="w-full pl-9 pr-8 py-2 rounded-xl border border-slate-200 text-xs bg-white placeholder-slate-400 text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#4361EE] shadow-2xs"
-        />
-        {searchQuery && (
-          <button
-            type="button"
-            onClick={() => setSearchQuery("")}
-            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-0.5"
-          >
-            <X size={13} />
-          </button>
-        )}
-      </div>
-
-      {/* 4. Team Member Selection List: Click member to select and tag */}
-      <div className="border border-slate-200/80 rounded-2xl bg-white overflow-hidden shadow-2xs">
-        <div className="max-h-40 sm:max-h-44 overflow-y-auto divide-y divide-slate-100">
-          {filteredMembers.length > 0 ? (
-            filteredMembers.map((member) => {
-              const mId = member.id || member._id;
-              const tagged = isTagged(mId);
-              const isSelected =
-                selectedMemberId?.toString() === mId?.toString();
-              const tags = getMemberTags(mId);
-
-              return (
-                <div
-                  key={mId}
-                  onClick={() => handleSelectMember(member)}
-                  className={`flex items-center justify-between p-2.5 transition-colors cursor-pointer ${
-                    isSelected
-                      ? "bg-indigo-50/80 border-l-4 border-l-[#4361EE]"
-                      : tagged
-                        ? "bg-emerald-50/20 hover:bg-slate-50"
-                        : "hover:bg-slate-50"
-                  }`}
-                >
-                  <div className="flex items-center gap-2.5 min-w-0 pr-2">
-                    <Avatar
-                      src={member.avatar}
-                      name={member.name}
-                      size="sm"
-                      className="ring-1 ring-slate-100 shrink-0"
-                    />
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-1.5">
-                        <p className="text-xs font-bold text-slate-800 truncate">
-                          {member.name}
-                        </p>
-                        {member.username && (
-                          <span className="text-[10px] text-slate-400 truncate hidden sm:inline">
-                            @{member.username}
-                          </span>
-                        )}
-                      </div>
-                      <p className="text-[11px] text-slate-400 truncate">
-                        {member.role || "Team Member"}
-                      </p>
+            {/* Quick Roles Checkbox List */}
+            <div className="max-h-44 overflow-y-auto space-y-0.5 divide-y divide-slate-50 pr-0.5">
+              {QUICK_ROLES.map((role) => {
+                const activeMember = taggedMembers.find(
+                  (m) =>
+                    getMemberId(m)?.toString() ===
+                    openPopoverMemberId?.toString(),
+                );
+                const activeMemberTags = activeMember
+                  ? getMemberTags(activeMember)
+                  : [];
+                const isChecked = activeMemberTags.includes(role);
+                return (
+                  <div
+                    key={role}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleToggleTag(openPopoverMemberId, role);
+                    }}
+                    className="flex items-center justify-between px-2 py-1.5 rounded-lg hover:bg-slate-50 cursor-pointer transition-colors text-xs select-none"
+                  >
+                    <span
+                      className={`text-[11px] ${
+                        isChecked
+                          ? "text-[#4361EE] font-bold"
+                          : "text-slate-700 font-medium"
+                      }`}
+                    >
+                      {role}
+                    </span>
+                    <div
+                      className={`w-3.5 h-3.5 rounded border flex items-center justify-center transition-all ${
+                        isChecked
+                          ? "bg-[#4361EE] border-[#4361EE] text-white"
+                          : "border-slate-300 bg-white"
+                      }`}
+                    >
+                      {isChecked && <Check size={10} strokeWidth={3} />}
                     </div>
                   </div>
-
-                  {/* Right Action: Select / Tagged Pill */}
-                  <div className="flex items-center gap-2 shrink-0">
-                    {tagged ? (
-                      <div className="flex items-center gap-1.5">
-                        <div className="flex flex-wrap gap-1 max-w-37.5 justify-end">
-                          {tags.slice(0, 2).map((t) => (
-                            <span
-                              key={t}
-                              className="text-[10px] font-bold px-1.5 py-0.2 rounded-md bg-indigo-50 text-[#4361EE] border border-indigo-100"
-                            >
-                              {t}
-                            </span>
-                          ))}
-                          {tags.length > 2 && (
-                            <span className="text-[9px] font-bold text-slate-400">
-                              +{tags.length - 2}
-                            </span>
-                          )}
-                        </div>
-
-                        <span
-                          className={`px-2.5 py-1 rounded-xl text-[11px] font-bold flex items-center gap-1 transition-colors ${
-                            isSelected
-                              ? "bg-indigo-600 text-white shadow-xs"
-                              : "bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-indigo-50 hover:text-indigo-700 hover:border-indigo-200"
-                          }`}
-                        >
-                          <Check size={11} strokeWidth={3} />
-                          <span>{isSelected ? "Editing" : "Tagged"}</span>
-                        </span>
-                      </div>
-                    ) : (
-                      <span className="px-3 py-1 rounded-xl bg-slate-100 hover:bg-[#4361EE] hover:text-white text-slate-700 text-[11px] font-bold shadow-2xs flex items-center gap-1 transition-all">
-                        <Plus size={12} strokeWidth={2.5} />
-                        <span>Select & Tag</span>
-                      </span>
-                    )}
-                  </div>
-                </div>
-              );
-            })
-          ) : (
-            <div className="p-4 text-center text-xs text-slate-400">
-              No team members found matching "{searchQuery}"
+                );
+              })}
             </div>
-          )}
-        </div>
-      </div>
+          </div>,
+          document.body,
+        )}
 
       {error && <p className="text-xs text-rose-500 font-medium">{error}</p>}
     </div>
