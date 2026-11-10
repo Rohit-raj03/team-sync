@@ -20,6 +20,7 @@ export const ProjectMemberTagSelector = ({
   taggedMembers = [],
   onChange,
   error,
+  themeColor = "#4361EE",
 }) => {
   const { members = [] } = useTeam();
   const [searchQuery, setSearchQuery] = useState("");
@@ -113,6 +114,21 @@ export const ProjectMemberTagSelector = ({
   const getMemberTags = (member) => {
     if (Array.isArray(member.tags) && member.tags.length > 0) {
       return member.tags;
+    }
+    if (Array.isArray(member.projectRoles) && member.projectRoles.length > 0) {
+      return member.projectRoles;
+    }
+    if (Array.isArray(member.projectRole) && member.projectRole.length > 0) {
+      return member.projectRole;
+    }
+    if (
+      typeof member.projectRole === "string" &&
+      member.projectRole.includes(",")
+    ) {
+      return member.projectRole
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean);
     }
     if (member.projectRole) {
       return [member.projectRole];
@@ -429,6 +445,15 @@ export const ProjectMemberTagSelector = ({
                       tags.map((tag) => (
                         <span
                           key={tag}
+                          style={
+                            themeColor && themeColor !== "#4361EE"
+                              ? {
+                                  backgroundColor: `${themeColor}15`,
+                                  color: themeColor,
+                                  borderColor: `${themeColor}35`,
+                                }
+                              : undefined
+                          }
                           className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-semibold border shadow-2xs shrink-0 transition-all ${getAssignedTagStyle(tag)}`}
                         >
                           <span className="truncate max-w-22.5 sm:max-w-30">

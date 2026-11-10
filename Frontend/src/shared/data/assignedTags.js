@@ -14,24 +14,27 @@ export const ASSIGNED_TAGS = {
   CONTRIBUTOR: "Contributor",
 };
 
+// Project Theme Tag styling (Unified theme instead of rainbow multi-colors)
+export const PROJECT_THEME_TAG_STYLE = "bg-indigo-50 text-[#4361EE] border-indigo-100/90";
+
 export const TAG_COLORS = {
-  Frontend: "bg-blue-100 text-blue-700 border-blue-200",
-  Backend: "bg-purple-100 text-purple-700 border-purple-200",
-  "UI/UX": "bg-pink-100 text-pink-700 border-pink-200",
-  "Full Stack": "bg-teal-100 text-teal-700 border-teal-200",
-  "Project Lead": "bg-indigo-100 text-indigo-700 border-indigo-200",
-  Database: "bg-amber-100 text-amber-700 border-amber-200",
-  Testing: "bg-green-100 text-green-700 border-green-200",
-  DevOps: "bg-indigo-100 text-indigo-700 border-indigo-200",
-  "QA Reviewer": "bg-emerald-100 text-emerald-700 border-emerald-200",
-  "Product Manager": "bg-violet-100 text-violet-700 border-violet-200",
-  Documentation: "bg-gray-100 text-gray-700 border-gray-200",
-  "Bug Fix": "bg-red-100 text-red-700 border-red-200",
-  Contributor: "bg-slate-100 text-slate-700 border-slate-200",
+  Frontend: PROJECT_THEME_TAG_STYLE,
+  Backend: PROJECT_THEME_TAG_STYLE,
+  "UI/UX": PROJECT_THEME_TAG_STYLE,
+  "Full Stack": PROJECT_THEME_TAG_STYLE,
+  "Project Lead": PROJECT_THEME_TAG_STYLE,
+  Database: PROJECT_THEME_TAG_STYLE,
+  Testing: PROJECT_THEME_TAG_STYLE,
+  DevOps: PROJECT_THEME_TAG_STYLE,
+  "QA Reviewer": PROJECT_THEME_TAG_STYLE,
+  "Product Manager": PROJECT_THEME_TAG_STYLE,
+  Documentation: PROJECT_THEME_TAG_STYLE,
+  "Bug Fix": PROJECT_THEME_TAG_STYLE,
+  Contributor: PROJECT_THEME_TAG_STYLE,
 };
 
 export const getAssignedTagStyle = (tag) => {
-  return TAG_COLORS[tag] || "bg-indigo-50 text-[#4361EE] border-indigo-100/90";
+  return TAG_COLORS[tag] || PROJECT_THEME_TAG_STYLE;
 };
 
 export const getAssignedTagLabel = (tag) => {

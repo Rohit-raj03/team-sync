@@ -13,9 +13,8 @@ const projectMemberSchema = new mongoose.Schema(
       default: "Member",
     },
     projectRole: {
-      type: String,
+      type: mongoose.Schema.Types.Mixed,
       default: "Contributor",
-      trim: true,
     },
     tags: [
       {
@@ -28,8 +27,31 @@ const projectMemberSchema = new mongoose.Schema(
       default: Date.now,
     },
   },
-  { _id: true }
+  { _id: true },
 );
+
+// Keep member projectRole and tags arrays synchronized
+projectMemberSchema.pre("validate", function (next) {
+  if (Array.isArray(this.tags) && this.tags.length > 0) {
+    if (!this.projectRole || (Array.isArray(this.projectRole) && this.projectRole.length === 0)) {
+      this.projectRole = this.tags;
+    }
+  } else if (Array.isArray(this.projectRole) && this.projectRole.length > 0) {
+    this.tags = this.projectRole;
+  } else if (typeof this.projectRole === "string" && this.projectRole.trim()) {
+    if (this.projectRole.includes(",")) {
+      const split = this.projectRole
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean);
+      this.tags = split;
+      this.projectRole = split;
+    } else {
+      this.tags = [this.projectRole.trim()];
+    }
+  }
+  next();
+});
 
 const projectSchema = new mongoose.Schema(
   {
@@ -135,7 +157,7 @@ const projectSchema = new mongoose.Schema(
     timestamps: true,
     toJSON: { virtuals: true },
     toObject: { virtuals: true },
-  }
+  },
 );
 
 // Keep manager and owner in sync before saving
@@ -156,6 +178,28 @@ projectSchema.pre("save", function (next) {
     this.themeColor = this.color;
   } else if (this.themeColor && !this.color) {
     this.color = this.themeColor;
+  }
+
+  // Ensure member projectRole and tags arrays are always synchronized before saving
+  if (Array.isArray(this.members)) {
+    this.members.forEach((m) => {
+      const rawRoles =
+        Array.isArray(m.tags) && m.tags.length > 0
+          ? m.tags
+          : Array.isArray(m.projectRole) && m.projectRole.length > 0
+          ? m.projectRole
+          : typeof m.projectRole === "string" && m.projectRole.includes(",")
+          ? m.projectRole
+              .split(",")
+              .map((s) => s.trim())
+              .filter(Boolean)
+          : m.projectRole
+          ? [m.projectRole]
+          : ["Contributor"];
+
+      m.tags = rawRoles;
+      m.projectRole = rawRoles;
+    });
   }
 
   next();
@@ -206,6 +250,26 @@ projectSchema.set("toJSON", {
     if (Array.isArray(ret.members)) {
       ret.members = ret.members.map((m) => {
         if (m.user && typeof m.user === "object") {
+          const rawTags =
+            Array.isArray(m.tags) && m.tags.length > 0
+              ? m.tags
+              : Array.isArray(m.projectRole) && m.projectRole.length > 0
+              ? m.projectRole
+              : typeof m.projectRole === "string" && m.projectRole.includes(",")
+              ? m.projectRole
+                  .split(",")
+                  .map((s) => s.trim())
+                  .filter(Boolean)
+              : m.projectRole
+              ? [m.projectRole]
+              : ["Contributor"];
+
+          const displayRole = Array.isArray(m.projectRole)
+            ? m.projectRole.join(", ")
+            : typeof m.projectRole === "string"
+            ? m.projectRole
+            : rawTags.join(", ");
+
           return {
             id: m.user._id || m.user.id,
             _id: m.user._id || m.user.id,
@@ -214,13 +278,9 @@ projectSchema.set("toJSON", {
             username: m.user.username,
             avatar: m.user.avatar,
             role: m.role || "Member",
-            projectRole: m.projectRole || m.role || "Contributor",
-            tags:
-              Array.isArray(m.tags) && m.tags.length > 0
-                ? m.tags
-                : m.projectRole
-                ? [m.projectRole]
-                : ["Contributor"],
+            projectRole: displayRole,
+            projectRoles: rawTags,
+            tags: rawTags,
             joinedAt: m.joinedAt,
             user: m.user,
           };

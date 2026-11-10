@@ -110,13 +110,23 @@ export const createProject = async (req, res) => {
             const memberTags =
               Array.isArray(m.tags) && m.tags.length > 0
                 ? m.tags
+                : Array.isArray(m.projectRoles) && m.projectRoles.length > 0
+                ? m.projectRoles
+                : Array.isArray(m.projectRole) && m.projectRole.length > 0
+                ? m.projectRole
+                : typeof m.projectRole === "string" && m.projectRole.includes(",")
+                ? m.projectRole
+                    .split(",")
+                    .map((s) => s.trim())
+                    .filter(Boolean)
                 : m.projectRole
                 ? [m.projectRole]
                 : ["Contributor"];
+
             initialMembers.push({
               user: userDoc._id,
               role: m.role || "Member",
-              projectRole: m.projectRole || memberTags[0] || "Contributor",
+              projectRole: memberTags,
               tags: memberTags,
               joinedAt: new Date(),
             });
@@ -355,6 +365,95 @@ export const updateProject = async (req, res) => {
       project.endDate = req.body.dueDate;
     }
 
+    if (Array.isArray(req.body.members)) {
+      const updatedMembers = [];
+      const ownerId = project.owner?.toString() || project.manager?.toString();
+
+      // Ensure project owner/manager is preserved
+      const hasOwnerInPayload = req.body.members.some((m) => {
+        const uid =
+          typeof m === "string"
+            ? m
+            : m.id || m._id || m.user?._id || m.user?.id || m.user;
+        return uid?.toString() === ownerId;
+      });
+
+      if (!hasOwnerInPayload && ownerId) {
+        const existingOwner = project.members.find((m) => {
+          const uid = m.user?._id?.toString() || m.user?.toString();
+          return uid === ownerId;
+        });
+        if (existingOwner) {
+          updatedMembers.push(existingOwner);
+        } else {
+          updatedMembers.push({
+            user: ownerId,
+            role: "Owner",
+            projectRole: ["Project Owner"],
+            tags: ["Project Owner"],
+            joinedAt: project.createdAt || new Date(),
+          });
+        }
+      }
+
+      for (const m of req.body.members) {
+        const userId =
+          typeof m === "string"
+            ? m
+            : m.id || m._id || m.user?._id || m.user?.id || m.user;
+
+        if (userId && mongoose.Types.ObjectId.isValid(userId)) {
+          // Avoid duplicate entries
+          const alreadyAdded = updatedMembers.some((existing) => {
+            const uid =
+              existing.user?._id?.toString() || existing.user?.toString();
+            return uid === userId.toString();
+          });
+          if (alreadyAdded) continue;
+
+          const existingMember = project.members.find((em) => {
+            const uid = em.user?._id?.toString() || em.user?.toString();
+            return uid === userId.toString();
+          });
+
+          const rawRoles =
+            Array.isArray(m.tags) && m.tags.length > 0
+              ? m.tags
+              : Array.isArray(m.projectRoles) && m.projectRoles.length > 0
+              ? m.projectRoles
+              : Array.isArray(m.projectRole) && m.projectRole.length > 0
+              ? m.projectRole
+              : typeof m.projectRole === "string" && m.projectRole.includes(",")
+              ? m.projectRole
+                  .split(",")
+                  .map((s) => s.trim())
+                  .filter(Boolean)
+              : m.projectRole
+              ? [m.projectRole]
+              : existingMember?.tags && existingMember.tags.length > 0
+              ? existingMember.tags
+              : existingMember?.projectRole
+              ? Array.isArray(existingMember.projectRole)
+                ? existingMember.projectRole
+                : [existingMember.projectRole]
+              : ["Contributor"];
+
+          updatedMembers.push({
+            user: userId,
+            role:
+              m.role ||
+              existingMember?.role ||
+              (userId.toString() === ownerId ? "Owner" : "Member"),
+            projectRole: rawRoles,
+            tags: rawRoles,
+            joinedAt: existingMember?.joinedAt || new Date(),
+          });
+        }
+      }
+
+      project.members = updatedMembers;
+    }
+
     await project.save();
 
     const populated = await ProjectModel.findById(projectId)
@@ -556,6 +655,15 @@ export const addProjectMember = async (req, res) => {
     const memberTags =
       Array.isArray(req.body.tags) && req.body.tags.length > 0
         ? req.body.tags
+        : Array.isArray(req.body.projectRoles) && req.body.projectRoles.length > 0
+        ? req.body.projectRoles
+        : Array.isArray(projectRole) && projectRole.length > 0
+        ? projectRole
+        : typeof projectRole === "string" && projectRole.includes(",")
+        ? projectRole
+            .split(",")
+            .map((s) => s.trim())
+            .filter(Boolean)
         : projectRole
         ? [projectRole]
         : ["Contributor"];
@@ -563,7 +671,7 @@ export const addProjectMember = async (req, res) => {
     project.members.push({
       user: targetUser._id,
       role: assignedRole,
-      projectRole: projectRole || memberTags[0] || "Contributor",
+      projectRole: memberTags,
       tags: memberTags,
       joinedAt: new Date(),
     });
@@ -664,16 +772,25 @@ export const updateProjectMemberRole = async (req, res) => {
       }
     }
 
-    if (projectRole !== undefined) {
-      member.projectRole = projectRole;
-    }
+    const newRoles =
+      Array.isArray(req.body.tags) && req.body.tags.length > 0
+        ? req.body.tags
+        : Array.isArray(req.body.projectRoles) && req.body.projectRoles.length > 0
+        ? req.body.projectRoles
+        : Array.isArray(projectRole) && projectRole.length > 0
+        ? projectRole
+        : typeof projectRole === "string" && projectRole.includes(",")
+        ? projectRole
+            .split(",")
+            .map((s) => s.trim())
+            .filter(Boolean)
+        : projectRole !== undefined
+        ? [projectRole]
+        : null;
 
-    if (req.body.tags !== undefined) {
-      const updatedTags = Array.isArray(req.body.tags) ? req.body.tags : [req.body.tags];
-      member.tags = updatedTags;
-      if (!projectRole && updatedTags.length > 0) {
-        member.projectRole = updatedTags[0];
-      }
+    if (newRoles !== null) {
+      member.projectRole = newRoles;
+      member.tags = newRoles;
     }
 
     await project.save();

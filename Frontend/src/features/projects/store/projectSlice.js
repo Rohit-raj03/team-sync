@@ -84,12 +84,23 @@ const projectSlice = createSlice({
           (m) => (m.id || m._id) === memberId
         );
         if (!exists) {
+          const rawTags =
+            Array.isArray(member.tags) && member.tags.length > 0
+              ? member.tags
+              : Array.isArray(projectRole) && projectRole.length > 0
+              ? projectRole
+              : typeof projectRole === "string" && projectRole.includes(",")
+              ? projectRole.split(",").map((s) => s.trim()).filter(Boolean)
+              : [projectRole || "Contributor"];
+
           project.members.push({
             ...member,
             id: memberId,
             _id: memberId,
             role,
-            projectRole,
+            projectRole: Array.isArray(projectRole) ? projectRole.join(", ") : projectRole,
+            projectRoles: rawTags,
+            tags: rawTags,
           });
           storage.set("teamsync_projects", state.projects);
         }
@@ -118,7 +129,21 @@ const projectSlice = createSlice({
         );
         if (mem) {
           if (role) mem.role = role;
-          if (projectRole !== undefined) mem.projectRole = projectRole;
+          if (projectRole !== undefined) {
+            const rawTags =
+              Array.isArray(projectRole) && projectRole.length > 0
+                ? projectRole
+                : typeof projectRole === "string" && projectRole.includes(",")
+                ? projectRole.split(",").map((s) => s.trim()).filter(Boolean)
+                : [projectRole];
+            mem.projectRole = Array.isArray(projectRole) ? projectRole.join(", ") : projectRole;
+            mem.projectRoles = rawTags;
+            mem.tags = rawTags;
+          }
+          if (Array.isArray(action.payload.tags)) {
+            mem.tags = action.payload.tags;
+            mem.projectRoles = action.payload.tags;
+          }
           storage.set("teamsync_projects", state.projects);
         }
       }

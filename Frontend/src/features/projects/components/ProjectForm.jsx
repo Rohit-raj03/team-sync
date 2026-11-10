@@ -61,6 +61,19 @@ const resolveInitialProjectData = (init = {}, isEditMode = false) => {
         : formatDateForInput(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000))),
     members: Array.isArray(init?.members)
       ? init.members.map((m) => {
+          const rawRoles =
+            Array.isArray(m?.tags) && m.tags.length > 0
+              ? m.tags
+              : Array.isArray(m?.projectRoles) && m.projectRoles.length > 0
+              ? m.projectRoles
+              : Array.isArray(m?.projectRole) && m.projectRole.length > 0
+              ? m.projectRole
+              : typeof m?.projectRole === "string" && m.projectRole.includes(",")
+              ? m.projectRole.split(",").map((s) => s.trim()).filter(Boolean)
+              : m?.projectRole
+              ? [m.projectRole]
+              : ["Contributor"];
+
           if (m?.user && typeof m.user === "object") {
             const uId = m.user._id || m.user.id;
             return {
@@ -70,16 +83,17 @@ const resolveInitialProjectData = (init = {}, isEditMode = false) => {
               email: m.user.email,
               avatar: m.user.avatar,
               role: m.role || "Member",
-              projectRole: m.projectRole || "Contributor",
-              tags:
-                Array.isArray(m.tags) && m.tags.length > 0
-                  ? m.tags
-                  : m.projectRole
-                  ? [m.projectRole]
-                  : ["Contributor"],
+              projectRole: rawRoles[0] || "Contributor",
+              projectRoles: rawRoles,
+              tags: rawRoles,
             };
           }
-          return m;
+          return {
+            ...m,
+            projectRole: rawRoles[0] || m.projectRole || "Contributor",
+            projectRoles: rawRoles,
+            tags: rawRoles,
+          };
         })
       : [],
   };
@@ -471,6 +485,7 @@ export const ProjectForm = ({
         <div className="p-3 sm:p-3.5 rounded-2xl bg-white border border-slate-200/80 shadow-2xs">
           <ProjectMemberTagSelector
             taggedMembers={formData.members}
+            themeColor={formData.color || "#4361EE"}
             onChange={(newMembers) =>
               setFormData((prev) => ({ ...prev, members: newMembers }))
             }
