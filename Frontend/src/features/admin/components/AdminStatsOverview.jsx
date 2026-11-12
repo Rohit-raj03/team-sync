@@ -14,35 +14,45 @@ import {
  * Layer: features/admin/components/
  * Responsibility: Displays top-tier administrative statistics cards with metrics for users, projects, tasks, and overdue items.
  */
-export const AdminStatsOverview = ({ metrics }) => {
+export const AdminStatsOverview = ({ metrics = {} }) => {
+  const safeMetrics = {
+    totalUsers: metrics?.totalUsers ?? 0,
+    activeUsers: metrics?.activeUsers ?? 0,
+    totalProjects: metrics?.totalProjects ?? 0,
+    activeProjects: metrics?.activeProjects ?? 0,
+    totalTasks: metrics?.totalTasks ?? 0,
+    completedTasks: metrics?.completedTasks ?? 0,
+    overdueTasks: metrics?.overdueTasks ?? 0,
+  };
+
   const cards = [
     {
       label: 'Total Users',
-      value: metrics.totalUsers,
-      subtext: `${metrics.activeUsers} active now`,
+      value: safeMetrics.totalUsers,
+      subtext: `${safeMetrics.activeUsers} active now`,
       icon: Users,
       color: 'bg-blue-50 text-blue-600',
       trend: '+12% this month',
     },
     {
       label: 'Active Users',
-      value: metrics.activeUsers,
-      subtext: `${Math.round((metrics.activeUsers / (metrics.totalUsers || 1)) * 100)}% retention rate`,
+      value: safeMetrics.activeUsers,
+      subtext: `${Math.round((safeMetrics.activeUsers / (safeMetrics.totalUsers || 1)) * 100)}% retention rate`,
       icon: UserCheck,
       color: 'bg-emerald-50 text-emerald-600',
       trend: 'High Engagement',
     },
     {
       label: 'Total Projects',
-      value: metrics.totalProjects,
-      subtext: `${metrics.activeProjects} actively managed`,
+      value: safeMetrics.totalProjects,
+      subtext: `${safeMetrics.activeProjects} actively managed`,
       icon: FolderKanban,
       color: 'bg-indigo-50 text-indigo-600',
       trend: '4 workspaces',
     },
     {
       label: 'Active Projects',
-      value: metrics.activeProjects,
+      value: safeMetrics.activeProjects,
       subtext: 'Ongoing deliverables',
       icon: TrendingUp,
       color: 'bg-purple-50 text-purple-600',
@@ -50,27 +60,27 @@ export const AdminStatsOverview = ({ metrics }) => {
     },
     {
       label: 'Total Tasks',
-      value: metrics.totalTasks,
-      subtext: `${metrics.completedTasks} completed`,
+      value: safeMetrics.totalTasks,
+      subtext: `${safeMetrics.completedTasks} completed`,
       icon: ListTodo,
       color: 'bg-cyan-50 text-cyan-600',
       trend: '+8 new this week',
     },
     {
       label: 'Completed Tasks',
-      value: metrics.completedTasks,
-      subtext: `${Math.round((metrics.completedTasks / (metrics.totalTasks || 1)) * 100)}% completion rate`,
+      value: safeMetrics.completedTasks,
+      subtext: `${Math.round((safeMetrics.completedTasks / (safeMetrics.totalTasks || 1)) * 100)}% completion rate`,
       icon: CheckCircle2,
       color: 'bg-teal-50 text-teal-600',
       trend: 'Optimal Velocity',
     },
     {
       label: 'Overdue Tasks',
-      value: metrics.overdueTasks,
-      subtext: metrics.overdueTasks === 0 ? 'All tasks on time' : 'Requires attention',
+      value: safeMetrics.overdueTasks,
+      subtext: safeMetrics.overdueTasks === 0 ? 'All tasks on time' : 'Requires attention',
       icon: AlertTriangle,
-      color: metrics.overdueTasks > 0 ? 'bg-rose-50 text-rose-600' : 'bg-slate-50 text-slate-500',
-      trend: metrics.overdueTasks > 0 ? 'Needs review' : 'Zero blockers',
+      color: safeMetrics.overdueTasks > 0 ? 'bg-rose-50 text-rose-600' : 'bg-slate-50 text-slate-500',
+      trend: safeMetrics.overdueTasks > 0 ? 'Needs review' : 'Zero blockers',
     },
   ];
 
@@ -102,7 +112,7 @@ export const AdminStatsOverview = ({ metrics }) => {
             </div>
 
             <div className="pt-2 border-t border-slate-50">
-              <span className="text-[10px] font-bold text-[#4361EE] bg-indigo-50/70 px-2 py-0.5 rounded-md truncate block text-center">
+              <span className="text-[10px] font-bold text-primary bg-indigo-50/70 px-2 py-0.5 rounded-md truncate block text-center">
                 {card.trend}
               </span>
             </div>

@@ -61,7 +61,7 @@ export const ProjectsPage = () => {
         action={
           <button
             onClick={() => setIsModalOpen(true)}
-            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-[#4361EE] hover:bg-[#3451DE] active:scale-98 text-white text-xs font-bold shadow-md shadow-indigo-100 transition-all"
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-primary hover:bg-primary-hover active:scale-98 text-white text-xs font-bold shadow-md shadow-indigo-100 transition-all"
           >
             <Plus size={16} />
             <span>New Project</span>
@@ -123,7 +123,7 @@ export const ProjectsPage = () => {
             placeholder="Search projects by title, category, or tagged member..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 rounded-2xl border border-slate-200 text-xs bg-white placeholder-slate-400 text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#4361EE] shadow-xs"
+            className="w-full pl-10 pr-4 py-2.5 rounded-2xl border border-slate-200 text-xs bg-white placeholder-slate-400 text-slate-800 focus:outline-none focus:ring-2 focus:ring-primary shadow-xs"
           />
         </div>
 
@@ -141,7 +141,7 @@ export const ProjectsPage = () => {
               onClick={() => setFilter(tab.id)}
               className={`px-3 py-1.5 rounded-xl transition-all whitespace-nowrap ${
                 filter === tab.id
-                  ? "bg-[#4361EE] text-white shadow-xs"
+                  ? "bg-primary text-white shadow-xs"
                   : "text-slate-500 hover:text-slate-800 hover:bg-slate-50"
               }`}
             >

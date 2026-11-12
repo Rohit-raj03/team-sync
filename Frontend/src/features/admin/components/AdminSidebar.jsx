@@ -3,20 +3,20 @@ import {
   LayoutDashboard,
   BarChart3,
   Users,
-  UserPlus,
+
   ShieldCheck,
-  ToggleLeft,
+
   FolderKanban,
-  FolderPlus,
-  UserCheck,
+
+
   ListTodo,
-  PlusCircle,
+
   AlertCircle,
   History,
-  Bell,
+
   Building2,
-  Lock,
-  ChevronRight,
+
+
   Shield,
   ArrowLeft,
 } from 'lucide-react';
@@ -77,7 +77,7 @@ export const AdminSidebar = ({ activeTab, onSelectTab, overdueCount = 0 }) => {
         {/* Admin Header Title */}
         <div className="flex items-center justify-between pb-4 border-b border-slate-100">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-xl bg-indigo-50 text-[#4361EE] flex items-center justify-center font-bold">
+            <div className="w-8 h-8 rounded-xl bg-indigo-50 text-primary flex items-center justify-center font-bold">
               <Shield size={18} />
             </div>
             <div>
@@ -112,7 +112,7 @@ export const AdminSidebar = ({ activeTab, onSelectTab, overdueCount = 0 }) => {
                     onClick={() => onSelectTab(item.id)}
                     className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition-all ${
                       isActive
-                        ? 'bg-[#4361EE] text-white shadow-sm shadow-indigo-200'
+                        ? 'bg-primary text-white shadow-sm shadow-indigo-200'
                         : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
                     }`}
                   >
@@ -147,7 +147,7 @@ export const AdminSidebar = ({ activeTab, onSelectTab, overdueCount = 0 }) => {
       <div className="pt-4 border-t border-slate-100">
         <Link
           to={ROUTES.DASHBOARD}
-          className="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl border border-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-50 hover:text-[#4361EE] transition-colors"
+          className="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl border border-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-50 hover:text-primary transition-colors"
         >
           <ArrowLeft size={14} />
           <span>Back to App Workspace</span>

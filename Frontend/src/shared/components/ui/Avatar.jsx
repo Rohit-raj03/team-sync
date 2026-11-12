@@ -38,7 +38,7 @@ export const Avatar = ({ src, name = 'User', size = 'md', className = '' }) => {
 
   return (
     <div
-      className={`rounded-full bg-indigo-100 text-[#4361EE] font-bold flex items-center justify-center shrink-0 select-none ${
+      className={`rounded-full bg-indigo-100 text-primary font-bold flex items-center justify-center shrink-0 select-none ${
         sizes[size] || sizes.md
       } ${className}`}
       title={name}

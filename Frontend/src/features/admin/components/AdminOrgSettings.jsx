@@ -55,7 +55,7 @@ export const AdminOrgSettings = ({ onSaveSettings }) => {
       {/* General Org Profile Card */}
       <div className="p-6 bg-white rounded-3xl border border-slate-100/90 shadow-sm space-y-4 text-xs">
         <div className="flex items-center gap-2 pb-3 border-b border-slate-100">
-          <Building2 size={16} className="text-[#4361EE]" />
+          <Building2 size={16} className="text-primary" />
           <h3 className="font-bold text-slate-800">Company Identity</h3>
         </div>
 
@@ -135,7 +135,7 @@ export const AdminOrgSettings = ({ onSaveSettings }) => {
               onChange={(e) =>
                 setSettings({ ...settings, enforce2FA: e.target.checked })
               }
-              className="w-4 h-4 rounded text-[#4361EE] focus:ring-[#4361EE] cursor-pointer"
+              className="w-4 h-4 rounded text-primary focus:ring-primary cursor-pointer"
             />
           </label>
         </div>
@@ -164,7 +164,7 @@ export const AdminOrgSettings = ({ onSaveSettings }) => {
       <div className="flex justify-end">
         <button
           type="submit"
-          className="inline-flex items-center gap-2 px-6 py-2.5 rounded-2xl bg-[#4361EE] hover:bg-[#3451DE] active:scale-98 text-white text-xs font-bold shadow-md shadow-indigo-100 transition-all"
+          className="inline-flex items-center gap-2 px-6 py-2.5 rounded-2xl bg-primary hover:bg-primary-hover active:scale-98 text-white text-xs font-bold shadow-md shadow-indigo-100 transition-all"
         >
           <Save size={14} />
           <span>Save Organization Settings</span>

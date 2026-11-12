@@ -34,7 +34,6 @@ const adminSlice = createSlice({
     stats: null,
     permissions: INITIAL_ROLE_PERMISSIONS,
     activityLogs: [],
-    toast: null,
     loading: false,
     error: null,
   },
@@ -86,14 +85,6 @@ const adminSlice = createSlice({
         ...action.payload,
       });
     },
-    showToast(state, action) {
-      state.toast = typeof action.payload === 'string'
-        ? { message: action.payload, type: 'success' }
-        : action.payload;
-    },
-    hideToast(state) {
-      state.toast = null;
-    },
   },
 });
 
@@ -108,8 +99,6 @@ export const {
   removeUser,
   updatePermission,
   addLog,
-  showToast,
-  hideToast,
 } = adminSlice.actions;
 
 export default adminSlice.reducer;

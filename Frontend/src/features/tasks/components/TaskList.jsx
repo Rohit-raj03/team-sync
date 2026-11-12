@@ -1,13 +1,16 @@
 import React from 'react';
+import { CheckSquare } from 'lucide-react';
 import { TaskCard } from './TaskCard.jsx';
+import { EmptyState } from '../../../shared/components/ui/EmptyState.jsx';
 
-export const TaskList = ({ tasks, onTaskClick }) => {
+export const TaskList = ({ tasks = [], onTaskClick }) => {
   if (tasks.length === 0) {
     return (
-      <div className="p-12 text-center bg-white rounded-2xl border border-dashed border-slate-200">
-        <p className="text-slate-500 font-medium">No tasks found</p>
-        <p className="text-xs text-slate-400 mt-1">Try changing filters or add a new task.</p>
-      </div>
+      <EmptyState
+        icon={CheckSquare}
+        title="No tasks found"
+        description="Try changing filters or add a new task to your workspace."
+      />
     );
   }
 
@@ -19,3 +22,5 @@ export const TaskList = ({ tasks, onTaskClick }) => {
     </div>
   );
 };
+
+export default TaskList;

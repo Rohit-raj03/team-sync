@@ -49,7 +49,7 @@ export const TimelineSummaryCards = ({ tasks = [], projects = [] }) => {
         value: String(activeProjectsCount).padStart(2, "0"),
         subtext: `${projects.length} total registered initiatives`,
         icon: Zap,
-        color: "bg-indigo-50 text-[#4361EE]",
+        color: "bg-indigo-50 text-primary",
       },
       {
         label: "Deliverables Completed",
@@ -80,7 +80,7 @@ export const TimelineSummaryCards = ({ tasks = [], projects = [] }) => {
       {stats.map((s, idx) => {
         const Icon = s.icon;
         return (
-          <Card key={idx} hover className="p-5 flex items-center gap-4">
+          <Card key={s.label || s.title || idx} hover className="p-5 flex items-center gap-4">
             <div
               className={`w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 ${s.color}`}
             >

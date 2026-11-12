@@ -22,9 +22,10 @@ export const ProfilePhotoSection = ({
     setImageError(false);
   }, [avatar]);
 
-  const firstLetter = (fullName && fullName.trim().length > 0)
-    ? fullName.trim().charAt(0).toUpperCase()
-    : "U";
+  const firstLetter =
+    fullName && fullName.trim().length > 0
+      ? fullName.trim().charAt(0).toUpperCase()
+      : "U";
 
   const handleFileChange = (e) => {
     const file = e.target.files?.[0];
@@ -48,7 +49,7 @@ export const ProfilePhotoSection = ({
               className="w-24 h-24 sm:w-28 sm:h-28 rounded-3xl object-cover ring-4 ring-slate-100 shadow-md group-hover:opacity-95 transition-all"
             />
           ) : (
-            <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-3xl bg-linear-to-tr from-[#4361EE] to-[#00C2FF] text-white text-3xl font-black flex items-center justify-center shadow-md ring-4 ring-slate-100">
+            <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-3xl bg-linear-to-tr from-primary to-accent-cyan text-white text-3xl font-black flex items-center justify-center shadow-md ring-4 ring-slate-100">
               {firstLetter}
             </div>
           )}
@@ -58,7 +59,7 @@ export const ProfilePhotoSection = ({
             type="button"
             onClick={() => fileInputRef.current?.click()}
             disabled={isSaving}
-            className="absolute bottom-1 right-1 w-8 h-8 rounded-full bg-white shadow-md border border-slate-200 text-slate-700 hover:text-[#4361EE] hover:bg-slate-50 flex items-center justify-center transition-all disabled:opacity-50"
+            className="absolute bottom-1 right-1 w-8 h-8 rounded-full bg-white shadow-md border border-slate-200 text-slate-700 hover:text-primary hover:bg-slate-50 flex items-center justify-center transition-all disabled:opacity-50"
             title="Upload photo"
           >
             <Camera size={15} />
@@ -92,7 +93,7 @@ export const ProfilePhotoSection = ({
               disabled={isSaving}
               className="px-4 py-2 rounded-2xl bg-[#F4F7FB] hover:bg-slate-100 text-slate-700 text-xs font-semibold flex items-center gap-2 border border-slate-200/80 transition-colors disabled:opacity-50"
             >
-              <UploadCloud size={15} className="text-[#4361EE]" />
+              <UploadCloud size={15} className="text-primary" />
               <span>Change Photo</span>
             </button>
 

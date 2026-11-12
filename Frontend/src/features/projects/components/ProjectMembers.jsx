@@ -38,7 +38,7 @@ const ROLE_BADGES = {
     label: "Project Owner",
   },
   Admin: {
-    bg: "bg-indigo-50 text-[#4361EE] border-indigo-200",
+    bg: "bg-indigo-50 text-primary border-indigo-200",
     icon: ShieldCheck,
     label: "Admin",
   },
@@ -180,7 +180,7 @@ export const ProjectMembers = ({
       {/* Header Bar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
         <div className="flex items-center gap-2.5">
-          <div className="w-9 h-9 rounded-2xl bg-indigo-50 text-[#4361EE] flex items-center justify-center shadow-xs">
+          <div className="w-9 h-9 rounded-2xl bg-indigo-50 text-primary flex items-center justify-center shadow-xs">
             <Users size={18} />
           </div>
           <div>
@@ -216,7 +216,7 @@ export const ProjectMembers = ({
               placeholder="Search members..."
               value={memberSearchQuery}
               onChange={(e) => setMemberSearchQuery(e.target.value)}
-              className="pl-8 pr-3 py-1.5 rounded-xl border border-slate-200 text-xs bg-white text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#4361EE]"
+              className="pl-8 pr-3 py-1.5 rounded-xl border border-slate-200 text-xs bg-white text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary"
             />
           </div>
 
@@ -227,7 +227,7 @@ export const ProjectMembers = ({
               setAddError("");
               setSelectedUserToAdd(null);
             }}
-            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-[#4361EE] hover:bg-[#3451DE] active:scale-98 text-white text-xs font-bold shadow-xs transition-all"
+            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-primary hover:bg-primary-hover active:scale-98 text-white text-xs font-bold shadow-xs transition-all"
           >
             <UserPlus size={14} />
             <span>Add Member</span>
@@ -240,7 +240,7 @@ export const ProjectMembers = ({
         <div className="p-5 rounded-3xl bg-slate-50 border border-slate-200/90 shadow-sm animate-in fade-in duration-150 space-y-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <UserPlus size={16} className="text-[#4361EE]" />
+              <UserPlus size={16} className="text-primary" />
               <h4 className="text-xs font-bold uppercase tracking-wider text-slate-800">
                 Add Registered User to Project
               </h4>
@@ -276,7 +276,7 @@ export const ProjectMembers = ({
                 placeholder="Type name, email, or username to search non-members..."
                 value={eligibleSearch}
                 onChange={(e) => setEligibleSearch(e.target.value)}
-                className="w-full pl-9 pr-3 py-2 rounded-xl border border-slate-200 text-xs bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#4361EE]"
+                className="w-full pl-9 pr-3 py-2 rounded-xl border border-slate-200 text-xs bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-primary"
               />
             </div>
           </div>
@@ -285,7 +285,7 @@ export const ProjectMembers = ({
           <div className="max-h-44 overflow-y-auto rounded-2xl border border-slate-200 bg-white divide-y divide-slate-100">
             {loadingEligible ? (
               <div className="p-4 text-center text-xs text-slate-400 flex items-center justify-center gap-2">
-                <Loader2 size={14} className="animate-spin text-[#4361EE]" />
+                <Loader2 size={14} className="animate-spin text-primary" />
                 <span>Searching eligible registered users...</span>
               </div>
             ) : eligibleUsers.length > 0 ? (
@@ -307,7 +307,7 @@ export const ProjectMembers = ({
                     }
                     className={`p-2.5 flex items-center justify-between cursor-pointer transition-colors ${
                       isSelected
-                        ? "bg-indigo-50/80 border-l-4 border-[#4361EE]"
+                        ? "bg-indigo-50/80 border-l-4 border-primary"
                         : "hover:bg-slate-50"
                     }`}
                   >
@@ -333,11 +333,11 @@ export const ProjectMembers = ({
                         {user.jobTitle || user.role || "User"}
                       </span>
                       {isSelected ? (
-                        <div className="w-5 h-5 rounded-full bg-[#4361EE] text-white flex items-center justify-center">
+                        <div className="w-5 h-5 rounded-full bg-primary text-white flex items-center justify-center">
                           <Check size={12} strokeWidth={3} />
                         </div>
                       ) : (
-                        <span className="text-[11px] font-semibold text-[#4361EE]">
+                        <span className="text-[11px] font-semibold text-primary">
                           Select
                         </span>
                       )}
@@ -359,7 +359,7 @@ export const ProjectMembers = ({
             <div className="p-3 rounded-2xl bg-white border border-slate-200/80 space-y-3">
               <div className="flex items-center gap-2 text-xs font-bold text-slate-800">
                 <span>Configure Role for</span>
-                <span className="text-[#4361EE]">{selectedUserToAdd.name}</span>
+                <span className="text-primary">{selectedUserToAdd.name}</span>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -370,7 +370,7 @@ export const ProjectMembers = ({
                   <select
                     value={newMemberRole}
                     onChange={(e) => setNewMemberRole(e.target.value)}
-                    className="w-full px-3 py-1.5 rounded-xl border border-slate-200 text-xs font-semibold bg-white text-slate-800 focus:ring-2 focus:ring-[#4361EE]"
+                    className="w-full px-3 py-1.5 rounded-xl border border-slate-200 text-xs font-semibold bg-white text-slate-800 focus:ring-2 focus:ring-primary"
                   >
                     {ACCESS_ROLES.map((r) => (
                       <option key={r} value={r}>
@@ -387,7 +387,7 @@ export const ProjectMembers = ({
                   <select
                     value={newMemberProjectRole}
                     onChange={(e) => setNewMemberProjectRole(e.target.value)}
-                    className="w-full px-3 py-1.5 rounded-xl border border-slate-200 text-xs font-semibold bg-white text-slate-800 focus:ring-2 focus:ring-[#4361EE]"
+                    className="w-full px-3 py-1.5 rounded-xl border border-slate-200 text-xs font-semibold bg-white text-slate-800 focus:ring-2 focus:ring-primary"
                   >
                     {SPECIALTY_ROLES.map((r) => (
                       <option key={r} value={r}>
@@ -413,7 +413,7 @@ export const ProjectMembers = ({
               type="button"
               onClick={handleAddMemberSubmit}
               disabled={!selectedUserToAdd || isSubmitting}
-              className="inline-flex items-center gap-1.5 px-5 py-2 rounded-xl bg-[#4361EE] hover:bg-[#3451DE] active:scale-98 text-white text-xs font-bold shadow-xs transition-all disabled:opacity-50"
+              className="inline-flex items-center gap-1.5 px-5 py-2 rounded-xl bg-primary hover:bg-primary-hover active:scale-98 text-white text-xs font-bold shadow-xs transition-all disabled:opacity-50"
             >
               {isSubmitting ? (
                 <>
@@ -491,7 +491,7 @@ export const ProjectMembers = ({
                         <select
                           value={editRole}
                           onChange={(e) => setEditRole(e.target.value)}
-                          className="w-full px-2 py-1 rounded-lg border border-slate-200 text-xs bg-white text-slate-800 font-semibold focus:ring-1 focus:ring-[#4361EE]"
+                          className="w-full px-2 py-1 rounded-lg border border-slate-200 text-xs bg-white text-slate-800 font-semibold focus:ring-1 focus:ring-primary"
                         >
                           {ACCESS_ROLES.map((r) => (
                             <option key={r} value={r}>
@@ -508,7 +508,7 @@ export const ProjectMembers = ({
                         <select
                           value={editProjectRole}
                           onChange={(e) => setEditProjectRole(e.target.value)}
-                          className="w-full px-2 py-1 rounded-lg border border-slate-200 text-xs bg-white text-slate-800 font-semibold focus:ring-1 focus:ring-[#4361EE]"
+                          className="w-full px-2 py-1 rounded-lg border border-slate-200 text-xs bg-white text-slate-800 font-semibold focus:ring-1 focus:ring-primary"
                         >
                           {SPECIALTY_ROLES.map((r) => (
                             <option key={r} value={r}>
@@ -530,7 +530,7 @@ export const ProjectMembers = ({
                       <button
                         type="button"
                         onClick={() => handleSaveMemberRole(member.id)}
-                        className="px-2.5 py-1 rounded-lg bg-[#4361EE] text-white text-[10px] font-bold shadow-xs hover:bg-[#3451DE] transition-colors"
+                        className="px-2.5 py-1 rounded-lg bg-primary text-white text-[10px] font-bold shadow-xs hover:bg-primary-hover transition-colors"
                       >
                         Save Role
                       </button>
@@ -548,7 +548,7 @@ export const ProjectMembers = ({
                         <button
                           type="button"
                           onClick={() => startEditMember(member)}
-                          className="px-2 py-0.5 rounded-lg text-[10px] font-bold text-slate-500 hover:text-[#4361EE] hover:bg-indigo-50 transition-colors"
+                          className="px-2 py-0.5 rounded-lg text-[10px] font-bold text-slate-500 hover:text-primary hover:bg-indigo-50 transition-colors"
                         >
                           Change Role
                         </button>
@@ -595,7 +595,7 @@ export const ProjectMembers = ({
           <button
             type="button"
             onClick={() => setIsAddModalOpen(true)}
-            className="mt-2 text-xs font-bold text-[#4361EE] hover:underline"
+            className="mt-2 text-xs font-bold text-primary hover:underline"
           >
             + Add registered team members now
           </button>

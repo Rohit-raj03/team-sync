@@ -117,7 +117,7 @@ export const TaskAssigneeSelector = ({
         <button
           type="button"
           onClick={() => setIsInviteOpen(true)}
-          className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#4361EE] hover:text-[#3451DE] transition-colors"
+          className="inline-flex items-center gap-1.5 text-xs font-semibold text-primary hover:text-primary-hover transition-colors"
         >
           <UserPlus size={14} />
           <span>Invite New</span>
@@ -170,7 +170,7 @@ export const TaskAssigneeSelector = ({
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           placeholder="Search team members by name or username..."
-          className="w-full pl-10 pr-9 py-2.5 rounded-xl border border-slate-200 text-sm bg-white placeholder-slate-400 text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#4361EE] focus:border-transparent transition-all"
+          className="w-full pl-10 pr-9 py-2.5 rounded-xl border border-slate-200 text-sm bg-white placeholder-slate-400 text-slate-900 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
         />
         {searchQuery && (
           <button
@@ -204,7 +204,7 @@ export const TaskAssigneeSelector = ({
                     <div
                       className={`w-4 h-4 rounded border flex items-center justify-center transition-colors shrink-0 ${
                         active
-                          ? "bg-[#4361EE] border-[#4361EE] text-white shadow-xs"
+                          ? "bg-primary border-primary text-white shadow-xs"
                           : "border-slate-300 bg-white"
                       }`}
                     >
@@ -251,7 +251,7 @@ export const TaskAssigneeSelector = ({
                   <span
                     className={`text-[10px] font-semibold px-2 py-0.5 rounded-full shrink-0 ${
                       active
-                        ? "bg-indigo-100 text-[#4361EE]"
+                        ? "bg-indigo-100 text-primary"
                         : "bg-slate-100 text-slate-500"
                     }`}
                   >
@@ -277,7 +277,7 @@ export const TaskAssigneeSelector = ({
               <button
                 type="button"
                 onClick={openInviteWithName}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-[#4361EE] text-xs font-bold transition-colors"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-primary text-xs font-bold transition-colors"
               >
                 <Plus size={14} />
                 <span>Invite "{searchQuery}"</span>
@@ -295,7 +295,7 @@ export const TaskAssigneeSelector = ({
           <div className="bg-white w-full max-w-md rounded-3xl shadow-2xl border border-slate-100 overflow-hidden animate-in zoom-in-95 duration-150">
             <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-slate-50/50">
               <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-xl bg-indigo-50 text-[#4361EE] flex items-center justify-center">
+                <div className="w-8 h-8 rounded-xl bg-indigo-50 text-primary flex items-center justify-center">
                   <UserPlus size={18} />
                 </div>
                 <div>
@@ -335,7 +335,7 @@ export const TaskAssigneeSelector = ({
                   onChange={(e) =>
                     setNewMemberData({ ...newMemberData, name: e.target.value })
                   }
-                  className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#4361EE]"
+                  className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
                 />
               </div>
 
@@ -358,7 +358,7 @@ export const TaskAssigneeSelector = ({
                         email: e.target.value,
                       })
                     }
-                    className="w-full pl-9 pr-3.5 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#4361EE]"
+                    className="w-full pl-9 pr-3.5 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
                   />
                 </div>
               </div>
@@ -378,7 +378,7 @@ export const TaskAssigneeSelector = ({
                         username: e.target.value,
                       })
                     }
-                    className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#4361EE]"
+                    className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
                   />
                 </div>
 
@@ -401,7 +401,7 @@ export const TaskAssigneeSelector = ({
                           role: e.target.value,
                         })
                       }
-                      className="w-full pl-9 pr-3.5 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#4361EE]"
+                      className="w-full pl-9 pr-3.5 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
                     />
                   </div>
                 </div>
@@ -418,7 +418,7 @@ export const TaskAssigneeSelector = ({
                 <button
                   type="button"
                   onClick={handleQuickInvite}
-                  className="px-4 py-2 rounded-xl bg-[#4361EE] hover:bg-[#3451DE] text-white text-xs font-bold shadow-sm transition-colors flex items-center gap-1.5"
+                  className="px-4 py-2 rounded-xl bg-primary hover:bg-primary-hover text-white text-xs font-bold shadow-sm transition-colors flex items-center gap-1.5"
                 >
                   <Check size={14} />
                   <span>Add & Assign</span>

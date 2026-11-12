@@ -62,7 +62,7 @@ export const TaskRecentList = () => {
                       className={`w-11 h-11 rounded-full text-white flex items-center justify-center shrink-0 shadow-md ${
                         isDone
                           ? "bg-emerald-500 shadow-emerald-200"
-                          : "bg-[#4361EE] shadow-indigo-300"
+                          : "bg-primary shadow-indigo-300"
                       }`}
                     >
                       {isDone ? (
@@ -103,7 +103,7 @@ export const TaskRecentList = () => {
                       )}
                     </div>
                     <div className="flex items-center gap-4 text-xs mt-1.5">
-                      <div className="flex items-center gap-1 text-[#4361EE] font-medium">
+                      <div className="flex items-center gap-1 text-primary font-medium">
                         <FolderKanban size={13} />
                         <span>
                           {t.projectName || (typeof t.project === "object" ? t.project?.name : "Workspace")}
@@ -139,7 +139,7 @@ export const TaskRecentList = () => {
                       <div className="flex -space-x-1.5 overflow-hidden">
                         {t.assignees.slice(0, 3).map((a, i) => (
                           <Avatar
-                            key={a.id || a._id || i}
+                            key={a.id || a._id || a.email || `assignee-${a.name || i}`}
                             src={a.avatar}
                             name={a.name || "User"}
                             size="xs"

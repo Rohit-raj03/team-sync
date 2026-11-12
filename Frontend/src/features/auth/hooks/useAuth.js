@@ -1,3 +1,4 @@
+import { useCallback } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import {
   loginStart,
@@ -10,12 +11,14 @@ import {
 } from '../store/authSlice.js';
 import { authService } from '../services/auth.service.js';
 import { showToast } from '../../../shared/utils/toast.js';
+import { clearTeamCache } from '../../team/hooks/useTeam.js';
+import { clearNotificationsCache } from '../../notifications/hooks/useNotifications.js';
 
 export function useAuth() {
   const dispatch = useDispatch();
   const { user, token, isAuthenticated, loading, error } = useSelector((state) => state.auth);
 
-  const login = async (credentials) => {
+  const login = useCallback(async (credentials) => {
     try {
       dispatch(loginStart());
       const data = await authService.login(credentials);
@@ -28,9 +31,9 @@ export function useAuth() {
       showToast.auth.loginError(err);
       throw err;
     }
-  };
+  }, [dispatch]);
 
-  const register = async (userData) => {
+  const register = useCallback(async (userData) => {
     try {
       dispatch(loginStart());
       const data = await authService.register(userData);
@@ -43,9 +46,9 @@ export function useAuth() {
       showToast.auth.registerError(err);
       throw err;
     }
-  };
+  }, [dispatch]);
 
-  const loginWithGoogle = async (credential) => {
+  const loginWithGoogle = useCallback(async (credential) => {
     try {
       dispatch(loginStart());
       const data = await authService.googleLogin(credential);
@@ -58,9 +61,9 @@ export function useAuth() {
       showToast.auth.loginError(err);
       throw err;
     }
-  };
+  }, [dispatch]);
 
-  const checkAuth = async () => {
+  const checkAuth = useCallback(async () => {
     if (!token) return null;
     try {
       const response = await authService.getCurrentUser();
@@ -76,20 +79,22 @@ export function useAuth() {
       }
       return null;
     }
-  };
+  }, [dispatch, token]);
 
-  const updateProfile = (updatedFields) => {
+  const updateProfile = useCallback((updatedFields) => {
     dispatch(updateUserProfile(updatedFields));
-  };
+  }, [dispatch]);
 
-  const clearAuthError = () => {
+  const clearAuthError = useCallback(() => {
     dispatch(clearError());
-  };
+  }, [dispatch]);
 
-  const logout = () => {
+  const logout = useCallback(() => {
     dispatch(logoutAction());
+    clearTeamCache();
+    clearNotificationsCache();
     showToast.auth.logoutSuccess();
-  };
+  }, [dispatch]);
 
   return {
     user,

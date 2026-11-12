@@ -70,7 +70,7 @@ export const ProfilePage = () => {
               type="button"
               onClick={saveChanges}
               disabled={isSaving}
-              className="text-xs font-semibold rounded-2xl bg-[#4361EE] hover:bg-[#3451DE] text-white shadow-md shadow-indigo-200"
+              className="text-xs font-semibold rounded-2xl bg-primary hover:bg-primary-hover text-white shadow-md shadow-indigo-200"
             >
               {isSaving ? (
                 <span className="flex items-center gap-1.5">
@@ -152,7 +152,7 @@ export const ProfilePage = () => {
             <Button
               type="submit"
               disabled={!isDirty || isSaving}
-              className="text-xs font-semibold rounded-2xl bg-[#4361EE] hover:bg-[#3451DE] text-white shadow-md shadow-indigo-200 disabled:opacity-50 disabled:shadow-none flex-1 sm:flex-initial"
+              className="text-xs font-semibold rounded-2xl bg-primary hover:bg-primary-hover text-white shadow-md shadow-indigo-200 disabled:opacity-50 disabled:shadow-none flex-1 sm:flex-initial"
             >
               {isSaving ? (
                 <span className="flex items-center justify-center gap-1.5">

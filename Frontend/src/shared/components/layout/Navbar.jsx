@@ -46,7 +46,7 @@ export const Navbar = ({ onToggleSidebar }) => {
       </div>
 
       {/* Center: Search input with magnifying glass on the RIGHT */}
-      <div className="flex-1 max-w-md mx-4">
+      <div className="flex-1 max-w-md mx-2 sm:mx-4">
         <div className="relative">
           <input
             type="text"
@@ -74,7 +74,7 @@ export const Navbar = ({ onToggleSidebar }) => {
           >
             <Bell size={20} />
             {unreadCount > 0 && (
-              <span className="absolute top-1 right-1 min-w-4 h-4 px-1 bg-[#4361EE] text-white text-[9px] font-bold rounded-full flex items-center justify-center ring-2 ring-white">
+              <span className="absolute top-1 right-1 min-w-4 h-4 px-1 bg-primary text-white text-[9px] font-bold rounded-full flex items-center justify-center ring-2 ring-white">
                 {unreadCount > 9 ? "9+" : unreadCount}
               </span>
             )}

@@ -214,10 +214,14 @@ export const ProjectForm = ({
 
         {/* Project Name */}
         <div className="space-y-1">
-          <label className="block text-xs font-bold uppercase tracking-wider text-slate-700">
+          <label
+            htmlFor="project-name-input"
+            className="block text-xs font-bold uppercase tracking-wider text-slate-700"
+          >
             Project Name <span className="text-rose-500">*</span>
           </label>
           <input
+            id="project-name-input"
             type="text"
             placeholder="e.g. Next-Gen Client Portal"
             value={formData.name}
@@ -228,7 +232,7 @@ export const ProjectForm = ({
             className={`w-full px-3.5 py-2 rounded-xl border text-sm font-semibold transition-all ${
               errors.name
                 ? "border-rose-400 bg-rose-50/20 focus:ring-2 focus:ring-rose-200"
-                : "border-slate-200 bg-white focus:ring-2 focus:ring-[#4361EE] focus:border-transparent"
+                : "border-slate-200 bg-white focus:ring-2 focus:ring-primary focus:border-transparent"
             } text-slate-900 placeholder-slate-400 shadow-2xs`}
           />
           {errors.name && (
@@ -241,7 +245,10 @@ export const ProjectForm = ({
           {/* Category Input / Dropdown (In-place transformation) */}
           <div className="space-y-1">
             <div className="flex items-center justify-between">
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-700">
+              <label
+                htmlFor={isCustomCategory ? "project-category-custom" : "project-category-select"}
+                className="block text-xs font-bold uppercase tracking-wider text-slate-700"
+              >
                 Category
               </label>
               {isCustomCategory && (
@@ -254,7 +261,7 @@ export const ProjectForm = ({
                       category: PROJECT_CATEGORIES[0],
                     }));
                   }}
-                  className="text-[11px] font-semibold text-[#4361EE] hover:underline cursor-pointer"
+                  className="text-[11px] font-semibold text-primary hover:underline cursor-pointer"
                 >
                   Presets
                 </button>
@@ -269,6 +276,7 @@ export const ProjectForm = ({
               {isCustomCategory ? (
                 <>
                   <input
+                    id="project-category-custom"
                     type="text"
                     placeholder="Type custom category name..."
                     value={formData.category}
@@ -278,7 +286,7 @@ export const ProjectForm = ({
                         category: e.target.value,
                       }))
                     }
-                    className="w-full pl-9 pr-8 py-2 rounded-xl border border-indigo-300 text-xs font-semibold bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#4361EE] shadow-2xs"
+                    className="w-full pl-9 pr-8 py-2 rounded-xl border border-indigo-300 text-xs font-semibold bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-primary shadow-2xs"
                     autoFocus
                   />
                   <button
@@ -300,6 +308,7 @@ export const ProjectForm = ({
               ) : (
                 <>
                   <select
+                    id="project-category-select"
                     value={
                       PROJECT_CATEGORIES.includes(formData.category)
                         ? formData.category
@@ -314,7 +323,7 @@ export const ProjectForm = ({
                         setFormData((prev) => ({ ...prev, category: val }));
                       }
                     }}
-                    className="w-full pl-9 pr-8 py-2 rounded-xl border border-slate-200 text-xs font-semibold bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#4361EE] focus:border-transparent shadow-2xs appearance-none cursor-pointer"
+                    className="w-full pl-9 pr-8 py-2 rounded-xl border border-slate-200 text-xs font-semibold bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent shadow-2xs appearance-none cursor-pointer"
                   >
                     {PROJECT_CATEGORIES.map((cat) => (
                       <option key={cat} value={cat}>
@@ -373,10 +382,14 @@ export const ProjectForm = ({
 
         {/* Description */}
         <div className="space-y-1">
-          <label className="block text-xs font-bold uppercase tracking-wider text-slate-700">
+          <label
+            htmlFor="project-description-input"
+            className="block text-xs font-bold uppercase tracking-wider text-slate-700"
+          >
             Description
           </label>
           <textarea
+            id="project-description-input"
             rows={2}
             placeholder="Outline the core goals, deliverable scope, and technical roadmap..."
             value={formData.description}
@@ -386,7 +399,7 @@ export const ProjectForm = ({
                 description: e.target.value,
               }))
             }
-            className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs text-slate-800 placeholder-slate-400 bg-white focus:outline-none focus:ring-2 focus:ring-[#4361EE] shadow-2xs resize-none leading-relaxed"
+            className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs text-slate-800 placeholder-slate-400 bg-white focus:outline-none focus:ring-2 focus:ring-primary shadow-2xs resize-none leading-relaxed"
           />
         </div>
 
@@ -394,15 +407,19 @@ export const ProjectForm = ({
         <div className="p-3 sm:p-3.5 rounded-2xl bg-slate-50 border border-slate-100 space-y-2.5">
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
             <div>
-              <label className="block text-[11px] font-bold text-slate-600 mb-1">
+              <label
+                htmlFor="project-status-select"
+                className="block text-[11px] font-bold text-slate-600 mb-1"
+              >
                 Status
               </label>
               <select
+                id="project-status-select"
                 value={formData.status}
                 onChange={(e) =>
                   setFormData((prev) => ({ ...prev, status: e.target.value }))
                 }
-                className="w-full px-2.5 py-1.5 rounded-xl border border-slate-200 text-xs font-semibold bg-white text-slate-800 focus:ring-2 focus:ring-[#4361EE]"
+                className="w-full px-2.5 py-1.5 rounded-xl border border-slate-200 text-xs font-semibold bg-white text-slate-800 focus:ring-2 focus:ring-primary"
               >
                 <option value="PLANNING">Planning</option>
                 <option value="ACTIVE">Active</option>
@@ -414,10 +431,14 @@ export const ProjectForm = ({
             </div>
 
             <div>
-              <label className="block text-[11px] font-bold text-slate-600 mb-1">
+              <label
+                htmlFor="project-priority-select"
+                className="block text-[11px] font-bold text-slate-600 mb-1"
+              >
                 Priority
               </label>
               <select
+                id="project-priority-select"
                 value={formData.priority}
                 onChange={(e) =>
                   setFormData((prev) => ({
@@ -425,7 +446,7 @@ export const ProjectForm = ({
                     priority: e.target.value,
                   }))
                 }
-                className="w-full px-2.5 py-1.5 rounded-xl border border-slate-200 text-xs font-semibold bg-white text-slate-800 focus:ring-2 focus:ring-[#4361EE]"
+                className="w-full px-2.5 py-1.5 rounded-xl border border-slate-200 text-xs font-semibold bg-white text-slate-800 focus:ring-2 focus:ring-primary"
               >
                 <option value="LOW">Low</option>
                 <option value="MEDIUM">Medium</option>
@@ -435,10 +456,14 @@ export const ProjectForm = ({
             </div>
 
             <div>
-              <label className="block text-[11px] font-bold text-slate-600 mb-1">
+              <label
+                htmlFor="project-start-date"
+                className="block text-[11px] font-bold text-slate-600 mb-1"
+              >
                 Start Date
               </label>
               <input
+                id="project-start-date"
                 type="date"
                 name="startDate"
                 value={formData.startDate || ""}
@@ -448,15 +473,19 @@ export const ProjectForm = ({
                     startDate: e.target.value,
                   }))
                 }
-                className="w-full px-2 py-1.5 rounded-xl border border-slate-200 text-xs bg-white text-slate-800 focus:ring-2 focus:ring-[#4361EE]"
+                className="w-full px-2 py-1.5 rounded-xl border border-slate-200 text-xs bg-white text-slate-800 focus:ring-2 focus:ring-primary"
               />
             </div>
 
             <div>
-              <label className="block text-[11px] font-bold text-slate-600 mb-1">
+              <label
+                htmlFor="project-due-date"
+                className="block text-[11px] font-bold text-slate-600 mb-1"
+              >
                 Target Due Date
               </label>
               <input
+                id="project-due-date"
                 type="date"
                 name="dueDate"
                 value={formData.dueDate || ""}
@@ -469,7 +498,7 @@ export const ProjectForm = ({
                 className={`w-full px-2 py-1.5 rounded-xl border text-xs bg-white text-slate-800 focus:ring-2 ${
                   errors.dueDate
                     ? "border-rose-400 focus:ring-rose-200"
-                    : "border-slate-200 focus:ring-[#4361EE]"
+                    : "border-slate-200 focus:ring-primary"
                 }`}
               />
             </div>
@@ -508,7 +537,7 @@ export const ProjectForm = ({
         <button
           type="submit"
           disabled={submitting}
-          className="px-6 py-2 rounded-xl bg-[#4361EE] hover:bg-[#3451DE] active:scale-98 text-white text-xs font-bold shadow-sm shadow-indigo-200 transition-all flex items-center gap-2 disabled:opacity-60 cursor-pointer"
+          className="px-6 py-2 rounded-xl bg-primary hover:bg-primary-hover active:scale-98 text-white text-xs font-bold shadow-sm shadow-indigo-200 transition-all flex items-center gap-2 disabled:opacity-60 cursor-pointer"
         >
           {submitting ? (
             <>

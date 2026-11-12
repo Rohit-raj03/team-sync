@@ -16,6 +16,15 @@ export const GoogleLoginButton = ({
   const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
+    if (!env.GOOGLE_CLIENT_ID) {
+      if (import.meta.env.DEV) {
+        console.warn(
+          "VITE_GOOGLE_CLIENT_ID is not configured in environment. Google Sign-In is disabled."
+        );
+      }
+      return;
+    }
+
     let checkInterval = null;
 
     const initializeGoogleSignIn = () => {
@@ -71,6 +80,16 @@ export const GoogleLoginButton = ({
       if (checkInterval) clearInterval(checkInterval);
     };
   }, [onSuccess, onError, text]);
+
+  if (!env.GOOGLE_CLIENT_ID) {
+    return (
+      <div className="w-full flex flex-col items-center justify-center">
+        <div className="w-full max-w-90 h-11 rounded-lg border border-dashed border-slate-200 bg-slate-50 flex items-center justify-center text-xs text-slate-400 font-medium px-4 text-center">
+          Google Sign-In is not configured
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full flex flex-col items-center justify-center">

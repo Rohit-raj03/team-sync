@@ -4,14 +4,14 @@ import {
   FolderKanban,
   ChevronDown,
   ChevronRight,
-  Clock,
+
   Sparkles,
-  Layers,
+
   AlertCircle,
   Plus,
 } from "lucide-react";
 import { Card } from "../../../shared/components/ui/Card.jsx";
-import { Avatar } from "../../../shared/components/ui/Avatar.jsx";
+
 import { TimelineTaskBar } from "./TimelineTaskBar.jsx";
 import { TimelineTaskHoverCard } from "./TimelineTaskHoverCard.jsx";
 import {
@@ -223,13 +223,24 @@ export const TimelineCalendarGrid = ({
 
   return (
     <Card className="p-0 overflow-hidden relative shadow-[0_10px_35px_-5px_rgba(0,0,0,0.04)] border-slate-200/80">
+      {/* Mobile Horizontal Scroll Affordance Banner */}
+      <div className="md:hidden flex items-center justify-between px-4 py-2 bg-indigo-50/70 border-b border-indigo-100/80 text-[11px] font-semibold text-primary">
+        <span className="flex items-center gap-1.5">
+          <Sparkles size={13} className="text-primary shrink-0" />
+          <span>Swipe horizontally to view full schedule timeline</span>
+        </span>
+        <span className="text-[10px] text-slate-500 uppercase tracking-wider font-bold">
+          Scroll →
+        </span>
+      </div>
+
       {tracks.length > 0 && hasAnyTasks ? (
         <div className="overflow-x-auto select-none">
           <div className="min-w-225 lg:min-w-275">
             {/* Header Row: Left Tracks Title + Right Timeline Date Intervals */}
             <div className="grid grid-cols-12 border-b border-slate-200/90 bg-[#F8FAFC]">
-              {/* Left Column Header */}
-              <div className="col-span-3 lg:col-span-3 p-3.5 px-5 text-[11px] font-bold text-slate-500 uppercase tracking-wider flex items-center justify-between border-r border-slate-200/80">
+              {/* Left Column Header (Sticky on horizontal scroll) */}
+              <div className="col-span-3 lg:col-span-3 p-3.5 px-5 text-[11px] font-bold text-slate-600 uppercase tracking-wider flex items-center justify-between border-r border-slate-200/80 sticky left-0 z-20 bg-[#F8FAFC] shadow-[1px_0_4px_rgba(0,0,0,0.03)]">
                 <span className="flex items-center gap-2">
                   <FolderKanban size={14} className="text-slate-400" />
                   Projects & Tracks
@@ -259,7 +270,7 @@ export const TimelineCalendarGrid = ({
                   >
                     <p
                       className={`text-[10px] font-bold uppercase tracking-tight ${
-                        interval.isToday ? "text-[#4361EE]" : "text-slate-400"
+                        interval.isToday ? "text-primary" : "text-slate-400"
                       }`}
                     >
                       {interval.label}
@@ -268,7 +279,7 @@ export const TimelineCalendarGrid = ({
                       <div
                         className={`mt-0.5 inline-flex w-6.5 h-6.5 items-center justify-center rounded-full text-xs font-bold transition-all ${
                           interval.isToday
-                            ? "bg-[#4361EE] text-white shadow-xs"
+                            ? "bg-primary text-white shadow-xs"
                             : "text-slate-700"
                         }`}
                       >
@@ -278,7 +289,7 @@ export const TimelineCalendarGrid = ({
                       <div
                         className={`mt-0.5 inline-flex items-center justify-center px-2 py-0.5 rounded-lg text-xs font-semibold transition-all whitespace-nowrap ${
                           interval.isToday
-                            ? "bg-[#4361EE] text-white shadow-xs"
+                            ? "bg-primary text-white shadow-xs"
                             : "text-slate-700"
                         }`}
                       >
@@ -302,10 +313,10 @@ export const TimelineCalendarGrid = ({
                 return (
                   <div
                     key={track.id}
-                    className="grid grid-cols-12 hover:bg-slate-50/30 transition-colors group relative overflow-hidden"
+                    className="grid grid-cols-12 hover:bg-slate-50/30 transition-colors group relative"
                   >
-                    {/* Left: Project Header & Metadata */}
-                    <div className="col-span-3 lg:col-span-3 p-3.5 px-5 flex items-center justify-between border-r border-slate-200/80 bg-white">
+                    {/* Left: Project Header & Metadata (Sticky on horizontal scroll) */}
+                    <div className="col-span-3 lg:col-span-3 p-3.5 px-5 flex items-center justify-between border-r border-slate-200/80 bg-white sticky left-0 z-10 shadow-[1px_0_4px_rgba(0,0,0,0.03)]">
                       <div className="flex items-center gap-2.5 min-w-0 flex-1">
                         {/* Project Theme Color Pill / Dot */}
                         <div
@@ -327,7 +338,7 @@ export const TimelineCalendarGrid = ({
                               </span>
                             )}
                           </div>
-                          <span className="text-[10px] font-semibold text-slate-400 block truncate mt-0.5">
+                          <span className="text-[10px] font-semibold text-slate-500 block truncate mt-0.5">
                             {track.category} · {track.taskCount} task
                             {track.taskCount !== 1 ? "s" : ""}
                           </span>
@@ -385,7 +396,7 @@ export const TimelineCalendarGrid = ({
                       {/* Visible Today Marker Line */}
                       {todayPositionPercent !== null && (
                         <div
-                          className="absolute inset-y-0 w-0.5 bg-[#4361EE] z-5 pointer-events-none shadow-xs"
+                          className="absolute inset-y-0 w-0.5 bg-primary z-5 pointer-events-none shadow-xs"
                           style={{ left: `${todayPositionPercent}%` }}
                         />
                       )}
@@ -428,7 +439,7 @@ export const TimelineCalendarGrid = ({
       ) : (
         /* Empty State */
         <div className="p-14 text-center bg-slate-50/40 rounded-3xl border border-dashed border-slate-200 m-4">
-          <div className="w-12 h-12 rounded-2xl bg-indigo-50 text-[#4361EE] flex items-center justify-center mx-auto mb-3 shadow-xs">
+          <div className="w-12 h-12 rounded-2xl bg-indigo-50 text-primary flex items-center justify-center mx-auto mb-3 shadow-xs">
             <Calendar size={24} />
           </div>
           <h3 className="text-base font-bold text-slate-800">
@@ -442,7 +453,7 @@ export const TimelineCalendarGrid = ({
           {onAddTask && (
             <button
               onClick={onAddTask}
-              className="mt-4 inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold bg-[#4361EE] text-white hover:bg-indigo-600 shadow-xs transition-all"
+              className="mt-4 inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold bg-primary text-white hover:bg-indigo-600 shadow-xs transition-all"
             >
               <Plus size={14} />
               <span>Create Task</span>

@@ -1,23 +1,32 @@
 import React, { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { PageHeader } from "../../shared/components/layout/PageHeader.jsx";
 import { Card } from "../../shared/components/ui/Card.jsx";
 import { Button } from "../../shared/components/ui/Button.jsx";
-import { Avatar } from "../../shared/components/ui/Avatar.jsx";
+
 import { ROUTES } from "../../shared/constants/routes.js";
 import { useAuth } from "../../features/auth/hooks/useAuth.js";
+import { storage } from "../../shared/utils/localStorage.js";
+import { showToast } from "../../shared/utils/toast.js";
 import {
   User,
   Shield,
   Bell,
-  Palette,
+
   ChevronRight,
-  ExternalLink,
+
   CheckCircle2,
-  Lock,
-  Globe,
-  Sliders,
+
+
+
 } from "lucide-react";
+
+const DEFAULT_NOTIFICATIONS = {
+  assignedTasks: true,
+  weeklyDigest: true,
+  directMessages: true,
+  projectMilestones: false,
+};
 
 /**
  * Presentation Layer: SettingsPage
@@ -25,15 +34,11 @@ import {
  * Responsibility: Workspace and system settings hub with direct links to Profile Settings, security options, notification controls, and appearance.
  */
 export const SettingsPage = () => {
-  const navigate = useNavigate();
   const { user } = useAuth();
 
-  const [notifications, setNotifications] = useState({
-    assignedTasks: true,
-    weeklyDigest: true,
-    directMessages: true,
-    projectMilestones: false,
-  });
+  const [notifications, setNotifications] = useState(() =>
+    storage.get("user_settings_notifications", DEFAULT_NOTIFICATIONS)
+  );
 
   const [savedNotice, setSavedNotice] = useState(false);
 
@@ -43,15 +48,18 @@ export const SettingsPage = () => {
 
   const handleSave = (e) => {
     e.preventDefault();
+    storage.set("user_settings_notifications", notifications);
     setSavedNotice(true);
+    showToast.success("Workspace preferences saved successfully.");
     setTimeout(() => setSavedNotice(false), 3000);
   };
 
   const displayName = user?.name || "Team Member";
-  const displayUsername = user?.username || (user?.email ? user.email.split("@")[0] : "user");
+  const displayUsername =
+    user?.username || (user?.email ? user.email.split("@")[0] : "user");
   const displayJob = user?.jobTitle || "Contributor";
   const displayEmail = user?.email || "";
-  const displayAvatar = user?.avatar || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(displayName)}`;
+  const displayAvatar = user?.avatar;
 
   return (
     <div className="max-w-4xl mx-auto space-y-8 pb-16">
@@ -86,13 +94,11 @@ export const SettingsPage = () => {
                 <h3 className="text-base font-bold text-slate-900">
                   {displayName}
                 </h3>
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-50 text-[#4361EE] border border-indigo-100">
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-50 text-primary border border-indigo-100">
                   @{displayUsername}
                 </span>
               </div>
-              <p className="text-xs text-slate-500 font-medium">
-                {displayJob}
-              </p>
+              <p className="text-xs text-slate-500 font-medium">{displayJob}</p>
               <p className="text-[11px] text-slate-400 mt-0.5">
                 {displayEmail}
               </p>
@@ -102,7 +108,7 @@ export const SettingsPage = () => {
           {/* Action Link to Profile Page */}
           <Link
             to={ROUTES.PROFILE}
-            className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-2xl bg-[#4361EE] hover:bg-[#3451DE] text-white text-xs font-bold shadow-md shadow-indigo-200 transition-all hover:scale-[1.02] active:scale-98 shrink-0"
+            className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-2xl bg-primary hover:bg-primary-hover text-white text-xs font-bold shadow-md shadow-indigo-200 transition-all hover:scale-[1.02] active:scale-98 shrink-0"
           >
             <User size={15} />
             <span>Profile Settings</span>
@@ -119,11 +125,11 @@ export const SettingsPage = () => {
           className="p-6 bg-white rounded-3xl border border-slate-100 hover:border-indigo-200 hover:shadow-md transition-all group flex items-start justify-between"
         >
           <div className="flex items-start gap-4">
-            <div className="w-11 h-11 rounded-2xl bg-indigo-50 text-[#4361EE] flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+            <div className="w-11 h-11 rounded-2xl bg-indigo-50 text-primary flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
               <User size={20} />
             </div>
             <div>
-              <h4 className="font-bold text-sm text-slate-900 group-hover:text-[#4361EE] transition-colors">
+              <h4 className="font-bold text-sm text-slate-900 group-hover:text-primary transition-colors">
                 Personal Information
               </h4>
               <p className="text-xs text-slate-400 mt-1">
@@ -133,7 +139,7 @@ export const SettingsPage = () => {
           </div>
           <ChevronRight
             size={18}
-            className="text-slate-300 group-hover:text-[#4361EE] transition-colors shrink-0 mt-1"
+            className="text-slate-300 group-hover:text-primary transition-colors shrink-0 mt-1"
           />
         </Link>
 
@@ -147,7 +153,7 @@ export const SettingsPage = () => {
               <Shield size={20} />
             </div>
             <div>
-              <h4 className="font-bold text-sm text-slate-900 group-hover:text-[#4361EE] transition-colors">
+              <h4 className="font-bold text-sm text-slate-900 group-hover:text-primary transition-colors">
                 Account & Security
               </h4>
               <p className="text-xs text-slate-400 mt-1">
@@ -157,7 +163,7 @@ export const SettingsPage = () => {
           </div>
           <ChevronRight
             size={18}
-            className="text-slate-300 group-hover:text-[#4361EE] transition-colors shrink-0 mt-1"
+            className="text-slate-300 group-hover:text-primary transition-colors shrink-0 mt-1"
           />
         </Link>
       </div>
@@ -193,7 +199,7 @@ export const SettingsPage = () => {
                 type="checkbox"
                 checked={notifications.assignedTasks}
                 onChange={() => handleToggle("assignedTasks")}
-                className="w-4 h-4 rounded text-[#4361EE] focus:ring-indigo-500 cursor-pointer"
+                className="w-4 h-4 rounded text-primary focus:ring-indigo-500 cursor-pointer"
               />
             </div>
 
@@ -210,7 +216,7 @@ export const SettingsPage = () => {
                 type="checkbox"
                 checked={notifications.directMessages}
                 onChange={() => handleToggle("directMessages")}
-                className="w-4 h-4 rounded text-[#4361EE] focus:ring-indigo-500 cursor-pointer"
+                className="w-4 h-4 rounded text-primary focus:ring-indigo-500 cursor-pointer"
               />
             </div>
 
@@ -227,7 +233,7 @@ export const SettingsPage = () => {
                 type="checkbox"
                 checked={notifications.projectMilestones}
                 onChange={() => handleToggle("projectMilestones")}
-                className="w-4 h-4 rounded text-[#4361EE] focus:ring-indigo-500 cursor-pointer"
+                className="w-4 h-4 rounded text-primary focus:ring-indigo-500 cursor-pointer"
               />
             </div>
 
@@ -244,7 +250,7 @@ export const SettingsPage = () => {
                 type="checkbox"
                 checked={notifications.weeklyDigest}
                 onChange={() => handleToggle("weeklyDigest")}
-                className="w-4 h-4 rounded text-[#4361EE] focus:ring-indigo-500 cursor-pointer"
+                className="w-4 h-4 rounded text-primary focus:ring-indigo-500 cursor-pointer"
               />
             </div>
           </div>
@@ -252,7 +258,7 @@ export const SettingsPage = () => {
           <div className="pt-4 border-t border-slate-100 flex justify-end gap-3">
             <Button
               type="submit"
-              className="bg-[#4361EE] hover:bg-[#3451DE] text-white text-xs font-bold rounded-2xl shadow-md shadow-indigo-200"
+              className="bg-primary hover:bg-primary-hover text-white text-xs font-bold rounded-2xl shadow-md shadow-indigo-200"
             >
               Save Preferences
             </Button>

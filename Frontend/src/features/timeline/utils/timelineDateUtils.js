@@ -6,12 +6,16 @@
  */
 
 /**
- * Format a Date object to YYYY-MM-DD
+ * Format a Date object to YYYY-MM-DD in local calendar coordinates
  */
 export function toISODate(date) {
   if (!date) return "";
   const d = new Date(date);
-  return isNaN(d.getTime()) ? "" : d.toISOString().split("T")[0];
+  if (isNaN(d.getTime())) return "";
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
 }
 
 /**

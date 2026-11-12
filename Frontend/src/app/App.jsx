@@ -10,7 +10,7 @@ export const App = () => {
     if (token) {
       checkAuth();
     }
-  }, []);
+  }, [checkAuth, token]);
 
   return (
     <>

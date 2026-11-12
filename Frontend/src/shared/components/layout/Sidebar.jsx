@@ -103,7 +103,7 @@ export const Sidebar = ({ isOpen, onClose }) => {
                   transition-all duration-200 group relative
                   ${
                     isActive
-                      ? "bg-[#4361EE] text-white shadow-md shadow-indigo-300"
+                      ? "bg-primary text-white shadow-md shadow-indigo-300"
                       : "text-slate-400 hover:text-indigo-600 hover:bg-slate-50"
                   }`
                 }

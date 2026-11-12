@@ -36,7 +36,7 @@ export const TasksPage = () => {
           <div className="flex items-center gap-2">
             <Button
               onClick={() => setIsCreateOpen(true)}
-              className="flex items-center gap-2 bg-[#4361EE] hover:bg-[#3451DE] text-white shadow-md shadow-indigo-100"
+              className="flex items-center gap-2 bg-primary hover:bg-primary-hover text-white shadow-md shadow-indigo-100"
             >
               <Plus size={16} />
               <span>Create Task</span>

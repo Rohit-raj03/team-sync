@@ -1,32 +1,32 @@
-import React, { useState, useEffect } from "react";
-import { useDispatch } from "react-redux";
+import React, { useState } from "react";
+// Redux dispatch not required; handled via hooks
 import { useParams, useNavigate, Link } from "react-router-dom";
 import {
   ArrowLeft,
-  Calendar,
+
   FolderKanban,
-  CheckCircle2,
-  Users,
+
+
   Plus,
   Edit3,
-  Clock,
+
   ChevronRight,
-  Sparkles,
+
   Trash2,
 } from "lucide-react";
-import { PageHeader } from "../../shared/components/layout/PageHeader.jsx";
+
 import { Badge } from "../../shared/components/ui/Badge.jsx";
 import { Modal } from "../../shared/components/ui/Modal.jsx";
 import { ProjectMembers } from "../../features/projects/components/ProjectMembers.jsx";
 import { ProjectTaskList } from "../../features/projects/components/ProjectTaskList.jsx";
-import { ProjectForm } from "../../features/projects/components/ProjectForm.jsx";
+
 import { CreateProjectModal } from "../../features/projects/components/CreateProjectModal.jsx";
 import { CreateTaskModal } from "../../features/tasks/components/CreateTaskModal.jsx";
 import { TaskDetails } from "../../features/tasks/components/TaskDetails.jsx";
 import { useProjects } from "../../features/projects/hooks/useProjects.js";
 import { useTasks } from "../../features/tasks/hooks/useTasks.js";
-import { projectService } from "../../features/projects/services/project.service.js";
-import { addProject as addProjectAction } from "../../features/projects/store/projectSlice.js";
+// Hooks handle project retrieval & state updates
+
 import { formatDate } from "../../shared/utils/formatDate.js";
 import { ROUTES } from "../../shared/constants/routes.js";
 
@@ -70,7 +70,7 @@ export const ProjectDetailsPage = () => {
         </p>
         <Link
           to={ROUTES.PROJECTS}
-          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-2xl bg-[#4361EE] text-white text-xs font-bold hover:bg-[#3451DE] transition-colors"
+          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-2xl bg-primary text-white text-xs font-bold hover:bg-primary-hover transition-colors"
         >
           <ArrowLeft size={14} />
           <span>Back to Projects</span>
@@ -193,7 +193,7 @@ export const ProjectDetailsPage = () => {
             </button>
             <button
               onClick={() => setIsCreateTaskOpen(true)}
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-[#4361EE] hover:bg-[#3451DE] active:scale-98 text-white text-xs font-bold shadow-md shadow-indigo-100 transition-all"
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-primary hover:bg-primary-hover active:scale-98 text-white text-xs font-bold shadow-md shadow-indigo-100 transition-all"
             >
               <Plus size={16} />
               <span>Add Task</span>
@@ -236,7 +236,7 @@ export const ProjectDetailsPage = () => {
             <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
               Task Completion
             </span>
-            <span className="font-bold text-[#4361EE] mt-0.5 block">
+            <span className="font-bold text-primary mt-0.5 block">
               {completedTasksCount}/{projectTasks.length} ({progressPercent}%)
             </span>
           </div>

@@ -4,10 +4,10 @@ import {
   FolderKanban,
   Plus,
   Search,
-  CheckCircle2,
-  Clock,
-  Users,
-  ChevronRight,
+
+
+
+
   Crown,
   ArrowUpRight,
 } from "lucide-react";
@@ -15,7 +15,6 @@ import { useProjects } from "../../projects/hooks/useProjects.js";
 import { CreateProjectModal } from "../../projects/components/CreateProjectModal.jsx";
 import { Badge } from "../../../shared/components/ui/Badge.jsx";
 import { ROUTES } from "../../../shared/constants/routes.js";
-import { formatDate } from "../../../shared/utils/formatDate.js";
 
 const STATUS_VARIANTS = {
   ACTIVE: "success",
@@ -72,7 +71,7 @@ export const DashboardProjectsWidget = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b border-slate-100">
         <div className="flex items-center gap-2.5">
-          <div className="w-9 h-9 rounded-2xl bg-indigo-50 text-[#4361EE] flex items-center justify-center shadow-xs">
+          <div className="w-9 h-9 rounded-2xl bg-indigo-50 text-primary flex items-center justify-center shadow-xs">
             <FolderKanban size={18} />
           </div>
           <div>
@@ -93,7 +92,7 @@ export const DashboardProjectsWidget = () => {
         <div className="flex items-center gap-2">
           <Link
             to={ROUTES.PROJECTS}
-            className="inline-flex items-center gap-1 text-xs font-bold text-[#4361EE] hover:text-[#3451DE] px-2.5 py-1.5 rounded-xl hover:bg-indigo-50 transition-colors"
+            className="inline-flex items-center gap-1 text-xs font-bold text-primary hover:text-primary-hover px-2.5 py-1.5 rounded-xl hover:bg-indigo-50 transition-colors"
           >
             <span>View All</span>
             <ArrowUpRight size={14} />
@@ -101,7 +100,7 @@ export const DashboardProjectsWidget = () => {
           <button
             type="button"
             onClick={() => setIsCreateOpen(true)}
-            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-[#4361EE] hover:bg-[#3451DE] text-white text-xs font-bold shadow-xs transition-all"
+            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-primary hover:bg-primary-hover text-white text-xs font-bold shadow-xs transition-all"
           >
             <Plus size={14} />
             <span>New Project</span>
@@ -121,7 +120,7 @@ export const DashboardProjectsWidget = () => {
             placeholder="Search projects by name or category..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-8 pr-3 py-1.5 rounded-xl border border-slate-200 text-xs bg-slate-50/50 focus:bg-white text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#4361EE]"
+            className="w-full pl-8 pr-3 py-1.5 rounded-xl border border-slate-200 text-xs bg-slate-50/50 focus:bg-white text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary"
           />
         </div>
 
@@ -177,7 +176,7 @@ export const DashboardProjectsWidget = () => {
                       <FolderKanban size={16} />
                     </div>
                     <div className="min-w-0">
-                      <h4 className="text-xs font-bold text-slate-900 group-hover:text-[#4361EE] transition-colors truncate">
+                      <h4 className="text-xs font-bold text-slate-900 group-hover:text-primary transition-colors truncate">
                         {project.name}
                       </h4>
                       <p className="text-[10px] text-slate-400 font-medium truncate">
@@ -295,7 +294,7 @@ export const DashboardProjectsWidget = () => {
           <button
             type="button"
             onClick={() => setIsCreateOpen(true)}
-            className="text-xs font-bold text-[#4361EE] hover:underline"
+            className="text-xs font-bold text-primary hover:underline"
           >
             + Create your first project now
           </button>

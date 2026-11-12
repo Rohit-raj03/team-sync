@@ -7,6 +7,7 @@ import { AtSign } from "lucide-react";
  * and stable user ID representation: @[Member Name](userId)
  */
 export const MentionTextarea = ({
+  id,
   value = "",
   onChange,
   projectMembers = [],
@@ -144,13 +145,14 @@ export const MentionTextarea = ({
     <div className="relative w-full">
       <textarea
         ref={textareaRef}
+        id={id}
         rows={rows}
         value={value}
         onChange={handleTextChange}
         onKeyDown={handleKeyDown}
         placeholder={placeholder}
         disabled={disabled}
-        className={`w-full px-3.5 py-2.5 rounded-2xl border border-slate-200 text-xs text-slate-800 placeholder-slate-400 bg-white focus:outline-none focus:ring-2 focus:ring-[#4361EE] focus:border-transparent transition-all resize-none shadow-xs ${className}`}
+        className={`w-full px-3.5 py-2.5 rounded-2xl border border-slate-200 text-xs text-slate-800 placeholder-slate-400 bg-white focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all resize-none shadow-xs ${className}`}
       />
 
       {/* Floating Autocomplete Dropdown */}
@@ -161,7 +163,7 @@ export const MentionTextarea = ({
         >
           <div className="px-3 py-1.5 bg-slate-50 border-b border-slate-100 flex items-center justify-between text-[11px] font-bold text-slate-500">
             <span className="flex items-center gap-1">
-              <AtSign size={12} className="text-[#4361EE]" />
+              <AtSign size={12} className="text-primary" />
               <span>Mention Project Member</span>
             </span>
             <span className="text-[10px] text-slate-400 font-medium">
@@ -180,7 +182,7 @@ export const MentionTextarea = ({
                     onClick={() => insertMention(member)}
                     className={`flex items-center gap-2.5 px-3 py-2 cursor-pointer transition-colors ${
                       isHighlighted
-                        ? "bg-indigo-50/80 text-[#4361EE]"
+                        ? "bg-indigo-50/80 text-primary"
                         : "hover:bg-slate-50 text-slate-700"
                     }`}
                   >

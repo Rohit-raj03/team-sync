@@ -1,13 +1,20 @@
 import React, { useState } from "react";
 import { Card } from "../../../shared/components/ui/Card.jsx";
+import { useTasks } from "../hooks/useTasks.js";
 
 /**
  * Feature Component: TaskActivityChart
  * Layer: features/tasks/components/
  * Responsibility: Exact reproduction of "Task Done" dual-spline area chart from Figma with cyan/purple curves and month ticks.
+ * Integrates live task completion metrics from useTasks.
  */
 export const TaskActivityChart = () => {
   const [activeTab, setActiveTab] = useState("Monthly");
+  const { allTasks = [] } = useTasks();
+
+  const completedCount = allTasks.filter(
+    (t) => t.status === "COMPLETED" || t.status === "Done"
+  ).length;
 
   const tabs = ["Daily", "Weekly", "Monthly"];
   const months = [
@@ -61,19 +68,24 @@ export const TaskActivityChart = () => {
     <Card className="p-6 md:p-8 rounded-3xl">
       {/* Header: Task Done on left, Daily Weekly Monthly on right */}
       <div className="flex items-center justify-between mb-8">
-        <h3 className="text-xl font-bold text-slate-900 tracking-tight">
-          Task Done
-        </h3>
+        <div className="flex items-center gap-3">
+          <h3 className="text-xl font-bold text-slate-900 tracking-tight">
+            Task Done
+          </h3>
+          <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-600 border border-emerald-100">
+            {completedCount} Completed
+          </span>
+        </div>
 
         <div className="flex items-center gap-6 text-sm font-semibold">
           {tabs.map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
-              className={`transition-all pb-1 focus:outline-none ${
+              className={`transition-all pb-1 focus:outline-none cursor-pointer ${
                 activeTab === tab
-                  ? "text-[#00C2FF] border-b-2 border-[#00C2FF] font-bold"
-                  : "text-slate-700 hover:text-slate-900"
+                  ? "text-primary border-b-2 border-primary font-bold"
+                  : "text-slate-600 hover:text-slate-900"
               }`}
             >
               {tab}
@@ -85,7 +97,7 @@ export const TaskActivityChart = () => {
       {/* Chart Canvas with Y-axis guides */}
       <div className="relative w-full h-64 md:h-72">
         {/* Y-Axis scale numbers & Grid lines */}
-        <div className="absolute left-0 top-0 bottom-8 w-8 flex flex-col justify-between text-[11px] font-medium text-slate-400 select-none">
+        <div className="absolute left-0 top-0 bottom-8 w-8 flex flex-col justify-between text-[11px] font-medium text-slate-500 select-none">
           <span>400</span>
           <span>300</span>
           <span>200</span>
@@ -175,7 +187,7 @@ export const TaskActivityChart = () => {
           </div>
 
           {/* X-Axis Month Ticks */}
-          <div className="flex justify-between items-center text-[11px] font-medium text-slate-400 pt-2 px-1">
+          <div className="flex justify-between items-center text-[11px] font-medium text-slate-500 pt-2 px-1">
             {months.map((m, idx) => (
               <span key={idx}>{m}</span>
             ))}

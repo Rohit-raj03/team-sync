@@ -215,7 +215,7 @@ export const TimelinePage = () => {
             {selectedTask && (
               <button
                 onClick={handleOpenFullPage}
-                className="inline-flex items-center gap-1 text-xs text-[#4361EE] hover:text-indigo-700 font-semibold px-2 py-1 rounded-lg hover:bg-indigo-50 transition-colors"
+                className="inline-flex items-center gap-1 text-xs text-primary hover:text-indigo-700 font-semibold px-2 py-1 rounded-lg hover:bg-indigo-50 transition-colors"
                 title="Open in full dedicated page"
               >
                 <span>Full Page</span>

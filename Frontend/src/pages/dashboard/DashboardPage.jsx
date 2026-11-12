@@ -5,6 +5,7 @@ import { TaskRecentList } from "../../features/tasks/components/TaskRecentList.j
 import { DashboardProjectsWidget } from "../../features/dashboard/components/DashboardProjectsWidget.jsx";
 import { TodayScheduleWidget } from "../../features/dashboard/components/TodayScheduleWidget.jsx";
 import { MessagesWidget } from "../../features/dashboard/components/MessagesWidget.jsx";
+import { NewTaskWidget } from "../../features/dashboard/components/NewTaskWidget.jsx";
 
 /**
  * Presentation Layer: DashboardPage (Screen 1 from Figma)
@@ -36,6 +37,9 @@ export const DashboardPage = () => {
 
         {/* 2. Messages Widget with 4 User Threads */}
         <MessagesWidget />
+
+        {/* 3. New Task Creator Widget */}
+        <NewTaskWidget />
       </div>
     </div>
   );

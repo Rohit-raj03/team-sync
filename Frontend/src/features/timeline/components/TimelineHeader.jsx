@@ -67,7 +67,7 @@ export const TimelineHeader = ({
             </button>
 
             <span className="text-xs font-bold text-slate-700 px-2.5 flex items-center gap-1.5 min-w-32 justify-center">
-              <Calendar size={13} className="text-[#4361EE]" />
+              <Calendar size={13} className="text-primary" />
               {rangeTitle}
             </span>
 
@@ -81,7 +81,7 @@ export const TimelineHeader = ({
 
             <button
               onClick={onToday}
-              className="text-[11px] font-bold text-[#4361EE] hover:bg-indigo-50 px-2 py-1 rounded-xl transition-colors ml-0.5"
+              className="text-[11px] font-bold text-primary hover:bg-indigo-50 px-2 py-1 rounded-xl transition-colors ml-0.5"
             >
               Today
             </button>
@@ -98,7 +98,7 @@ export const TimelineHeader = ({
                 onClick={() => onViewModeChange?.(mode)}
                 className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all ${
                   viewMode === mode
-                    ? "bg-[#4361EE] text-white shadow-xs"
+                    ? "bg-primary text-white shadow-xs"
                     : "text-slate-500 hover:text-slate-900"
                 }`}
               >
@@ -112,21 +112,21 @@ export const TimelineHeader = ({
             onClick={() => setShowFilters((prev) => !prev)}
             className={`p-2.5 bg-white border rounded-2xl transition-all relative shadow-2xs ${
               showFilters || hasActiveFilters
-                ? "border-indigo-300 text-[#4361EE] bg-indigo-50/40"
+                ? "border-indigo-300 text-primary bg-indigo-50/40"
                 : "border-slate-200/80 text-slate-600 hover:bg-slate-50"
             }`}
             title="Toggle filters"
           >
             <Filter size={16} />
             {hasActiveFilters && (
-              <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-[#4361EE]" />
+              <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-primary" />
             )}
           </button>
 
           {/* Add Milestone / Task CTA */}
           <Button
             onClick={onAddTask}
-            className="rounded-full bg-linear-to-r from-[#4361EE] to-blue-600 text-white shadow-md shadow-indigo-200 flex items-center gap-1.5 px-4 py-2 text-xs font-semibold hover:shadow-lg transition-all"
+            className="rounded-full bg-linear-to-r from-primary to-blue-600 text-white shadow-md shadow-indigo-200 flex items-center gap-1.5 px-4 py-2 text-xs font-semibold hover:shadow-lg transition-all"
           >
             <Plus size={15} />
             <span>Add Milestone</span>

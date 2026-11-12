@@ -1,4 +1,4 @@
-import { useEffect, useCallback } from "react";
+import { useEffect, useCallback, useRef } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import {
   setTasks,
@@ -26,10 +26,15 @@ export function useTasks(options = {}) {
     (state) => state.tasks
   );
 
+  const tasksRef = useRef(tasks);
+  useEffect(() => {
+    tasksRef.current = tasks;
+  }, [tasks]);
+
   const fetchTasks = useCallback(async (force = false) => {
-    const isCacheValid = tasks.length > 0 && Date.now() - lastTasksFetchTimestamp < CACHE_TTL_MS;
+    const isCacheValid = tasksRef.current.length > 0 && Date.now() - lastTasksFetchTimestamp < CACHE_TTL_MS;
     if (!force && isCacheValid) {
-      return tasks;
+      return tasksRef.current;
     }
 
     if (inFlightTasksPromise) {
@@ -38,7 +43,7 @@ export function useTasks(options = {}) {
 
     inFlightTasksPromise = (async () => {
       try {
-        if (tasks.length === 0) {
+        if (tasksRef.current.length === 0) {
           dispatch(setLoading(true));
         }
         const res = await taskService.getTasks();
@@ -59,7 +64,7 @@ export function useTasks(options = {}) {
     })();
 
     return inFlightTasksPromise;
-  }, [dispatch, tasks.length]);
+  }, [dispatch]);
 
   useEffect(() => {
     if (autoFetch) {

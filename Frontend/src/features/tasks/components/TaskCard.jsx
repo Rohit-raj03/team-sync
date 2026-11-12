@@ -57,7 +57,7 @@ export const TaskCard = ({ task, onClick }) => {
           </Badge>
         </div>
 
-        <h4 className="font-semibold text-slate-800 group-hover:text-[#4361EE] transition-colors line-clamp-1">
+        <h4 className="font-semibold text-slate-800 group-hover:text-primary transition-colors line-clamp-1">
           {task.title}
         </h4>
         <p className="text-xs text-slate-500 mt-1 line-clamp-2">

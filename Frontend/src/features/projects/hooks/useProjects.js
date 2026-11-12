@@ -1,4 +1,4 @@
-import { useMemo, useEffect, useCallback } from "react";
+import { useMemo, useEffect, useCallback, useRef } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import {
   setProjects,
@@ -33,11 +33,16 @@ export function useProjects(options = {}) {
   );
   const tasks = useSelector((state) => state.tasks?.tasks || []);
 
+  const projectsRef = useRef(projects);
+  useEffect(() => {
+    projectsRef.current = projects;
+  }, [projects]);
+
   // Fetch projects from server on mount with deduplication and caching
   const fetchProjects = useCallback(async (force = false) => {
-    const isCacheValid = projects.length > 0 && Date.now() - lastProjectsFetchTimestamp < PROJECTS_CACHE_TTL_MS;
+    const isCacheValid = projectsRef.current.length > 0 && Date.now() - lastProjectsFetchTimestamp < PROJECTS_CACHE_TTL_MS;
     if (!force && isCacheValid) {
-      return projects;
+      return projectsRef.current;
     }
 
     if (inFlightProjectsPromise) {
@@ -46,7 +51,7 @@ export function useProjects(options = {}) {
 
     inFlightProjectsPromise = (async () => {
       try {
-        if (projects.length === 0) {
+        if (projectsRef.current.length === 0) {
           dispatch(setLoading(true));
         }
         const res = await projectService.getProjects();
@@ -67,7 +72,7 @@ export function useProjects(options = {}) {
     })();
 
     return inFlightProjectsPromise;
-  }, [dispatch, projects.length]);
+  }, [dispatch]);
 
   useEffect(() => {
     if (autoFetch) {

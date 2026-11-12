@@ -19,7 +19,7 @@ export const TaskFilter = ({ currentFilter, onFilterChange }) => {
           onClick={() => onFilterChange(f.id)}
           className={`px-3 py-1.5 rounded-xl text-xs font-medium whitespace-nowrap transition-colors ${
             currentFilter === f.id
-              ? 'bg-[#4361EE] text-white shadow-sm'
+              ? 'bg-primary text-white shadow-sm'
               : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
           }`}
         >

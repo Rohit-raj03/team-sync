@@ -90,14 +90,14 @@ export const LoginForm = () => {
         <div className="flex justify-end -mt-1">
           <Link
             to={ROUTES.FORGOT_PASSWORD}
-            className="text-xs font-semibold text-[#4361EE] hover:text-[#3451DE] hover:underline transition-colors"
+            className="text-xs font-semibold text-primary hover:text-primary-hover hover:underline transition-colors"
           >
             Forgot password?
           </Link>
         </div>
         <Button
           type="submit"
-          className="w-full bg-[#4361EE] hover:bg-[#3451DE]"
+          className="w-full bg-primary hover:bg-primary-hover"
           disabled={loading}
         >
           {loading ? "Signing in..." : "Sign In"}

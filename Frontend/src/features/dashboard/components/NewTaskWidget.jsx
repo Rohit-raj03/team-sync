@@ -32,7 +32,7 @@ export const NewTaskWidget = () => {
       name: "Chris",
       avatar:
         "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=100&h=100&fit=crop&crop=faces",
-      color: "bg-[#E8F8FE] text-[#00C2FF]",
+      color: "bg-sky-50 text-sky-700 border border-sky-100",
     },
   ];
 
@@ -43,14 +43,14 @@ export const NewTaskWidget = () => {
         <h3 className="text-lg font-bold text-slate-900 tracking-tight">
           New Task
         </h3>
-        <button className="text-slate-300 hover:text-slate-600">
+        <button className="text-slate-400 hover:text-slate-600">
           <MoreHorizontal size={18} />
         </button>
       </div>
 
       {/* Task Title Field */}
       <div>
-        <label className="block text-[11px] font-semibold text-slate-400 mb-1">
+        <label className="block text-[11px] font-semibold text-slate-500 mb-1">
           Task Title
         </label>
         <input
@@ -69,9 +69,9 @@ export const NewTaskWidget = () => {
         </button>
 
         <div className="flex items-center gap-2 overflow-x-auto py-1">
-          {emojis.map((emoji, idx) => (
+          {emojis.map((emoji) => (
             <button
-              key={idx}
+              key={emoji}
               type="button"
               onClick={() => setSelectedEmoji(emoji)}
               className={`text-base p-1 rounded-lg transition-transform hover:scale-125 ${
@@ -92,7 +92,7 @@ export const NewTaskWidget = () => {
 
       {/* Add Collaborators */}
       <div>
-        <label className="block text-[11px] font-semibold text-slate-400 mb-2">
+        <label className="block text-[11px] font-semibold text-slate-500 mb-2">
           Add Collaborators
         </label>
 
@@ -125,7 +125,7 @@ export const NewTaskWidget = () => {
           {/* Submit Arrow Button */}
           <button
             type="button"
-            className="w-8 h-8 rounded-full bg-[#4361EE] hover:bg-[#3451DE] text-white flex items-center justify-center shadow-md shadow-indigo-300 ml-auto shrink-0 transition-transform active:scale-95"
+            className="w-8 h-8 rounded-full bg-primary hover:bg-primary-hover text-white flex items-center justify-center shadow-md shadow-indigo-300 ml-auto shrink-0 transition-transform active:scale-95"
           >
             <ArrowRight size={15} />
           </button>

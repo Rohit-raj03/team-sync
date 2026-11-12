@@ -113,7 +113,7 @@ export const RegisterForm = () => {
         </div>
         <Button
           type="submit"
-          className="w-full bg-[#4361EE] hover:bg-[#3451DE]"
+          className="w-full bg-primary hover:bg-primary-hover"
           disabled={loading}
         >
           {loading ? "Creating account..." : "Create Account"}

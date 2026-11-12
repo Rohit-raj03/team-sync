@@ -1,58 +1,19 @@
 import React, { useState } from "react";
-import {
-  Calendar,
-  Clock,
-  FolderKanban,
-  CheckCircle2,
-  Paperclip,
-  Tag,
-  ListChecks,
-  MessageSquare,
-  FileText,
-  Check,
-  Plus,
-  Trash2,
-  Edit2,
-  X,
-  UserPlus,
-  Users,
-  Search,
-  ChevronDown,
-  Save,
-  Image as ImageIcon,
-  ExternalLink,
-  Eye,
-  Loader2,
-} from "lucide-react";
-import { Badge } from "../../../shared/components/ui/Badge.jsx";
-import {
-  getPriorityBadgeVariant,
-  getStatusBadgeVariant,
-} from "../utils/taskHelpers.js";
-import { formatDate } from "../../../shared/utils/formatDate.js";
 import { useTasks } from "../hooks/useTasks.js";
 import { useAuth } from "../../auth/hooks/useAuth.js";
 import { taskService } from "../services/task.service.js";
 import { showToast } from "../../../shared/utils/toast.js";
 import { useTeam } from "../../team/hooks/useTeam.js";
 import { useProjects } from "../../projects/hooks/useProjects.js";
-import { deriveProjectColorTokens } from "../../timeline/utils/timelineColors.js";
-import { MentionTextarea } from "./MentionTextarea.jsx";
-import { MentionRenderer } from "./MentionRenderer.jsx";
 import { TaskComments } from "./TaskComments.jsx";
 import { CreateTaskModal } from "./CreateTaskModal.jsx";
 import { DeleteTaskModal } from "./DeleteTaskModal.jsx";
-import { Avatar } from "../../../shared/components/ui/Avatar.jsx";
-import {
-  TaskAttachmentsUploader,
-  formatFileSize,
-  isImageFile,
-  getDocumentBadge,
-} from "./TaskAttachmentsUploader.jsx";
-import {
-  TASK_STATUS,
-  TASK_PRIORITY,
-} from "../../../shared/constants/taskStatus.js";
+import { AttachmentPreviewModal } from "./attachments/AttachmentPreviewModal.jsx";
+import { TaskHeaderMeta } from "./task-details/TaskHeaderMeta.jsx";
+import { TaskAssigneeSection } from "./task-details/TaskAssigneeSection.jsx";
+import { TaskSubtasksSection } from "./task-details/TaskSubtasksSection.jsx";
+import { TaskAttachmentsSection } from "./task-details/TaskAttachmentsSection.jsx";
+import { TaskMetadataSection } from "./task-details/TaskMetadataSection.jsx";
 
 const getSubtaskId = (sub, idx) => sub?.id || sub?._id || `st-${idx}`;
 
@@ -96,28 +57,28 @@ export const TaskDetails = ({
         }))
       : teamMembers);
 
-  // Local state for editing modes
-  const [isEditingMeta, setIsEditingMeta] = useState(false);
-  const [editTitle, setEditTitle] = useState(task?.title || "");
-  const [editDescription, setEditDescription] = useState(
-    task?.description || "",
-  );
-  const [editDueDate, setEditDueDate] = useState(task?.dueDate || "");
-  const [editEstimatedTime, setEditEstimatedTime] = useState(
-    task?.estimatedTime || "8h",
-  );
-
-  // Attachment state & viewer modal
-  const [isUploaderOpen, setIsUploaderOpen] = useState(false);
+  // Attachment preview & deletion state
   const [previewModalUrl, setPreviewModalUrl] = useState(null);
   const [removingAttachmentId, setRemovingAttachmentId] = useState(null);
+
+  // Edit & Delete modal states
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState("");
 
   // Current authenticated user for RBAC permission enforcement
   const { user: currentUser } = useAuth();
   const currentUserId = (currentUser?._id || currentUser?.id)?.toString();
-  const creatorId = (task?.creator?._id || task?.creator?.id || task?.creator)?.toString();
+  const creatorId = (
+    task?.creator?._id ||
+    task?.creator?.id ||
+    task?.creator
+  )?.toString();
   const isAdmin = currentUser?.role === "admin";
-  const isCreator = Boolean(currentUserId && creatorId && currentUserId === creatorId);
+  const isCreator = Boolean(
+    currentUserId && creatorId && currentUserId === creatorId
+  );
   const isProjectManager = Boolean(
     project &&
       currentUserId &&
@@ -143,47 +104,6 @@ export const TaskDetails = ({
     return Boolean(uploaderId && currentUserId && uploaderId === currentUserId);
   };
 
-  // Assignee picker dropdown state
-  const [isAssigneePickerOpen, setIsAssigneePickerOpen] = useState(false);
-  const [memberSearchQuery, setMemberSearchQuery] = useState("");
-
-  // Subtask creation input state
-  const [newSubtaskTitle, setNewSubtaskTitle] = useState("");
-  const [isAddingSubtask, setIsAddingSubtask] = useState(false);
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [editingSubtaskId, setEditingSubtaskId] = useState(null);
-  const [editingSubtaskTitle, setEditingSubtaskTitle] = useState("");
-
-  // Delete modal state
-  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
-  const [deleteError, setDeleteError] = useState("");
-
-  const handleDeleteConfirm = async (reason) => {
-    setIsDeleting(true);
-    setDeleteError("");
-    try {
-      const idToDelete = task.id || task._id || currentId;
-      await deleteTask(idToDelete, reason);
-      setIsDeleteModalOpen(false);
-      onDelete?.(idToDelete);
-      onClose?.();
-    } catch (err) {
-      console.error("Task deletion failed:", err);
-      setDeleteError(
-        err.response?.data?.message ||
-        err.message ||
-        "Failed to delete task. You may not have permission to delete this task."
-      );
-    } finally {
-      setIsDeleting(false);
-    }
-  };
-
-  // Status & Priority dropdown states
-  const [isStatusMenuOpen, setIsStatusMenuOpen] = useState(false);
-  const [isPriorityMenuOpen, setIsPriorityMenuOpen] = useState(false);
-
   if (!task) return null;
 
   // 1. SUBTASK TICKING / TOGGLE
@@ -205,13 +125,12 @@ export const TaskDetails = ({
   };
 
   // 2. ADD SUBTASK
-  const handleAddSubtask = (e) => {
-    e?.preventDefault();
-    if (!newSubtaskTitle.trim()) return;
+  const handleAddSubtask = (title) => {
+    if (!title?.trim()) return;
 
     const newSubtask = {
       id: `st-${Date.now()}`,
-      title: newSubtaskTitle.trim(),
+      title: title.trim(),
       completed: false,
     };
 
@@ -222,8 +141,6 @@ export const TaskDetails = ({
 
     updateTask(updatedTask);
     onUpdate?.(updatedTask);
-    setNewSubtaskTitle("");
-    setIsAddingSubtask(false);
   };
 
   // 3. REMOVE SUBTASK
@@ -231,7 +148,7 @@ export const TaskDetails = ({
     e?.stopPropagation?.();
     const currentSubtasks = task.subtasks || [];
     const updatedSubtasks = currentSubtasks.filter(
-      (s, idx) => getSubtaskId(s, idx) !== subtaskId,
+      (s, idx) => getSubtaskId(s, idx) !== subtaskId
     );
 
     const updatedTask = {
@@ -261,26 +178,29 @@ export const TaskDetails = ({
 
     updateTask(updatedTask, { silent: true });
     onUpdate?.(updatedTask);
-    setEditingSubtaskId(null);
-    setEditingSubtaskTitle("");
   };
 
   // 4. EMPLOYEE / ASSIGNEE EDITING (TOGGLE ASSIGNEE)
   const handleToggleAssignee = (member) => {
     const currentAssignees = task.assignees || [];
-    const exists = currentAssignees.some((a) => a.id === member.id);
+    const exists = currentAssignees.some(
+      (a) => (a.id || a._id) === (member.id || member._id)
+    );
 
     let updatedAssignees;
     if (exists) {
-      updatedAssignees = currentAssignees.filter((a) => a.id !== member.id);
+      updatedAssignees = currentAssignees.filter(
+        (a) => (a.id || a._id) !== (member.id || member._id)
+      );
     } else {
       updatedAssignees = [
         ...currentAssignees,
         {
-          id: member.id,
+          id: member.id || member._id,
+          _id: member.id || member._id,
           name: member.name,
           username: member.username,
-          role: member.role,
+          role: member.role || member.projectRole,
           avatar: member.avatar,
         },
       ];
@@ -303,9 +223,9 @@ export const TaskDetails = ({
 
   // 5. QUICK REMOVE SINGLE ASSIGNEE
   const handleRemoveAssignee = (memberId, e) => {
-    e?.stopPropagation();
+    e?.stopPropagation?.();
     const updatedAssignees = (task.assignees || []).filter(
-      (a) => a.id !== memberId,
+      (a) => (a.id || a._id) !== memberId
     );
     const updatedAssignedTo =
       updatedAssignees.length > 0
@@ -330,7 +250,6 @@ export const TaskDetails = ({
     };
     updateTask(updatedTask);
     onUpdate?.(updatedTask);
-    setIsStatusMenuOpen(false);
   };
 
   // 7. QUICK PRIORITY CHANGE
@@ -341,37 +260,21 @@ export const TaskDetails = ({
     };
     updateTask(updatedTask);
     onUpdate?.(updatedTask);
-    setIsPriorityMenuOpen(false);
   };
 
   // 8. SAVE EDITED TITLE & DESCRIPTION
-  const handleSaveMeta = () => {
-    if (!editTitle.trim()) return;
-
+  const handleSaveMeta = (meta) => {
     const updatedTask = {
       ...task,
-      title: editTitle.trim(),
-      description: editDescription.trim(),
-      dueDate: editDueDate || task.dueDate,
-      estimatedTime: editEstimatedTime || task.estimatedTime,
+      ...meta,
     };
-
     updateTask(updatedTask);
     onUpdate?.(updatedTask);
-    setIsEditingMeta(false);
-  };
-
-  const handleCancelMeta = () => {
-    setEditTitle(task.title);
-    setEditDescription(task.description || "");
-    setEditDueDate(task.dueDate || "");
-    setEditEstimatedTime(task.estimatedTime || "8h");
-    setIsEditingMeta(false);
   };
 
   // 9. REMOVE ATTACHMENT FROM OVERVIEW
   const handleRemoveTaskAttachment = async (attachment, e) => {
-    e?.stopPropagation();
+    e?.stopPropagation?.();
     const attId = attachment.fileId || attachment._id || attachment.id;
     if (!attId) return;
 
@@ -416,867 +319,88 @@ export const TaskDetails = ({
     onUpdate?.(updatedTask);
   };
 
-  // Filter project members for assignee search
-  const filteredTeamMembers = effectiveMembers.filter((m) => {
-    const q = memberSearchQuery.toLowerCase();
-    const name = (m.name || "").toLowerCase();
-    const username = (m.username || "").toLowerCase();
-    const role = (m.role || m.projectRole || "").toLowerCase();
-    return name.includes(q) || username.includes(q) || role.includes(q);
-  });
-
-  const subtasks = task.subtasks || [];
-  const completedSubtasksCount = subtasks.filter((s) => s.completed).length;
-  const subtasksProgress =
-    subtasks.length > 0
-      ? Math.round((completedSubtasksCount / subtasks.length) * 100)
-      : 0;
+  // 11. TASK DELETION CONFIRMATION
+  const handleDeleteConfirm = async (reason) => {
+    setIsDeleting(true);
+    setDeleteError("");
+    try {
+      const idToDelete = task.id || task._id || currentId;
+      await deleteTask(idToDelete, reason);
+      setIsDeleteModalOpen(false);
+      onDelete?.(idToDelete);
+      onClose?.();
+    } catch (err) {
+      console.error("Task deletion failed:", err);
+      setDeleteError(
+        err.response?.data?.message ||
+          err.message ||
+          "Failed to delete task. You may not have permission to delete this task."
+      );
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   return (
     <div className="space-y-6">
-      {/* 1. Top Badges & Quick Dropdowns Header */}
-      <div className="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-slate-100">
-        <div className="flex items-center gap-2">
-          {/* Interactive Status Dropdown Pill */}
-          <div className="relative">
-            <button
-              type="button"
-              onClick={() => {
-                setIsStatusMenuOpen((prev) => !prev);
-                setIsPriorityMenuOpen(false);
-              }}
-              className="inline-flex items-center gap-1.5 focus:outline-none group"
-              title="Click to change status"
-            >
-              <Badge variant={getStatusBadgeVariant(task.status)}>
-                <span>{task.status?.replace("_", " ") || "TO DO"}</span>
-                <ChevronDown
-                  size={11}
-                  className="ml-0.5 opacity-60 group-hover:opacity-100"
-                />
-              </Badge>
-            </button>
+      {/* 1. Header with Status, Priority, Edit, Delete, Title, Description, Dates & Creator */}
+      <TaskHeaderMeta
+        task={task}
+        effectiveMembers={effectiveMembers}
+        onStatusChange={handleStatusChange}
+        onPriorityChange={handlePriorityChange}
+        onSaveMeta={handleSaveMeta}
+        onOpenEditModal={() => setIsEditModalOpen(true)}
+        onOpenDeleteModal={() => {
+          setDeleteError("");
+          setIsDeleteModalOpen(true);
+        }}
+      />
 
-            {isStatusMenuOpen && (
-              <div className="absolute left-0 mt-1.5 w-40 bg-white rounded-2xl shadow-xl border border-slate-100 py-1.5 z-30 animate-in fade-in zoom-in-95 duration-150">
-                <p className="px-3 py-1 text-[10px] font-bold uppercase text-slate-400">
-                  Change Status
-                </p>
-                {Object.values(TASK_STATUS).map((statusVal) => (
-                  <button
-                    key={statusVal}
-                    type="button"
-                    onClick={() => handleStatusChange(statusVal)}
-                    className={`w-full text-left px-3 py-1.5 text-xs font-semibold flex items-center justify-between transition-colors ${
-                      task.status === statusVal
-                        ? "bg-indigo-50 text-[#4361EE]"
-                        : "text-slate-700 hover:bg-slate-50"
-                    }`}
-                  >
-                    <span>{statusVal.replace("_", " ")}</span>
-                    {task.status === statusVal && <Check size={12} />}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
+      {/* 2. Employee / Assignees Section */}
+      <TaskAssigneeSection
+        assignees={task.assignees || []}
+        effectiveMembers={effectiveMembers}
+        onToggleAssignee={handleToggleAssignee}
+        onRemoveAssignee={handleRemoveAssignee}
+      />
 
-          {/* Interactive Priority Dropdown Pill */}
-          <div className="relative">
-            <button
-              type="button"
-              onClick={() => {
-                setIsPriorityMenuOpen((prev) => !prev);
-                setIsStatusMenuOpen(false);
-              }}
-              className="inline-flex items-center gap-1.5 focus:outline-none group"
-              title="Click to change priority"
-            >
-              <Badge variant={getPriorityBadgeVariant(task.priority)}>
-                <span>{task.priority} Priority</span>
-                <ChevronDown
-                  size={11}
-                  className="ml-0.5 opacity-60 group-hover:opacity-100"
-                />
-              </Badge>
-            </button>
+      {/* 3. Subtasks Checklist */}
+      <TaskSubtasksSection
+        subtasks={task.subtasks || []}
+        onToggleSubtask={handleToggleSubtask}
+        onAddSubtask={handleAddSubtask}
+        onRemoveSubtask={handleRemoveSubtask}
+        onUpdateSubtaskTitle={handleUpdateSubtaskTitle}
+      />
 
-            {isPriorityMenuOpen && (
-              <div className="absolute left-0 mt-1.5 w-36 bg-white rounded-2xl shadow-xl border border-slate-100 py-1.5 z-30 animate-in fade-in zoom-in-95 duration-150">
-                <p className="px-3 py-1 text-[10px] font-bold uppercase text-slate-400">
-                  Set Priority
-                </p>
-                {Object.values(TASK_PRIORITY).map((prioVal) => (
-                  <button
-                    key={prioVal}
-                    type="button"
-                    onClick={() => handlePriorityChange(prioVal)}
-                    className={`w-full text-left px-3 py-1.5 text-xs font-semibold flex items-center justify-between transition-colors ${
-                      task.priority === prioVal
-                        ? "bg-indigo-50 text-[#4361EE]"
-                        : "text-slate-700 hover:bg-slate-50"
-                    }`}
-                  >
-                    <span>{prioVal}</span>
-                    {task.priority === prioVal && <Check size={12} />}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
+      {/* 4. Attachments Section */}
+      <TaskAttachmentsSection
+        taskId={task.id || task._id || currentId}
+        attachments={task.attachments || []}
+        canAttachFiles={canAttachFiles}
+        canRemoveAttachment={canRemoveAttachment}
+        onAttachmentsChange={handleAttachmentsChange}
+        onRemoveAttachment={handleRemoveTaskAttachment}
+        onPreview={setPreviewModalUrl}
+        removingAttachmentId={removingAttachmentId}
+      />
 
-        {/* Project Name + Edit Toggle Button */}
-        <div className="flex items-center gap-3">
-          {task.isIndividual || (!task.project && !task.projectId) || task.projectName === "Individual Task" ? (
-            <div className="flex items-center gap-1.5 text-xs font-semibold text-purple-700 bg-purple-50 border border-purple-100 px-2.5 py-1 rounded-xl">
-              <span className="w-1.5 h-1.5 rounded-full bg-purple-500" />
-              <span>Self / Individual Task</span>
-            </div>
-          ) : (
-            task.projectName && (
-              <div className="flex items-center gap-1.5 text-xs text-slate-500 font-medium">
-                <FolderKanban size={13} className="text-[#4361EE]" />
-                <span>{task.projectName}</span>
-              </div>
-            )
-          )}
+      {/* 5. Metadata (Tags & Handover Notes) */}
+      <TaskMetadataSection
+        tags={task.tags || []}
+        project={project}
+        taskProject={task.project}
+        comment={task.comment}
+      />
 
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => setIsEditModalOpen(true)}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-xs font-bold text-[#4361EE] border border-indigo-100 transition-colors cursor-pointer shadow-2xs"
-            >
-              <Edit2 size={13} />
-              <span>Edit Task</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => {
-                setDeleteError("");
-                setIsDeleteModalOpen(true);
-              }}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-xs font-bold text-rose-600 border border-rose-100 transition-colors cursor-pointer shadow-2xs"
-              title="Delete task with mandatory reason"
-            >
-              <Trash2 size={13} />
-              <span>Delete</span>
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* 2. Title & Description (View or Inline Edit Mode) */}
-      {isEditingMeta ? (
-        <div className="space-y-3 p-4 bg-slate-50 rounded-2xl border border-slate-200/90 animate-in fade-in duration-150">
-          <div>
-            <label className="block text-[11px] font-bold uppercase text-slate-500 mb-1">
-              Task Title
-            </label>
-            <input
-              type="text"
-              value={editTitle}
-              onChange={(e) => setEditTitle(e.target.value)}
-              className="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm font-semibold bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#4361EE]"
-            />
-          </div>
-
-          <div>
-            <label className="block text-[11px] font-bold uppercase text-slate-500 mb-1">
-              Description (Type @ to mention team members)
-            </label>
-            <MentionTextarea
-              rows={3}
-              value={editDescription}
-              onChange={(newVal) => setEditDescription(newVal)}
-              projectMembers={effectiveMembers}
-              placeholder="Task description with @mentions..."
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-[11px] font-bold uppercase text-slate-500 mb-1">
-                Due Date
-              </label>
-              <input
-                type="date"
-                value={editDueDate}
-                onChange={(e) => setEditDueDate(e.target.value)}
-                className="w-full px-2.5 py-1.5 rounded-xl border border-slate-200 text-xs bg-white"
-              />
-            </div>
-
-            <div>
-              <label className="block text-[11px] font-bold uppercase text-slate-500 mb-1">
-                Estimated Time
-              </label>
-              <input
-                type="text"
-                placeholder="e.g. 12h or 3d"
-                value={editEstimatedTime}
-                onChange={(e) => setEditEstimatedTime(e.target.value)}
-                className="w-full px-2.5 py-1.5 rounded-xl border border-slate-200 text-xs bg-white"
-              />
-            </div>
-          </div>
-
-          <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-200/60">
-            <button
-              type="button"
-              onClick={handleCancelMeta}
-              className="px-3 py-1.5 rounded-xl border border-slate-200 text-xs font-semibold text-slate-600 hover:bg-slate-100 transition-colors"
-            >
-              Cancel
-            </button>
-            <button
-              type="button"
-              onClick={handleSaveMeta}
-              disabled={!editTitle.trim()}
-              className="px-4 py-1.5 rounded-xl bg-[#4361EE] hover:bg-[#3451DE] text-white text-xs font-bold transition-all shadow-xs flex items-center gap-1.5"
-            >
-              <Save size={13} />
-              <span>Save Changes</span>
-            </button>
-          </div>
-        </div>
-      ) : (
-        <div>
-          <h2 className="text-xl font-bold text-slate-900 leading-snug">
-            {task.title}
-          </h2>
-          <div className="text-xs text-slate-600 mt-2 leading-relaxed whitespace-pre-line">
-            {task.description ? (
-              <MentionRenderer text={task.description} />
-            ) : (
-              "No detailed description provided."
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* 3. Meta Grid: Dates & Estimation */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 p-3.5 bg-slate-50 rounded-2xl border border-slate-100 text-xs">
-        <div>
-          <span className="block text-[10px] font-bold uppercase tracking-wider text-slate-400">
-            Start Date
-          </span>
-          <span className="font-semibold text-slate-700 mt-0.5 block">
-            {task.startDate ? formatDate(task.startDate) : "Not specified"}
-          </span>
-        </div>
-
-        <div>
-          <span className="block text-[10px] font-bold uppercase tracking-wider text-slate-400">
-            Due Date
-          </span>
-          <span className="font-semibold text-slate-700 mt-0.5 block">
-            {task.dueDate ? formatDate(task.dueDate) : "No deadline"}
-          </span>
-        </div>
-
-        <div>
-          <span className="block text-[10px] font-bold uppercase tracking-wider text-slate-400">
-            Estimated Time
-          </span>
-          <span className="font-semibold text-[#4361EE] mt-0.5 block">
-            {task.estimatedTime || "8h"}
-          </span>
-        </div>
-      </div>
-
-      {/* TASK CREATOR (Clearly distinguished from assignees) */}
-      <div className="p-3 bg-slate-50/80 rounded-2xl border border-slate-100 flex items-center justify-between">
-        <div className="flex items-center gap-2.5">
-          <Avatar
-            src={task.creator?.avatar}
-            name={task.creator?.name || "Task Creator"}
-            size="sm"
-            className="ring-1 ring-slate-200"
-          />
-          <div>
-            <div className="flex items-center gap-1.5">
-              <span className="text-xs font-bold text-slate-800">
-                {task.creator?.name || "Unknown Creator"}
-              </span>
-              <span className="text-[10px] font-bold px-1.5 py-0.2 rounded-md bg-purple-50 text-purple-700 border border-purple-100">
-                Creator
-              </span>
-            </div>
-            <p className="text-[11px] text-slate-400">
-              Created on {formatDate(task.createdAt || task.startDate)}
-            </p>
-          </div>
-        </div>
-      </div>
-
-      {/* 4. EMPLOYEE / ASSIGNEES SECTION (EDIT & MANAGE) */}
-      <div className="space-y-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Users size={15} className="text-slate-500" />
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-700">
-              Assigned Employees ({task.assignees?.length || 0})
-            </span>
-          </div>
-
-          <button
-            type="button"
-            onClick={() => setIsAssigneePickerOpen((prev) => !prev)}
-            className="inline-flex items-center gap-1.5 text-xs font-bold text-[#4361EE] hover:text-[#3451DE] transition-colors"
-          >
-            <UserPlus size={13} />
-            <span>
-              {isAssigneePickerOpen ? "Done Editing" : "+ Edit Assignees"}
-            </span>
-          </button>
-        </div>
-
-        {/* Inline Employee Multi-Select Picker */}
-        {isAssigneePickerOpen && (
-          <div className="p-3.5 rounded-2xl bg-indigo-50/40 border border-indigo-100 space-y-3 animate-in fade-in duration-150">
-            <div className="relative">
-              <Search
-                size={14}
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
-              />
-              <input
-                type="text"
-                value={memberSearchQuery}
-                onChange={(e) => setMemberSearchQuery(e.target.value)}
-                placeholder="Search employees to assign or remove..."
-                className="w-full pl-9 pr-3 py-1.5 rounded-xl border border-slate-200 text-xs bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#4361EE]"
-              />
-            </div>
-
-            <div className="max-h-40 overflow-y-auto divide-y divide-slate-100 bg-white rounded-xl border border-slate-200/80">
-              {filteredTeamMembers.map((member) => {
-                const isAssigned = (task.assignees || []).some(
-                  (a) => a.id === member.id,
-                );
-                return (
-                  <div
-                    key={member.id}
-                    onClick={() => handleToggleAssignee(member)}
-                    className={`flex items-center justify-between p-2 cursor-pointer transition-colors ${
-                      isAssigned ? "bg-indigo-50/60" : "hover:bg-slate-50"
-                    }`}
-                  >
-                    <div className="flex items-center gap-2.5 min-w-0">
-                      <div
-                        className={`w-4 h-4 rounded border flex items-center justify-center transition-colors shrink-0 ${
-                          isAssigned
-                            ? "bg-[#4361EE] border-[#4361EE] text-white"
-                            : "border-slate-300 bg-white"
-                        }`}
-                      >
-                        {isAssigned && <Check size={11} strokeWidth={3} />}
-                      </div>
-
-                      <Avatar
-                        src={member.avatar}
-                        name={member.name}
-                        size="xs"
-                        className="ring-1 ring-slate-100"
-                      />
-
-                      <div className="min-w-0">
-                        <p className="text-xs font-bold text-slate-800 truncate">
-                          {member.name}
-                        </p>
-                        <p className="text-[10px] text-slate-400 truncate">
-                          {member.role || "Member"}
-                        </p>
-                      </div>
-                    </div>
-
-                    <span
-                      className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${
-                        isAssigned
-                          ? "bg-indigo-100 text-[#4361EE]"
-                          : "text-slate-400 hover:text-slate-600"
-                      }`}
-                    >
-                      {isAssigned ? "Assigned" : "+ Add"}
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
-        {/* Current Assigned Employees Cards */}
-        {task.assignees && task.assignees.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-            {task.assignees.map((user) => (
-              <div
-                key={user.id}
-                className="flex items-center justify-between p-2.5 bg-white rounded-xl border border-slate-200/80 shadow-xs hover:border-indigo-200 transition-all group"
-              >
-                <div className="flex items-center gap-2.5 min-w-0">
-                  <Avatar
-                    src={user.avatar}
-                    name={user.name}
-                    size="sm"
-                    className="ring-1 ring-slate-100 shrink-0"
-                  />
-                  <div className="min-w-0">
-                    <p className="text-xs font-bold text-slate-800 truncate">
-                      {user.name}
-                    </p>
-                    <p className="text-[11px] text-slate-400 truncate">
-                      {user.role || "Member"}
-                    </p>
-                  </div>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={(e) => handleRemoveAssignee(user.id, e)}
-                  title={`Remove ${user.name}`}
-                  className="opacity-0 group-hover:opacity-100 p-1 text-slate-300 hover:text-rose-500 hover:bg-rose-50 rounded-lg transition-all"
-                >
-                  <X size={13} />
-                </button>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="p-3 bg-slate-50 rounded-xl text-center border border-dashed border-slate-200">
-            <p className="text-xs text-slate-400 font-medium">
-              No employees assigned to this task.
-            </p>
-            <button
-              type="button"
-              onClick={() => setIsAssigneePickerOpen(true)}
-              className="text-xs font-bold text-[#4361EE] hover:underline mt-0.5"
-            >
-              + Assign employees now
-            </button>
-          </div>
-        )}
-      </div>
-
-      {/* 5. INTERACTIVE SUBTASKS CHECKLIST ("subtask ko tick kar sake") */}
-      <div className="space-y-3 p-3.5 rounded-2xl bg-slate-50/50 border border-slate-100">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <ListChecks size={15} className="text-[#4361EE]" />
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-800">
-              Subtasks Checklist ({completedSubtasksCount}/{subtasks.length})
-            </span>
-            <span className="text-[10px] font-bold uppercase text-slate-500 bg-slate-200/70 px-1.5 py-0.2 rounded-md">
-              Sub-items
-            </span>
-          </div>
-
-          <div className="flex items-center gap-2">
-            {subtasks.length > 0 && (
-              <span className="text-[11px] font-semibold text-slate-500">
-                {subtasksProgress}% complete
-              </span>
-            )}
-            <button
-              type="button"
-              onClick={() => setIsAddingSubtask((prev) => !prev)}
-              className="inline-flex items-center gap-1 text-xs font-bold text-[#4361EE] hover:text-[#3451DE] transition-colors cursor-pointer"
-            >
-              <Plus size={13} />
-              <span>Add Subtask</span>
-            </button>
-          </div>
-        </div>
-
-        {/* Progress Bar */}
-        {subtasks.length > 0 && (
-          <div className="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
-            <div
-              className="bg-[#4361EE] h-1.5 rounded-full transition-all duration-300"
-              style={{ width: `${subtasksProgress}%` }}
-            />
-          </div>
-        )}
-
-        {/* Interactive Clickable Checklist */}
-        {subtasks.length > 0 ? (
-          <div className="space-y-1.5 max-h-56 overflow-y-auto">
-            {subtasks.map((sub, idx) => {
-              const sId = getSubtaskId(sub, idx);
-              const isEditing = editingSubtaskId === sId;
-
-              return (
-                <div
-                  key={sId}
-                  className={`flex items-center justify-between p-2.5 rounded-xl border transition-all ${
-                    sub.completed
-                      ? "bg-slate-50/80 border-slate-200/60"
-                      : "bg-white border-slate-200 hover:border-indigo-200 hover:shadow-xs"
-                  }`}
-                >
-                  {isEditing ? (
-                    <div className="flex items-center gap-2 flex-1 min-w-0" onClick={(e) => e.stopPropagation()}>
-                      <input
-                        type="text"
-                        value={editingSubtaskTitle}
-                        onChange={(e) => setEditingSubtaskTitle(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter") handleUpdateSubtaskTitle(sId, editingSubtaskTitle, e);
-                          if (e.key === "Escape") setEditingSubtaskId(null);
-                        }}
-                        autoFocus
-                        className="flex-1 px-2.5 py-1 text-xs rounded-lg border border-indigo-300 focus:outline-none focus:ring-2 focus:ring-[#4361EE] bg-white text-slate-800"
-                      />
-                      <button
-                        type="button"
-                        onClick={(e) => handleUpdateSubtaskTitle(sId, editingSubtaskTitle, e)}
-                        className="p-1 text-emerald-600 hover:bg-emerald-50 rounded-lg"
-                        title="Save title"
-                      >
-                        <Check size={14} />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setEditingSubtaskId(null);
-                        }}
-                        className="p-1 text-slate-400 hover:bg-slate-100 rounded-lg"
-                        title="Cancel"
-                      >
-                        <X size={14} />
-                      </button>
-                    </div>
-                  ) : (
-                    <>
-                      <div
-                        onClick={(e) => handleToggleSubtask(sId, e)}
-                        className="flex items-center gap-2.5 min-w-0 flex-1 cursor-pointer select-none group"
-                      >
-                        {/* Clickable Tick Box */}
-                        <div
-                          className={`w-4 h-4 rounded border flex items-center justify-center transition-colors shrink-0 ${
-                            sub.completed
-                              ? "bg-emerald-500 border-emerald-500 text-white"
-                              : "border-slate-300 group-hover:border-[#4361EE] bg-white"
-                          }`}
-                        >
-                          {sub.completed && <Check size={11} strokeWidth={3} />}
-                        </div>
-
-                        <span
-                          className={`text-xs transition-colors truncate ${
-                            sub.completed
-                              ? "line-through text-slate-400 font-normal"
-                              : "text-slate-800 font-medium group-hover:text-[#4361EE]"
-                          }`}
-                        >
-                          {sub.title}
-                        </span>
-                      </div>
-
-                      <div className="flex items-center gap-1 shrink-0 ml-2">
-                        {/* Edit subtask title button */}
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setEditingSubtaskId(sId);
-                            setEditingSubtaskTitle(sub.title);
-                          }}
-                          title="Edit subtask title"
-                          className="p-1 text-slate-300 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all"
-                        >
-                          <Edit2 size={13} />
-                        </button>
-
-                        {/* Delete subtask button */}
-                        <button
-                          type="button"
-                          onClick={(e) => handleRemoveSubtask(sId, e)}
-                          title="Delete subtask"
-                          className="p-1 text-slate-300 hover:text-rose-500 hover:bg-rose-50 rounded-lg transition-all"
-                        >
-                          <Trash2 size={13} />
-                        </button>
-                      </div>
-                    </>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        ) : (
-          <div className="p-3 bg-slate-50 rounded-xl text-center border border-dashed border-slate-200">
-            <p className="text-xs text-slate-400 font-medium">
-              No subtasks added yet.
-            </p>
-          </div>
-        )}
-
-        {/* Inline Add Subtask Input Form */}
-        {isAddingSubtask && (
-          <form
-            onSubmit={handleAddSubtask}
-            className="flex gap-2 pt-1 animate-in fade-in duration-150"
-          >
-            <input
-              type="text"
-              autoFocus
-              placeholder="Enter new subtask title..."
-              value={newSubtaskTitle}
-              onChange={(e) => setNewSubtaskTitle(e.target.value)}
-              className="flex-1 px-3 py-1.5 rounded-xl border border-slate-200 text-xs bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#4361EE]"
-            />
-            <button
-              type="submit"
-              disabled={!newSubtaskTitle.trim()}
-              className="px-3 py-1.5 rounded-xl bg-[#4361EE] hover:bg-[#3451DE] text-white text-xs font-bold transition-colors disabled:opacity-40"
-            >
-              Add
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setNewSubtaskTitle("");
-                setIsAddingSubtask(false);
-              }}
-              className="px-2.5 py-1.5 rounded-xl border border-slate-200 text-xs text-slate-500 hover:bg-slate-50"
-            >
-              Cancel
-            </button>
-          </form>
-        )}
-      </div>
-
-      {/* 6. Attachments Section (Interactive Overview) */}
-      <div className="space-y-3 p-4 rounded-2xl bg-slate-50/60 border border-slate-100">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Paperclip size={15} className="text-[#4361EE]" />
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-800">
-              Attachments ({task.attachments?.length || 0})
-            </span>
-          </div>
-
-          {canAttachFiles && (
-            <button
-              type="button"
-              onClick={() => setIsUploaderOpen((prev) => !prev)}
-              className="inline-flex items-center gap-1.5 text-xs font-bold text-[#4361EE] hover:text-[#3451DE] transition-colors cursor-pointer"
-            >
-              <Plus size={13} />
-              <span>{isUploaderOpen ? "Close Uploader" : "Add Attachments"}</span>
-            </button>
-          )}
-        </div>
-
-        {/* Inline Attachment Uploader for Direct Uploads to this Task */}
-        {isUploaderOpen && (
-          <div className="p-3.5 bg-white rounded-2xl border border-indigo-100 shadow-xs animate-in fade-in duration-150">
-            <TaskAttachmentsUploader
-              taskId={task.id || task._id}
-              attachments={task.attachments || []}
-              onChange={handleAttachmentsChange}
-            />
-          </div>
-        )}
-
-        {/* Attachments Cards Grid */}
-        {task.attachments && task.attachments.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-            {task.attachments.map((file, idx) => {
-              const fileName = file.fileName || file.name || "Attachment";
-              const fileUrl = file.fileUrl || file.url || "";
-              const fileId = file.fileId || file._id || file.id || `att-${idx}`;
-              const isImage = isImageFile(fileName, file.mimeType || file.fileType);
-              const badge = getDocumentBadge(fileName);
-              const formattedSize =
-                file.size || (file.fileSize ? formatFileSize(file.fileSize) : "");
-              const isRemoving = removingAttachmentId === fileId;
-              const canRemove = canRemoveAttachment(file);
-
-              return (
-                <div
-                  key={fileId}
-                  className="flex items-center justify-between p-2.5 rounded-xl border border-slate-200/90 bg-white hover:border-indigo-200 hover:shadow-xs transition-all group"
-                >
-                  <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                    {/* Thumbnail / File Icon */}
-                    {isImage && (file.thumbnailUrl || fileUrl) ? (
-                      <div
-                        className="relative cursor-pointer group/thumb shrink-0"
-                        onClick={() => setPreviewModalUrl(fileUrl || file.thumbnailUrl)}
-                        title="Click to view full preview"
-                      >
-                        <img
-                          src={file.thumbnailUrl || fileUrl}
-                          alt={fileName}
-                          className="w-10 h-10 rounded-lg object-cover ring-1 ring-slate-200"
-                          onError={(e) => {
-                            e.target.style.display = "none";
-                            e.target.nextSibling.style.display = "flex";
-                          }}
-                        />
-                        <div className="hidden w-10 h-10 rounded-lg bg-emerald-50 text-emerald-600 border border-emerald-100 items-center justify-center">
-                          <ImageIcon size={18} />
-                        </div>
-                        <div className="absolute inset-0 bg-slate-900/40 rounded-lg opacity-0 group-hover/thumb:opacity-100 flex items-center justify-center text-white transition-opacity">
-                          <Eye size={13} />
-                        </div>
-                      </div>
-                    ) : (
-                      <div
-                        className={`w-10 h-10 rounded-lg border flex items-center justify-center shrink-0 ${badge.bg}`}
-                      >
-                        <FileText size={18} className={badge.iconColor} />
-                      </div>
-                    )}
-
-                    {/* Metadata */}
-                    <div className="min-w-0 flex-1">
-                      <p
-                        className="text-xs font-bold text-slate-800 truncate"
-                        title={fileName}
-                      >
-                        {fileName}
-                      </p>
-                      <div className="flex items-center gap-1.5 text-[10px] text-slate-400 mt-0.5">
-                        <span className="font-semibold text-slate-500 uppercase">
-                          {badge.label}
-                        </span>
-                        {formattedSize && (
-                          <>
-                            <span>•</span>
-                            <span>{formattedSize}</span>
-                          </>
-                        )}
-                        {file.uploadedBy?.name && (
-                          <>
-                            <span>•</span>
-                            <span className="truncate">by {file.uploadedBy.name}</span>
-                          </>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Actions: Open & Remove */}
-                  <div className="flex items-center gap-1 shrink-0 ml-2">
-                    {fileUrl && (
-                      <a
-                        href={fileUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="p-1.5 rounded-lg text-slate-400 hover:text-[#4361EE] hover:bg-indigo-50 transition-colors"
-                        title="Open attachment in new tab"
-                        aria-label={`Open ${fileName}`}
-                      >
-                        <ExternalLink size={13} />
-                      </a>
-                    )}
-
-                    {canRemove && (
-                      <button
-                        type="button"
-                        onClick={(e) => handleRemoveTaskAttachment(file, e)}
-                        disabled={isRemoving}
-                        className="p-1.5 rounded-lg text-slate-300 hover:text-rose-500 hover:bg-rose-50 transition-colors disabled:opacity-50"
-                        title={`Remove ${fileName}`}
-                        aria-label={`Remove ${fileName}`}
-                      >
-                        {isRemoving ? (
-                          <Loader2 size={13} className="animate-spin text-rose-500" />
-                        ) : (
-                          <Trash2 size={13} />
-                        )}
-                      </button>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        ) : (
-          !isUploaderOpen && (
-            <div className="p-4 bg-white rounded-xl text-center border border-dashed border-slate-200">
-              <p className="text-xs text-slate-400 font-medium">
-                No attachments uploaded for this task.
-              </p>
-              {canAttachFiles && (
-                <button
-                  type="button"
-                  onClick={() => setIsUploaderOpen(true)}
-                  className="text-xs font-bold text-[#4361EE] hover:underline mt-1 inline-flex items-center gap-1"
-                >
-                  <Plus size={12} />
-                  <span>Attach resources now</span>
-                </button>
-              )}
-            </div>
-          )
-        )}
-      </div>
-
-      {/* 7. Tags (Metadata) */}
-      {task.tags && task.tags.length > 0 && (() => {
-        const projColor =
-          project?.themeColor ||
-          project?.color ||
-          task?.project?.themeColor ||
-          task?.project?.color ||
-          "#4361EE";
-        const tokens = deriveProjectColorTokens(projColor);
-        return (
-          <div className="space-y-1.5">
-            <div className="flex items-center gap-1.5">
-              <Tag size={13} style={{ color: tokens.primary }} />
-              <span className="block text-xs font-bold uppercase tracking-wider text-slate-700">
-                Tags & Labels
-              </span>
-            </div>
-            <div className="flex flex-wrap gap-1.5">
-              {task.tags.map((t) => {
-                const label = t.startsWith("#") ? t.slice(1) : t;
-                return (
-                  <span
-                    key={t}
-                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold border shadow-2xs"
-                    style={{
-                      backgroundColor: tokens.bgLight,
-                      color: tokens.badgeText,
-                      borderColor: tokens.border,
-                    }}
-                  >
-                    <Tag size={10} style={{ color: tokens.primary }} />
-                    <span>#{label}</span>
-                  </span>
-                );
-              })}
-            </div>
-          </div>
-        );
-      })()}
-
-      {/* 8. Handover Note */}
-      {task.comment && (
-        <div className="p-3.5 rounded-2xl bg-amber-50/60 border border-amber-100 space-y-1 text-xs">
-          <div className="flex items-center gap-1.5 text-amber-800 font-bold">
-            <MessageSquare size={13} />
-            <span>Handover Note</span>
-          </div>
-          <p className="text-slate-700 leading-relaxed">{task.comment}</p>
-        </div>
-      )}
-
-      {/* 9. Interactive Comments & @Mentions */}
+      {/* 6. Comments & Discussion Stream */}
       <TaskComments
-        taskId={task.id || task._id}
+        taskId={task.id || task._id || currentId}
         projectMembers={effectiveMembers}
       />
-      {/* Comprehensive Update Task Modal */}
+
+      {/* 7. Comprehensive Update Task Modal */}
       <CreateTaskModal
         isOpen={isEditModalOpen}
         onClose={() => setIsEditModalOpen(false)}
@@ -1301,7 +425,7 @@ export const TaskDetails = ({
         }}
       />
 
-      {/* Delete Task Confirmation Modal */}
+      {/* 8. Delete Task Confirmation Modal */}
       <DeleteTaskModal
         isOpen={isDeleteModalOpen}
         onClose={() => {
@@ -1316,31 +440,13 @@ export const TaskDetails = ({
         apiError={deleteError}
       />
 
-      {/* Lightbox Modal for Image Attachment Previews */}
-      {previewModalUrl && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-xs animate-in fade-in"
-          onClick={() => setPreviewModalUrl(null)}
-        >
-          <div
-            className="relative max-w-4xl max-h-[90vh] bg-white rounded-2xl overflow-hidden shadow-2xl p-2"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <button
-              type="button"
-              onClick={() => setPreviewModalUrl(null)}
-              className="absolute top-4 right-4 z-10 p-1.5 rounded-xl bg-slate-900/60 text-white hover:bg-slate-900 transition-colors"
-            >
-              <X size={18} />
-            </button>
-            <img
-              src={previewModalUrl}
-              alt="Preview"
-              className="max-h-[84vh] w-auto rounded-xl object-contain mx-auto"
-            />
-          </div>
-        </div>
-      )}
+      {/* 9. Lightbox Modal for Image Attachment Previews */}
+      <AttachmentPreviewModal
+        previewUrl={previewModalUrl}
+        onClose={() => setPreviewModalUrl(null)}
+      />
     </div>
   );
 };
+
+export default TaskDetails;

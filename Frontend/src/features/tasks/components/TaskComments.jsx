@@ -120,7 +120,7 @@ export const TaskComments = ({ taskId, projectMembers = [] }) => {
     <div className="space-y-4 pt-4 border-t border-slate-100">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <MessageSquare size={16} className="text-[#4361EE]" />
+          <MessageSquare size={16} className="text-primary" />
           <h4 className="text-xs font-bold uppercase tracking-wider text-slate-800">
             Discussion & Activity ({comments.length})
           </h4>
@@ -164,7 +164,7 @@ export const TaskComments = ({ taskId, projectMembers = [] }) => {
           {/* Comments List */}
           {loading ? (
             <div className="p-6 text-center text-xs text-slate-400 flex items-center justify-center gap-2">
-              <Loader2 size={16} className="animate-spin text-[#4361EE]" />
+              <Loader2 size={16} className="animate-spin text-primary" />
               <span>Loading comments...</span>
             </div>
           ) : comments.length > 0 ? (
@@ -260,7 +260,7 @@ export const TaskComments = ({ taskId, projectMembers = [] }) => {
               <button
                 type="submit"
                 disabled={!commentText.trim() || isSubmitting}
-                className="px-4 py-2.5 rounded-2xl bg-[#4361EE] hover:bg-[#3451DE] text-white text-xs font-bold transition-all disabled:opacity-40 shadow-xs flex items-center gap-1.5 shrink-0 self-end cursor-pointer"
+                className="px-4 py-2.5 rounded-2xl bg-primary hover:bg-primary-hover text-white text-xs font-bold transition-all disabled:opacity-40 shadow-xs flex items-center gap-1.5 shrink-0 self-end cursor-pointer"
               >
                 {isSubmitting ? (
                   <Loader2 size={14} className="animate-spin" />

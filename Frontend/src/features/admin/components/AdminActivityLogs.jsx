@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
-import { History, Search, Filter, Clock, Shield, Sparkles } from 'lucide-react';
-import { Badge } from '../../../shared/components/ui/Badge.jsx';
+import { Search, Clock } from 'lucide-react';
+
 
 /**
  * Feature Component: AdminActivityLogs
@@ -49,7 +49,7 @@ export const AdminActivityLogs = ({ logs = [] }) => {
             placeholder="Search audit trail by actor, action, or target..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-9 pr-4 py-2 rounded-xl border border-slate-200 text-xs bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#4361EE]"
+            className="w-full pl-9 pr-4 py-2 rounded-xl border border-slate-200 text-xs bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-primary"
           />
         </div>
 
@@ -60,7 +60,7 @@ export const AdminActivityLogs = ({ logs = [] }) => {
               onClick={() => setCategoryFilter(cat)}
               className={`px-3 py-1.5 rounded-xl transition-colors whitespace-nowrap ${
                 categoryFilter === cat
-                  ? 'bg-[#4361EE] text-white shadow-xs'
+                  ? 'bg-primary text-white shadow-xs'
                   : 'bg-slate-100 hover:bg-slate-200 text-slate-600'
               }`}
             >
@@ -77,7 +77,7 @@ export const AdminActivityLogs = ({ logs = [] }) => {
             {filteredLogs.map((log) => (
               <div key={log.id} className="relative pl-6 group">
                 {/* Timeline node dot */}
-                <div className="absolute -left-2.25 top-1.5 w-4 h-4 rounded-full bg-white border-2 border-[#4361EE] group-hover:scale-115 transition-transform" />
+                <div className="absolute -left-2.25 top-1.5 w-4 h-4 rounded-full bg-white border-2 border-primary group-hover:scale-115 transition-transform" />
 
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-3.5 rounded-2xl bg-slate-50/60 hover:bg-slate-50 transition-colors">
                   <div className="flex items-center gap-3 min-w-0">
@@ -91,7 +91,7 @@ export const AdminActivityLogs = ({ logs = [] }) => {
                       <p className="text-slate-800 font-medium">
                         <span className="font-bold text-slate-900">{log.user}</span>{' '}
                         <span className="text-slate-600">{log.action}</span>{' '}
-                        <span className="font-semibold text-[#4361EE]">
+                        <span className="font-semibold text-primary">
                           "{log.resource}"
                         </span>
                       </p>

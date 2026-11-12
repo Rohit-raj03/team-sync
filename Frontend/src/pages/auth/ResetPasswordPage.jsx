@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { CheckCircle2, AlertCircle, ArrowLeft, Loader2, Lock } from "lucide-react";
 import { Input } from "../../shared/components/ui/Input.jsx";
 import { authService } from "../../features/auth/services/auth.service.js";
@@ -13,7 +13,6 @@ import { ROUTES } from "../../shared/constants/routes.js";
 export const ResetPasswordPage = () => {
   const [searchParams] = useSearchParams();
   const token = searchParams.get("token") || "";
-  const navigate = useNavigate();
 
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -89,7 +88,7 @@ export const ResetPasswordPage = () => {
 
             <Link
               to={ROUTES.LOGIN}
-              className="w-full inline-flex items-center justify-center gap-2 py-3 px-4 rounded-2xl bg-[#4361EE] hover:bg-[#3451DE] text-white text-xs font-bold shadow-md shadow-indigo-100 transition-all hover:scale-[1.01]"
+              className="w-full inline-flex items-center justify-center gap-2 py-3 px-4 rounded-2xl bg-primary hover:bg-primary-hover text-white text-xs font-bold shadow-md shadow-indigo-100 transition-all hover:scale-[1.01]"
             >
               <span>Proceed to Login</span>
             </Link>
@@ -134,7 +133,7 @@ export const ResetPasswordPage = () => {
             <button
               type="submit"
               disabled={loading || !token}
-              className="w-full inline-flex items-center justify-center gap-2 py-3 px-4 rounded-2xl bg-[#4361EE] hover:bg-[#3451DE] text-white text-xs font-bold shadow-md shadow-indigo-100 transition-all disabled:opacity-50 cursor-pointer"
+              className="w-full inline-flex items-center justify-center gap-2 py-3 px-4 rounded-2xl bg-primary hover:bg-primary-hover text-white text-xs font-bold shadow-md shadow-indigo-100 transition-all disabled:opacity-50 cursor-pointer"
             >
               {loading ? (
                 <>
@@ -149,7 +148,7 @@ export const ResetPasswordPage = () => {
             <div className="text-center pt-2">
               <Link
                 to={ROUTES.LOGIN}
-                className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-600 hover:text-[#4361EE]"
+                className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-600 hover:text-primary"
               >
                 <ArrowLeft size={14} />
                 <span>Back to Login</span>

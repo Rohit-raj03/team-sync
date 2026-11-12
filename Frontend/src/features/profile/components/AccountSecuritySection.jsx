@@ -81,7 +81,7 @@ export const AccountSecuritySection = ({
           </div>
 
           {!emailVerified && (
-            <button className="text-xs font-bold text-[#4361EE] hover:underline shrink-0">
+            <button className="text-xs font-bold text-primary hover:underline shrink-0">
               Resend verification email
             </button>
           )}
@@ -90,7 +90,7 @@ export const AccountSecuritySection = ({
         {/* 2. Password Change Option */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-5">
           <div className="flex items-start gap-3.5">
-            <div className="w-10 h-10 rounded-2xl bg-indigo-50 text-[#4361EE] flex items-center justify-center shrink-0 mt-0.5">
+            <div className="w-10 h-10 rounded-2xl bg-indigo-50 text-primary flex items-center justify-center shrink-0 mt-0.5">
               <KeyRound size={18} />
             </div>
             <div>
@@ -125,7 +125,7 @@ export const AccountSecuritySection = ({
                   Two-Factor Authentication (2FA)
                 </h4>
                 {twoFactorEnabled ? (
-                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-indigo-50 text-[#4361EE] border border-indigo-100">
+                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-indigo-50 text-primary border border-indigo-100">
                     Enabled
                   </span>
                 ) : (
@@ -147,7 +147,7 @@ export const AccountSecuritySection = ({
             className={`px-4 py-2 rounded-2xl text-xs font-bold border transition-colors shrink-0 ${
               twoFactorEnabled
                 ? "bg-white text-rose-600 hover:bg-rose-50 border-rose-200"
-                : "bg-[#4361EE] text-white hover:bg-[#3451DE] border-transparent shadow-xs"
+                : "bg-primary text-white hover:bg-primary-hover border-transparent shadow-xs"
             }`}
           >
             {twoFactorEnabled ? "Disable 2FA" : "Enable 2FA"}

@@ -1,4 +1,4 @@
-import { useMemo, useEffect, useCallback } from 'react';
+import { useMemo, useEffect, useCallback, useRef } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import {
   setUsers,
@@ -11,116 +11,165 @@ import {
   removeUser as removeUserAction,
   updatePermission as updatePermissionAction,
   addLog as addLogAction,
-  showToast as showToastAction,
-  hideToast as hideToastAction,
 } from '../store/adminSlice.js';
 import { adminService } from '../services/admin.service.js';
 import { useProjects } from '../../projects/hooks/useProjects.js';
 import { useTasks } from '../../tasks/hooks/useTasks.js';
+import { showToast as showAppToast } from '../../../shared/utils/toast.js';
+import { formatDateForInput } from '../../../shared/utils/formatDate.js';
+
+// Module-level deduplication and caching for admin API requests
+let inFlightAdminPromise = null;
+let lastAdminFetchTimestamp = 0;
+const ADMIN_CACHE_TTL_MS = 15000;
+
+// Normalize server user object to the shape expected by admin components
+const normalizeUser = (u) => {
+  if (!u) return null;
+  const rawRole = (u.role || '').toLowerCase();
+  let displayRole = 'Team Member';
+  if (rawRole === 'admin') displayRole = 'Admin';
+  else if (rawRole === 'manager') displayRole = 'Project Manager';
+
+  const isActive = u.isActive !== undefined ? Boolean(u.isActive) : true;
+
+  return {
+    id: u._id || u.id,
+    _id: u._id || u.id,
+    name: u.name || 'Anonymous User',
+    email: u.email || '',
+    username: u.username || (u.email ? u.email.split('@')[0] : 'user'),
+    role: displayRole,
+    rawRole: u.role,
+    jobTitle: u.jobTitle || (displayRole === 'Admin' ? 'Administrator' : 'Contributor'),
+    team: u.team || 'Core Team',
+    status: isActive ? 'active' : 'inactive',
+    isActive,
+    avatar: u.avatar || '',
+    lastActive: u.updatedAt ? new Date(u.updatedAt).toLocaleDateString() : 'Recently',
+    joinedDate: formatDateForInput(u.createdAt) || '2026-01-01',
+  };
+};
 
 /**
  * Feature Hook: useAdminData
  * Layer: features/admin/hooks/
  * Responsibility: Coordinates all administrative datasets using centralized Redux Toolkit state and live backend APIs.
  */
-export function useAdminData() {
+export function useAdminData(options = {}) {
+  const { autoFetch = true } = options;
   const dispatch = useDispatch();
-  const { users, permissions, activityLogs, toast, loading, error } = useSelector(
+  const currentUser = useSelector((state) => state.auth?.user);
+  const currentUserName =
+    currentUser?.name || currentUser?.username || 'Administrator';
+
+  const { users, permissions, activityLogs, loading, error } = useSelector(
     (state) => state.admin
   );
 
-  const { allProjects, deleteProject } = useProjects();
-  const { allTasks, updateTask, deleteTask } = useTasks();
+  const { allProjects, deleteProject } = useProjects({ autoFetch: false });
+  const { allTasks, updateTask, deleteTask } = useTasks({ autoFetch: false });
 
-  const showToast = useCallback(
-    (message, type = 'success') => {
-      dispatch(showToastAction({ message, type }));
-      setTimeout(() => {
-        dispatch(hideToastAction());
-      }, 3500);
-    },
-    [dispatch]
-  );
+  const usersRef = useRef(users);
+  useEffect(() => {
+    usersRef.current = users;
+  }, [users]);
+
+  const showToast = useCallback((message, type = 'success') => {
+    if (type === 'error') {
+      showAppToast.error(message);
+    } else {
+      showAppToast.success(message);
+    }
+  }, []);
 
   const addLog = useCallback(
     (user, action, resource, category = 'General') => {
+      const resolvedUser =
+        user && user !== 'Admin' ? user : currentUserName;
       dispatch(
         addLogAction({
-          user,
-          userAvatar: null,
+          user: resolvedUser,
+          userAvatar: currentUser?.avatar || null,
           action,
           resource,
           category,
         })
       );
     },
-    [dispatch]
+    [dispatch, currentUserName, currentUser?.avatar]
   );
 
-  // Normalize server user object to the shape expected by admin components
-  const normalizeUser = (u) => {
-    const rawRole = (u.role || '').toLowerCase();
-    let displayRole = 'Team Member';
-    if (rawRole === 'admin') displayRole = 'Admin';
-    else if (rawRole === 'manager') displayRole = 'Project Manager';
+  // Fetch real users and telemetry stats from live backend APIs with caching and deduplication
+  const fetchAdminData = useCallback(async (force = false) => {
+    const isCacheValid =
+      usersRef.current.length > 0 &&
+      Date.now() - lastAdminFetchTimestamp < ADMIN_CACHE_TTL_MS;
 
-    const isActive = u.isActive !== undefined ? Boolean(u.isActive) : true;
-
-    return {
-      id: u._id || u.id,
-      _id: u._id || u.id,
-      name: u.name || 'Anonymous User',
-      email: u.email || '',
-      username: u.username || (u.email ? u.email.split('@')[0] : 'user'),
-      role: displayRole,
-      rawRole: u.role,
-      jobTitle: u.jobTitle || (displayRole === 'Admin' ? 'Administrator' : 'Contributor'),
-      team: u.team || 'Core Team',
-      status: isActive ? 'active' : 'inactive',
-      isActive,
-      avatar: u.avatar || '',
-      lastActive: u.updatedAt ? new Date(u.updatedAt).toLocaleDateString() : 'Recently',
-      joinedDate: u.createdAt ? new Date(u.createdAt).toISOString().split('T')[0] : '2026-01-01',
-    };
-  };
-
-  // Fetch real users and telemetry stats from live backend APIs
-  const fetchAdminData = useCallback(async () => {
-    try {
-      dispatch(setLoading(true));
-      const [usersRes, statsRes] = await Promise.allSettled([
-        adminService.getUsers(),
-        adminService.getStats(),
-      ]);
-
-      if (usersRes.status === 'fulfilled' && usersRes.value?.users) {
-        const normalized = usersRes.value.users.map(normalizeUser);
-        dispatch(setUsers(normalized));
-      }
-
-      if (statsRes.status === 'fulfilled' && statsRes.value?.stats) {
-        dispatch(setStats(statsRes.value.stats));
-      }
-    } catch (err) {
-      console.error('Failed to load admin telemetry/users:', err.message);
-      dispatch(setError(err.message));
-    } finally {
-      dispatch(setLoading(false));
+    if (!force && isCacheValid) {
+      return { users: usersRef.current };
     }
+
+    if (inFlightAdminPromise) {
+      return inFlightAdminPromise;
+    }
+
+    inFlightAdminPromise = (async () => {
+      try {
+        if (usersRef.current.length === 0) {
+          dispatch(setLoading(true));
+        }
+
+        const [usersRes, statsRes] = await Promise.allSettled([
+          adminService.getUsers(),
+          adminService.getStats(),
+        ]);
+
+        if (usersRes.status === 'fulfilled' && usersRes.value?.users) {
+          const normalized = usersRes.value.users
+            .map(normalizeUser)
+            .filter(Boolean);
+          dispatch(setUsers(normalized));
+          lastAdminFetchTimestamp = Date.now();
+        }
+
+        if (statsRes.status === 'fulfilled' && statsRes.value?.stats) {
+          dispatch(setStats(statsRes.value.stats));
+        }
+
+        return { users: usersRef.current };
+      } catch (err) {
+        console.error('Failed to load admin telemetry/users:', err.message);
+        dispatch(setError(err.message));
+        throw err;
+      } finally {
+        dispatch(setLoading(false));
+        inFlightAdminPromise = null;
+      }
+    })();
+
+    return inFlightAdminPromise;
   }, [dispatch]);
 
   useEffect(() => {
-    fetchAdminData();
-  }, [fetchAdminData]);
+    if (autoFetch) {
+      fetchAdminData();
+    }
+  }, [autoFetch, fetchAdminData]);
 
   // 1. User Management Operations (Live Backend API + Redux)
-  const addUser = async (userData) => {
+  const addUser = useCallback(async (userData) => {
     try {
       const payload = {
         name: userData.name,
         email: userData.email,
         username: userData.username,
-        role: (userData.role === 'Admin' ? 'admin' : userData.role === 'Project Manager' ? 'manager' : 'user'),
+        role:
+          userData.role === 'Admin'
+            ? 'admin'
+            : userData.role === 'Project Manager'
+            ? 'manager'
+            : 'user',
         jobTitle: userData.jobTitle,
         phone: userData.phone || '',
       };
@@ -128,17 +177,18 @@ export function useAdminData() {
       const res = await adminService.createUser(payload);
       const created = normalizeUser(res?.user || payload);
       dispatch(addUserAction(created));
-      addLog('Admin', 'created a new user account', created.name, 'Users');
+      addLog(currentUserName, 'created a new user account', created.name, 'Users');
       showToast(`User "${created.name}" has been successfully added.`);
       return created;
     } catch (err) {
-      const msg = err?.response?.data?.message || err?.message || 'Failed to create user';
+      const msg =
+        err?.response?.data?.message || err?.message || 'Failed to create user';
       showToast(msg, 'error');
       throw err;
     }
-  };
+  }, [dispatch, currentUserName, addLog, showToast]);
 
-  const updateUser = async (userId, updatedFields) => {
+  const updateUser = useCallback(async (userId, updatedFields) => {
     try {
       if (updatedFields.role) {
         let backendRole = 'user';
@@ -149,13 +199,16 @@ export function useAdminData() {
       dispatch(updateUserAction({ id: userId, fields: updatedFields }));
       showToast('User details updated successfully.');
     } catch (err) {
-      const msg = err?.response?.data?.message || err?.message || 'Failed to update user';
+      const msg =
+        err?.response?.data?.message || err?.message || 'Failed to update user';
       showToast(msg, 'error');
     }
-  };
+  }, [dispatch, showToast]);
 
-  const toggleUserStatus = async (userId) => {
-    const targetUser = users.find((u) => u.id === userId || u._id === userId);
+  const toggleUserStatus = useCallback(async (userId) => {
+    const targetUser = usersRef.current.find(
+      (u) => u.id === userId || u._id === userId
+    );
     if (!targetUser) return;
     const newStatus = targetUser.status === 'active' ? 'inactive' : 'active';
     const newActiveState = newStatus === 'active';
@@ -164,60 +217,79 @@ export function useAdminData() {
       await adminService.toggleUserStatus(userId, newActiveState);
       dispatch(toggleUserStatusAction(userId));
       addLog(
-        'Admin',
-        newStatus === 'active' ? 'activated user account' : 'deactivated user account',
+        currentUserName,
+        newStatus === 'active'
+          ? 'activated user account'
+          : 'deactivated user account',
         targetUser.name,
         'Users'
       );
       showToast(
-        `User "${targetUser.name}" marked as ${newStatus === 'active' ? 'Active' : 'Deactivated'}.`,
+        `User "${targetUser.name}" marked as ${
+          newStatus === 'active' ? 'Active' : 'Deactivated'
+        }.`,
         newStatus === 'active' ? 'success' : 'info'
       );
     } catch (err) {
-      const msg = err?.response?.data?.message || err?.message || 'Failed to change user status';
+      const msg =
+        err?.response?.data?.message ||
+        err?.message ||
+        'Failed to change user status';
       showToast(msg, 'error');
     }
-  };
+  }, [dispatch, currentUserName, addLog, showToast]);
 
-  const removeUser = async (userId) => {
-    const target = users.find((u) => u.id === userId || u._id === userId);
+  const removeUser = useCallback(async (userId) => {
+    const target = usersRef.current.find(
+      (u) => u.id === userId || u._id === userId
+    );
     try {
       await adminService.deleteUser(userId);
       dispatch(removeUserAction(userId));
       if (target) {
-        addLog('Admin', 'removed user account', target.name, 'Users');
+        addLog(currentUserName, 'removed user account', target.name, 'Users');
       }
       showToast('User account deleted permanently.', 'info');
     } catch (err) {
-      const msg = err?.response?.data?.message || err?.message || 'Failed to delete user';
+      const msg =
+        err?.response?.data?.message || err?.message || 'Failed to delete user';
       showToast(msg, 'error');
     }
-  };
+  }, [dispatch, currentUserName, addLog, showToast]);
 
   // 2. Roles & Permissions Operations
-  const updatePermission = (role, permissionKey, value) => {
+  const updatePermission = useCallback((role, permissionKey, value) => {
     dispatch(updatePermissionAction({ role, permissionKey, value }));
-    addLog('Admin', `updated permissions for ${role}`, permissionKey, 'Security');
+    addLog(
+      currentUserName,
+      `updated permissions for ${role}`,
+      permissionKey,
+      'Security'
+    );
     showToast(`Permissions updated for role: ${role}`);
-  };
+  }, [dispatch, currentUserName, addLog, showToast]);
 
   // 3. Computed Overview Metrics from real live data
   const metrics = useMemo(() => {
-    const totalUsers = users.length;
-    const activeUsers = users.filter((u) => u.status === 'active').length;
-    const totalProjects = allProjects.length;
-    const activeProjects = allProjects.filter((p) => {
+    const safeUsers = Array.isArray(users) ? users : [];
+    const safeProjects = Array.isArray(allProjects) ? allProjects : [];
+    const safeTasks = Array.isArray(allTasks) ? allTasks : [];
+
+    const totalUsers = safeUsers.length;
+    const activeUsers = safeUsers.filter((u) => u.status === 'active').length;
+    const totalProjects = safeProjects.length;
+    const activeProjects = safeProjects.filter((p) => {
       const s = (p.status || '').toUpperCase();
       return s === 'ACTIVE' || s === 'IN_PROGRESS';
     }).length;
-    const totalTasks = allTasks.length;
-    const completedTasks = allTasks.filter((t) => {
+    const totalTasks = safeTasks.length;
+    const completedTasks = safeTasks.filter((t) => {
       const s = (t.status || '').toUpperCase();
       return s === 'COMPLETED' || s === 'DONE';
     }).length;
 
-    const todayStr = new Date().toISOString().split('T')[0];
-    const overdueTasks = allTasks.filter((t) => {
+    const todayStr = formatDateForInput(new Date());
+    const overdueTasks = safeTasks.filter((t) => {
       const s = (t.status || '').toUpperCase();
       const isDone = s === 'COMPLETED' || s === 'DONE';
       return !isDone && t.dueDate && t.dueDate < todayStr;
@@ -241,7 +313,6 @@ export function useAdminData() {
     metrics,
     allProjects,
     allTasks,
-    toast,
     loading,
     error,
     showToast,

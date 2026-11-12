@@ -28,7 +28,7 @@ export const MentionRenderer = ({ text = "", className = "" }) => {
       elements.push(
         <span
           key={`mention-${match.index}`}
-          className="inline-flex items-center gap-0.5 px-2 py-0.5 mx-0.5 rounded-full bg-indigo-50 border border-indigo-200/60 text-[#4361EE] font-bold text-[11px] align-baseline transition-colors hover:bg-indigo-100"
+          className="inline-flex items-center gap-0.5 px-2 py-0.5 mx-0.5 rounded-full bg-indigo-50 border border-indigo-200/60 text-primary font-bold text-[11px] align-baseline transition-colors hover:bg-indigo-100"
           title={`User ID: ${userId}`}
         >
           <AtSign size={10} className="stroke-[2.5]" />
@@ -41,7 +41,7 @@ export const MentionRenderer = ({ text = "", className = "" }) => {
       elements.push(
         <span
           key={`mention-user-${match.index}`}
-          className="inline-flex items-center gap-0.5 px-2 py-0.5 mx-0.5 rounded-full bg-indigo-50 border border-indigo-200/60 text-[#4361EE] font-bold text-[11px] align-baseline transition-colors hover:bg-indigo-100"
+          className="inline-flex items-center gap-0.5 px-2 py-0.5 mx-0.5 rounded-full bg-indigo-50 border border-indigo-200/60 text-primary font-bold text-[11px] align-baseline transition-colors hover:bg-indigo-100"
         >
           <AtSign size={10} className="stroke-[2.5]" />
           <span>{username}</span>

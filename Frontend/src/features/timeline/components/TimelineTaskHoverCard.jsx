@@ -208,7 +208,7 @@ export const TimelineTaskHoverCard = ({
             <div className="flex items-center -space-x-1.5">
               {assignees.slice(0, 3).map((a, idx) => (
                 <Avatar
-                  key={idx}
+                  key={a.id || a._id || a.email || `hover-assignee-${a.name || idx}`}
                   src={a.avatar}
                   name={a.name}
                   size="xs"

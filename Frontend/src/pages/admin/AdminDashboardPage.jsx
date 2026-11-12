@@ -1,37 +1,36 @@
-import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import React, { useState } from "react";
+import { useNavigate, Link } from "react-router-dom";
 import {
-  Shield,
-  Bell,
-  Search,
+
+
+
   Menu,
   X,
-  ExternalLink,
+
   ChevronRight,
-  Sparkles,
+
   LayoutGrid,
-} from 'lucide-react';
-import { AdminSidebar } from '../../features/admin/components/AdminSidebar.jsx';
-import { AdminStatsOverview } from '../../features/admin/components/AdminStatsOverview.jsx';
-import { AdminTaskChart } from '../../features/admin/components/AdminTaskChart.jsx';
-import { AdminProjectProgress } from '../../features/admin/components/AdminProjectProgress.jsx';
-import { AdminUserManagement } from '../../features/admin/components/AdminUserManagement.jsx';
-import { AdminProjectManagement } from '../../features/admin/components/AdminProjectManagement.jsx';
-import { AdminTaskManagement } from '../../features/admin/components/AdminTaskManagement.jsx';
-import { AdminRolesPermissions } from '../../features/admin/components/AdminRolesPermissions.jsx';
-import { AdminActivityLogs } from '../../features/admin/components/AdminActivityLogs.jsx';
-import { AdminOrgSettings } from '../../features/admin/components/AdminOrgSettings.jsx';
-import { AdminToast } from '../../features/admin/components/AdminToast.jsx';
-import { useAdminData } from '../../features/admin/hooks/useAdminData.js';
-import { CreateProjectModal } from '../../features/projects/components/CreateProjectModal.jsx';
-import { CreateTaskModal } from '../../features/tasks/components/CreateTaskModal.jsx';
-import { TaskDetails } from '../../features/tasks/components/TaskDetails.jsx';
-import { Modal } from '../../shared/components/ui/Modal.jsx';
-import { useProjects } from '../../features/projects/hooks/useProjects.js';
-import { useTasks } from '../../features/tasks/hooks/useTasks.js';
-import { useAuth } from '../../features/auth/hooks/useAuth.js';
-import { Avatar } from '../../shared/components/ui/Avatar.jsx';
-import { ROUTES } from '../../shared/constants/routes.js';
+} from "lucide-react";
+import { AdminSidebar } from "../../features/admin/components/AdminSidebar.jsx";
+import { AdminStatsOverview } from "../../features/admin/components/AdminStatsOverview.jsx";
+import { AdminTaskChart } from "../../features/admin/components/AdminTaskChart.jsx";
+import { AdminProjectProgress } from "../../features/admin/components/AdminProjectProgress.jsx";
+import { AdminUserManagement } from "../../features/admin/components/AdminUserManagement.jsx";
+import { AdminProjectManagement } from "../../features/admin/components/AdminProjectManagement.jsx";
+import { AdminTaskManagement } from "../../features/admin/components/AdminTaskManagement.jsx";
+import { AdminRolesPermissions } from "../../features/admin/components/AdminRolesPermissions.jsx";
+import { AdminActivityLogs } from "../../features/admin/components/AdminActivityLogs.jsx";
+import { AdminOrgSettings } from "../../features/admin/components/AdminOrgSettings.jsx";
+import { useAdminData } from "../../features/admin/hooks/useAdminData.js";
+import { CreateProjectModal } from "../../features/projects/components/CreateProjectModal.jsx";
+import { CreateTaskModal } from "../../features/tasks/components/CreateTaskModal.jsx";
+import { TaskDetails } from "../../features/tasks/components/TaskDetails.jsx";
+import { Modal } from "../../shared/components/ui/Modal.jsx";
+import { useProjects } from "../../features/projects/hooks/useProjects.js";
+import { useTasks } from "../../features/tasks/hooks/useTasks.js";
+import { useAuth } from "../../features/auth/hooks/useAuth.js";
+import { Avatar } from "../../shared/components/ui/Avatar.jsx";
+import { ROUTES } from "../../shared/constants/routes.js";
 
 /**
  * Presentation Layer: AdminDashboardPage
@@ -41,12 +40,13 @@ import { ROUTES } from '../../shared/constants/routes.js';
 export const AdminDashboardPage = () => {
   const navigate = useNavigate();
   const { user: currentUser } = useAuth();
+  const actorName =
+    currentUser?.name || currentUser?.username || "Administrator";
   const {
     users,
     permissions,
     activityLogs,
     metrics,
-    toast,
     showToast,
     addUser,
     updateUser,
@@ -59,10 +59,10 @@ export const AdminDashboardPage = () => {
     addLog,
   } = useAdminData();
 
-  const { allProjects, addProject } = useProjects();
-  const { allTasks, addTask } = useTasks();
+  const { allProjects, addProject } = useProjects({ autoFetch: false });
+  const { allTasks, addTask } = useTasks({ autoFetch: false });
 
-  const [activeTab, setActiveTab] = useState('overview');
+  const [activeTab, setActiveTab] = useState("overview");
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
   // Modals for creation & task inspection
@@ -72,26 +72,26 @@ export const AdminDashboardPage = () => {
 
   const handleCreateProject = (projectData) => {
     addProject(projectData);
-    addLog('Admin', 'created a new project', projectData.name, 'Projects');
+    addLog(actorName, "created a new project", projectData.name, "Projects");
     showToast(`Project "${projectData.name}" created successfully.`);
     setIsCreateProjectOpen(false);
   };
 
   const handleCreateTask = (taskData) => {
     addTask(taskData);
-    addLog('Admin', 'created a new task', taskData.title, 'Tasks');
+    addLog(actorName, "created a new task", taskData.title, "Tasks");
     showToast(`Task "${taskData.title}" created successfully.`);
     setIsCreateTaskOpen(false);
   };
 
   return (
-    <div className="flex h-screen bg-[#F4F7FE] overflow-hidden">
+    <div className="flex h-screen bg-surface-page overflow-hidden">
       {/* 1. Desktop & Mobile Admin Sidebar */}
       <div className="hidden lg:block h-full">
         <AdminSidebar
           activeTab={activeTab}
           onSelectTab={(tab) => setActiveTab(tab)}
-          overdueCount={metrics.overdueTasks}
+          overdueCount={metrics?.overdueTasks ?? 0}
         />
       </div>
 
@@ -115,7 +115,7 @@ export const AdminDashboardPage = () => {
                 setActiveTab(tab);
                 setIsMobileSidebarOpen(false);
               }}
-              overdueCount={metrics.overdueTasks}
+              overdueCount={metrics?.overdueTasks ?? 0}
             />
           </div>
         </div>
@@ -124,7 +124,7 @@ export const AdminDashboardPage = () => {
       {/* 2. Main Admin Workspace Area */}
       <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden">
         {/* Admin Top Navigation Bar */}
-        <header className="h-16 px-6 bg-white border-b border-slate-100 flex items-center justify-between shrink-0 select-none">
+        <header className="h-16 px-3 sm:px-6 bg-white border-b border-slate-100 flex items-center justify-between shrink-0 select-none">
           <div className="flex items-center gap-3">
             <button
               onClick={() => setIsMobileSidebarOpen(true)}
@@ -138,7 +138,7 @@ export const AdminDashboardPage = () => {
               <h1 className="text-sm font-bold text-slate-900">
                 Organization Administration
               </h1>
-              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-50 text-[#4361EE] hidden sm:inline-block">
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-50 text-primary hidden sm:inline-block">
                 Root Access
               </span>
             </div>
@@ -147,7 +147,7 @@ export const AdminDashboardPage = () => {
           <div className="flex items-center gap-3">
             <Link
               to={ROUTES.DASHBOARD}
-              className="hidden sm:inline-flex items-center gap-1.5 text-xs font-semibold text-slate-600 hover:text-[#4361EE] px-3 py-1.5 rounded-xl border border-slate-200 hover:bg-slate-50 transition-colors"
+              className="hidden sm:inline-flex items-center gap-1.5 text-xs font-semibold text-slate-600 hover:text-primary px-3 py-1.5 rounded-xl border border-slate-200 hover:bg-slate-50 transition-colors"
             >
               <LayoutGrid size={14} />
               <span>User App</span>
@@ -156,16 +156,18 @@ export const AdminDashboardPage = () => {
             <div className="flex items-center gap-2.5 pl-2 border-l border-slate-100">
               <Avatar
                 src={currentUser?.avatar}
-                name={currentUser?.name || 'Administrator'}
+                name={currentUser?.name || "Administrator"}
                 size="sm"
                 className="ring-2 ring-indigo-50"
               />
               <div className="hidden sm:block text-left">
                 <p className="text-xs font-bold text-slate-900 leading-tight">
-                  {currentUser?.name || 'Administrator'}
+                  {currentUser?.name || "Administrator"}
                 </p>
                 <p className="text-[10px] text-purple-600 font-semibold capitalize">
-                  {currentUser?.role === 'admin' ? 'Super Admin' : currentUser?.role || 'Admin'}
+                  {currentUser?.role === "admin"
+                    ? "Super Admin"
+                    : currentUser?.role || "Admin"}
                 </p>
               </div>
             </div>
@@ -173,9 +175,9 @@ export const AdminDashboardPage = () => {
         </header>
 
         {/* Dynamic Admin View Body */}
-        <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 space-y-8">
+        <main className="flex-1 overflow-y-auto p-3 sm:p-6 lg:p-8 space-y-6 sm:space-y-8">
           {/* TAB 1: OVERVIEW */}
-          {activeTab === 'overview' && (
+          {activeTab === "overview" && (
             <div className="space-y-8 max-w-7xl mx-auto">
               <AdminStatsOverview metrics={metrics} />
 
@@ -186,7 +188,9 @@ export const AdminDashboardPage = () => {
                 <div className="lg:col-span-5">
                   <AdminProjectProgress
                     projects={allProjects}
-                    onProjectClick={(id) => navigate(ROUTES.PROJECT_DETAILS(id))}
+                    onProjectClick={(id) =>
+                      navigate(ROUTES.PROJECT_DETAILS(id))
+                    }
                   />
                 </div>
               </div>
@@ -197,10 +201,12 @@ export const AdminDashboardPage = () => {
                   <AdminActivityLogs logs={activityLogs.slice(0, 4)} />
                 </div>
                 <div className="lg:col-span-4 p-6 bg-white rounded-3xl border border-slate-100/90 shadow-sm space-y-4">
-                  <h3 className="text-sm font-bold text-slate-900">Admin Shortcuts</h3>
+                  <h3 className="text-sm font-bold text-slate-900">
+                    Admin Shortcuts
+                  </h3>
                   <div className="space-y-2">
                     <button
-                      onClick={() => setActiveTab('users')}
+                      onClick={() => setActiveTab("users")}
                       className="w-full text-left p-3 rounded-2xl bg-slate-50 hover:bg-indigo-50/60 transition-colors flex items-center justify-between text-xs font-semibold text-slate-800"
                     >
                       <span>Manage All Users</span>
@@ -221,7 +227,7 @@ export const AdminDashboardPage = () => {
                       <ChevronRight size={14} className="text-slate-400" />
                     </button>
                     <button
-                      onClick={() => setActiveTab('roles')}
+                      onClick={() => setActiveTab("roles")}
                       className="w-full text-left p-3 rounded-2xl bg-slate-50 hover:bg-indigo-50/60 transition-colors flex items-center justify-between text-xs font-semibold text-slate-800"
                     >
                       <span>Audit Roles & Permissions</span>
@@ -234,7 +240,7 @@ export const AdminDashboardPage = () => {
           )}
 
           {/* TAB 2: ANALYTICS */}
-          {activeTab === 'analytics' && (
+          {activeTab === "analytics" && (
             <div className="space-y-6 max-w-7xl mx-auto">
               <AdminStatsOverview metrics={metrics} />
               <AdminTaskChart />
@@ -246,7 +252,7 @@ export const AdminDashboardPage = () => {
           )}
 
           {/* TAB 3: USER MANAGEMENT */}
-          {activeTab === 'users' && (
+          {activeTab === "users" && (
             <div className="max-w-7xl mx-auto">
               <AdminUserManagement
                 users={users}
@@ -259,7 +265,7 @@ export const AdminDashboardPage = () => {
           )}
 
           {/* TAB 4: ROLES & PERMISSIONS */}
-          {activeTab === 'roles' && (
+          {activeTab === "roles" && (
             <div className="max-w-7xl mx-auto">
               <AdminRolesPermissions
                 permissions={permissions}
@@ -269,7 +275,7 @@ export const AdminDashboardPage = () => {
           )}
 
           {/* TAB 5: PROJECT MANAGEMENT */}
-          {activeTab === 'projects' && (
+          {activeTab === "projects" && (
             <div className="max-w-7xl mx-auto">
               <AdminProjectManagement
                 projects={allProjects}
@@ -280,11 +286,13 @@ export const AdminDashboardPage = () => {
           )}
 
           {/* TAB 6: TASK MANAGEMENT & OVERDUE */}
-          {(activeTab === 'tasks' || activeTab === 'overdue-tasks') && (
+          {(activeTab === "tasks" || activeTab === "overdue-tasks") && (
             <div className="max-w-7xl mx-auto">
               <AdminTaskManagement
                 tasks={allTasks}
-                initialFilter={activeTab === 'overdue-tasks' ? 'OVERDUE' : 'ALL'}
+                initialFilter={
+                  activeTab === "overdue-tasks" ? "OVERDUE" : "ALL"
+                }
                 onUpdateTask={updateTask}
                 onDeleteTask={deleteTask}
                 onOpenCreateTask={() => setIsCreateTaskOpen(true)}
@@ -294,19 +302,24 @@ export const AdminDashboardPage = () => {
           )}
 
           {/* TAB 7: ACTIVITY LOGS */}
-          {activeTab === 'logs' && (
+          {activeTab === "logs" && (
             <div className="max-w-7xl mx-auto">
               <AdminActivityLogs logs={activityLogs} />
             </div>
           )}
 
           {/* TAB 8: SETTINGS */}
-          {activeTab === 'settings' && (
+          {activeTab === "settings" && (
             <div className="max-w-7xl mx-auto">
               <AdminOrgSettings
                 onSaveSettings={(data) => {
-                  addLog('Admin', 'updated organization settings', data.orgName, 'Settings');
-                  showToast('Organization settings updated.');
+                  addLog(
+                    actorName,
+                    "updated organization settings",
+                    data.orgName,
+                    "Settings",
+                  );
+                  showToast("Organization settings updated.");
                 }}
               />
             </div>
@@ -339,9 +352,6 @@ export const AdminDashboardPage = () => {
           onUpdate={(t) => setSelectedTaskForDetails(t)}
         />
       </Modal>
-
-      {/* Toast Feedback */}
-      <AdminToast toast={toast} onClose={() => {}} />
     </div>
   );
 };

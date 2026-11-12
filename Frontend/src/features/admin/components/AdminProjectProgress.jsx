@@ -1,6 +1,5 @@
 import React from 'react';
 import { FolderKanban, CheckCircle2, Users, ArrowUpRight, Calendar } from 'lucide-react';
-import { formatDate } from '../../../shared/utils/formatDate.js';
 import { Badge } from '../../../shared/components/ui/Badge.jsx';
 
 /**
@@ -40,7 +39,7 @@ export const AdminProjectProgress = ({ projects = [], onProjectClick }) => {
                     <FolderKanban size={16} />
                   </div>
                   <div className="min-w-0">
-                    <h4 className="text-xs font-bold text-slate-800 group-hover:text-[#4361EE] transition-colors truncate">
+                    <h4 className="text-xs font-bold text-slate-800 group-hover:text-primary transition-colors truncate">
                       {project.name}
                     </h4>
                     <span className="text-[10px] text-slate-400 font-medium">

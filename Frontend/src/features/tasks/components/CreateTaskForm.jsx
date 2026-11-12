@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef, useCallback } from "react";
 
 import {
   Calendar,
@@ -29,14 +29,9 @@ import { MentionTextarea } from "./MentionTextarea.jsx";
 import { useProjects } from "../../projects/hooks/useProjects.js";
 import { useTeam } from "../../team/hooks/useTeam.js";
 import { taskService } from "../services/task.service.js";
+import { formatDateForInput } from "../../../shared/utils/formatDate.js";
 
 const ESTIMATION_PRESETS = ["2h", "4h", "1d", "2d", "3d", "1w"];
-
-const formatDateForInput = (val) => {
-  if (!val) return "";
-  const d = new Date(val);
-  return isNaN(d.getTime()) ? "" : d.toISOString().split("T")[0];
-};
 
 const resolveInitialFormData = (init, isEdit) => {
   const pId =
@@ -54,14 +49,12 @@ const resolveInitialFormData = (init, isEdit) => {
     status: init?.status || TASK_STATUS.TODO,
     startDate:
       formatDateForInput(init?.startDate) ||
-      (isEdit ? "" : new Date().toISOString().split("T")[0]),
+      (isEdit ? "" : formatDateForInput(new Date())),
     dueDate:
       formatDateForInput(init?.dueDate) ||
       (isEdit
         ? ""
-        : new Date(Date.now() + 5 * 24 * 60 * 60 * 1000)
-            .toISOString()
-            .split("T")[0]),
+        : formatDateForInput(new Date(Date.now() + 5 * 24 * 60 * 60 * 1000))),
     estimatedTime: init?.estimatedTime || "8h",
     assignees: Array.isArray(init?.assignees)
       ? init.assignees.map((a) =>
@@ -112,7 +105,7 @@ export const CreateTaskForm = ({
   }, [formData.attachments]);
 
   // Clean up any files uploaded during this session from ImageKit if task is cancelled / not saved
-  const deleteSessionUploadedFiles = () => {
+  const deleteSessionUploadedFiles = useCallback(() => {
     if (isSavedRef.current) return;
     const initialFileIds = new Set(
       (initialData?.attachments || [])
@@ -128,12 +121,12 @@ export const CreateTaskForm = ({
         taskService.deleteImageKitFile(item.fileId).catch(() => {});
       }
     }
-  };
+  }, [initialData?.attachments]);
 
   const deleteSessionUploadedFilesRef = useRef(deleteSessionUploadedFiles);
   useEffect(() => {
     deleteSessionUploadedFilesRef.current = deleteSessionUploadedFiles;
-  });
+  }, [deleteSessionUploadedFiles]);
 
   useEffect(() => {
     return () => {
@@ -261,7 +254,7 @@ export const CreateTaskForm = ({
           <div className="p-4 rounded-3xl bg-linear-to-b from-indigo-50/40 to-white border border-indigo-100 shadow-xs space-y-2">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <span className="px-2 py-0.5 rounded-full bg-[#4361EE] text-white text-[10px] font-extrabold uppercase tracking-wider shadow-2xs">
+                <span className="px-2 py-0.5 rounded-full bg-primary text-white text-[10px] font-extrabold uppercase tracking-wider shadow-2xs">
                   Primary Task
                 </span>
                 <label
@@ -288,7 +281,7 @@ export const CreateTaskForm = ({
               className={`w-full px-4 py-3 rounded-2xl border text-sm font-medium transition-all ${
                 errors.title
                   ? "border-rose-400 focus:ring-2 focus:ring-rose-200 bg-rose-50/20 text-rose-900"
-                  : "border-slate-200 focus:ring-2 focus:ring-[#4361EE] focus:border-transparent bg-white text-slate-900"
+                  : "border-slate-200 focus:ring-2 focus:ring-primary focus:border-transparent bg-white text-slate-900"
               } placeholder-slate-400 shadow-xs`}
             />
             {errors.title && (
@@ -301,7 +294,10 @@ export const CreateTaskForm = ({
           {/* Task Description with Rich Toolbar Styling */}
           <div className="space-y-1.5">
             <div className="flex items-center justify-between">
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-700">
+              <label
+                htmlFor="task-description-input"
+                className="block text-xs font-bold uppercase tracking-wider text-slate-700"
+              >
                 Description & Acceptance Criteria
               </label>
               <div className="flex items-center gap-1 text-slate-400">
@@ -310,7 +306,7 @@ export const CreateTaskForm = ({
               </div>
             </div>
 
-            <div className="border border-slate-200 rounded-2xl bg-white overflow-hidden shadow-xs focus-within:ring-2 focus-within:ring-[#4361EE] focus-within:border-transparent transition-all">
+            <div className="border border-slate-200 rounded-2xl bg-white overflow-hidden shadow-xs focus-within:ring-2 focus-within:ring-primary focus-within:border-transparent transition-all">
               {/* Toolbar */}
               <div className="flex items-center gap-1 px-3 py-2 border-b border-slate-100 bg-slate-50/70 text-slate-600">
                 <button
@@ -354,6 +350,7 @@ export const CreateTaskForm = ({
               {/* Mention-supported Textarea */}
               <div className="p-2">
                 <MentionTextarea
+                  id="task-description-input"
                   rows={5}
                   placeholder="Describe the objective, user story, acceptance criteria, or type @ to mention project team members..."
                   value={formData.description}
@@ -413,7 +410,10 @@ export const CreateTaskForm = ({
           <div className="space-y-1.5">
             <div className="flex items-center gap-1.5">
               <FolderKanban size={14} className="text-slate-500" />
-              <label className="text-xs font-bold uppercase tracking-wider text-slate-700">
+              <label
+                htmlFor="task-project-select"
+                className="text-xs font-bold uppercase tracking-wider text-slate-700"
+              >
                 Project / Context
               </label>
               <span className="text-[10px] text-slate-400 font-normal">
@@ -421,6 +421,7 @@ export const CreateTaskForm = ({
               </span>
             </div>
             <select
+              id="task-project-select"
               value={formData.projectId}
               onChange={(e) => {
                 const newProjectId = e.target.value;
@@ -447,7 +448,7 @@ export const CreateTaskForm = ({
                     : prev.assignees,
                 }));
               }}
-              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#4361EE] shadow-xs cursor-pointer"
+              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-primary shadow-xs cursor-pointer"
             >
               <option value="">No Project (Individual / Self Task)</option>
               {availableProjects.map((project) => (
@@ -537,24 +538,32 @@ export const CreateTaskForm = ({
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-[11px] font-semibold text-slate-500 mb-1">
+                <label
+                  htmlFor="task-start-date"
+                  className="block text-[11px] font-semibold text-slate-500 mb-1"
+                >
                   Start Date
                 </label>
                 <input
+                  id="task-start-date"
                   type="date"
                   value={formData.startDate}
                   onChange={(e) =>
                     setFormData({ ...formData, startDate: e.target.value })
                   }
-                  className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#4361EE]"
+                  className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-primary"
                 />
               </div>
 
               <div>
-                <label className="block text-[11px] font-semibold text-slate-500 mb-1">
+                <label
+                  htmlFor="task-due-date"
+                  className="block text-[11px] font-semibold text-slate-500 mb-1"
+                >
                   Due Date <span className="text-rose-500">*</span>
                 </label>
                 <input
+                  id="task-due-date"
                   type="date"
                   value={formData.dueDate}
                   onChange={(e) => {
@@ -564,7 +573,7 @@ export const CreateTaskForm = ({
                   className={`w-full px-3 py-2 rounded-xl border text-xs bg-white text-slate-800 focus:outline-none focus:ring-2 ${
                     errors.dueDate
                       ? "border-rose-400 focus:ring-rose-200"
-                      : "border-slate-200 focus:ring-[#4361EE]"
+                      : "border-slate-200 focus:ring-primary"
                   }`}
                 />
               </div>
@@ -581,23 +590,27 @@ export const CreateTaskForm = ({
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-1.5">
                 <Clock size={14} className="text-slate-500" />
-                <label className="text-xs font-bold uppercase tracking-wider text-slate-700">
+                <label
+                  htmlFor="task-estimated-time"
+                  className="text-xs font-bold uppercase tracking-wider text-slate-700"
+                >
                   Estimated Time
                 </label>
               </div>
-              <span className="text-xs font-bold text-[#4361EE]">
+              <span className="text-xs font-bold text-primary">
                 {formData.estimatedTime}
               </span>
             </div>
 
             <input
+              id="task-estimated-time"
               type="text"
               placeholder="e.g. 12h or 3d"
               value={formData.estimatedTime}
               onChange={(e) =>
                 setFormData({ ...formData, estimatedTime: e.target.value })
               }
-              className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs bg-white placeholder-slate-400 text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#4361EE]"
+              className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs bg-white placeholder-slate-400 text-slate-800 focus:outline-none focus:ring-2 focus:ring-primary"
             />
 
             {/* Quick Estimation Pills */}
@@ -612,7 +625,7 @@ export const CreateTaskForm = ({
                   onClick={() => applyTimePreset(preset)}
                   className={`text-[11px] font-semibold px-2 py-0.5 rounded-lg transition-colors ${
                     formData.estimatedTime === preset
-                      ? "bg-[#4361EE] text-white shadow-xs"
+                      ? "bg-primary text-white shadow-xs"
                       : "bg-slate-100 hover:bg-slate-200 text-slate-600"
                   }`}
                 >
@@ -654,7 +667,7 @@ export const CreateTaskForm = ({
         <button
           type="submit"
           disabled={submitting}
-          className="w-full sm:w-auto px-8 py-2.5 rounded-2xl bg-[#4361EE] hover:bg-[#3451DE] active:scale-98 text-white text-xs font-bold shadow-md shadow-indigo-200 transition-all flex items-center justify-center gap-2 disabled:opacity-60 disabled:pointer-events-none"
+          className="w-full sm:w-auto px-8 py-2.5 rounded-2xl bg-primary hover:bg-primary-hover active:scale-98 text-white text-xs font-bold shadow-md shadow-indigo-200 transition-all flex items-center justify-center gap-2 disabled:opacity-60 disabled:pointer-events-none"
         >
           {submitting ? (
             <>

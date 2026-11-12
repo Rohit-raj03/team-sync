@@ -10,7 +10,7 @@ import { ForgotPasswordForm } from "../../features/auth/components/ForgotPasswor
  */
 export const ForgotPasswordPage = () => {
   return (
-    <div className="min-h-screen bg-[#F4F7FE] flex flex-col justify-between items-center p-4 sm:p-6">
+    <div className="min-h-screen bg-surface-page flex flex-col justify-between items-center p-4 sm:p-6">
       {/* Top subtle decorative spacer */}
       <div className="w-full h-4" />
 
@@ -45,7 +45,7 @@ export const ForgotPasswordPage = () => {
           <span>Having trouble?</span>
           <a
             href="mailto:support@teamsync.io"
-            className="font-semibold text-slate-600 hover:text-[#4361EE] hover:underline transition-colors"
+            className="font-semibold text-slate-600 hover:text-primary hover:underline transition-colors"
           >
             Contact Support
           </a>

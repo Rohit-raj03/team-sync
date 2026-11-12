@@ -152,7 +152,7 @@ export const PasswordChangeModal = ({ isOpen, onClose, onPasswordUpdated }) => {
             disabled={
               isSubmitting || !isMinLength || !hasNumberOrSymbol || !isMatching
             }
-            className="bg-[#4361EE] hover:bg-[#3451DE] text-white"
+            className="bg-primary hover:bg-primary-hover text-white"
           >
             {isSubmitting ? "Updating..." : "Save Password"}
           </Button>

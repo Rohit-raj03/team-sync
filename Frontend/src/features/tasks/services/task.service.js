@@ -42,8 +42,7 @@ export const taskService = {
     apiClient.get(`/tasks/${taskId}/attachments`),
   deleteTaskAttachment: async (taskId, attachmentId) =>
     apiClient.delete(`/tasks/${taskId}/attachments/${attachmentId}`),
-  deleteOrphanAttachment: async (fileId) =>
-    apiClient.delete(`/imagekit/file/${fileId}`),
+
   deleteImageKitFile: async (fileId) =>
     apiClient.delete(`/imagekit/file/${fileId}`),
 };

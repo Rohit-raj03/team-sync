@@ -11,6 +11,13 @@ const notifyListeners = () => {
   listeners.forEach((listener) => listener([...sharedMembersList]));
 };
 
+export const clearTeamCache = () => {
+  sharedMembersList = [];
+  lastTeamFetchTimestamp = 0;
+  inFlightTeamPromise = null;
+  notifyListeners();
+};
+
 /**
  * Feature Hook: useTeam
  * Connects directly to backend registered users (/api/users and /api/team/members).
@@ -48,11 +55,7 @@ export function useTeam(options = {}) {
             username: u.username || (u.email ? u.email.split("@")[0] : ""),
             email: u.email,
             role: u.jobTitle || u.role || "Team Member",
-            avatar:
-              u.avatar ||
-              `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(
-                u.name || "User"
-              )}`,
+            avatar: u.avatar || null,
             status: u.isActive !== false ? "online" : "offline",
             department: u.jobTitle?.includes("Design")
               ? "Design"
@@ -103,11 +106,7 @@ export function useTeam(options = {}) {
           username: invited.username || (invited.email ? invited.email.split("@")[0] : ""),
           email: invited.email,
           role: invited.jobTitle || invited.role || "Team Member",
-          avatar:
-            invited.avatar ||
-            `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(
-              invited.name
-            )}`,
+          avatar: invited.avatar || null,
           status: "online",
           department: "Engineering",
         };
@@ -123,9 +122,7 @@ export function useTeam(options = {}) {
         username: newMember.username || newMember.name.toLowerCase().replace(/\s+/g, ""),
         email: newMember.email,
         role: newMember.role || "Contributor",
-        avatar: `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(
-          newMember.name
-        )}`,
+        avatar: null,
         status: "online",
         department: "Engineering",
       };

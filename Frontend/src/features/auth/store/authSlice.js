@@ -31,6 +31,9 @@ const authSlice = createSlice({
       state.error = null;
       storage.set('auth_token', state.token);
       storage.set('auth_user', state.user);
+      if (action.payload.refreshToken) {
+        storage.set('auth_refresh_token', action.payload.refreshToken);
+      }
     },
     loginFailure(state, action) {
       state.loading = false;
@@ -47,6 +50,9 @@ const authSlice = createSlice({
       state.error = null;
       storage.set('auth_token', state.token);
       storage.set('auth_user', state.user);
+      if (action.payload.refreshToken) {
+        storage.set('auth_refresh_token', action.payload.refreshToken);
+      }
     },
     updateUserProfile(state, action) {
       const updated = { ...state.user, ...action.payload };
@@ -64,6 +70,7 @@ const authSlice = createSlice({
       state.error = null;
       storage.remove('auth_token');
       storage.remove('auth_user');
+      storage.remove('auth_refresh_token');
     },
   },
 });

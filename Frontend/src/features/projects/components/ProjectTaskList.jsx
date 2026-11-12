@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import {
   CheckCircle2,
   Clock,
@@ -10,6 +10,7 @@ import {
   Check,
 } from "lucide-react";
 import { Badge } from "../../../shared/components/ui/Badge.jsx";
+import { EmptyState } from "../../../shared/components/ui/EmptyState.jsx";
 import { formatDate } from "../../../shared/utils/formatDate.js";
 import {
   getPriorityBadgeVariant,
@@ -29,17 +30,19 @@ export const ProjectTaskList = ({
 }) => {
   const [filter, setFilter] = useState("ALL");
 
-  const filteredTasks = tasks.filter((t) => {
-    if (filter === "ALL") return true;
-    return t.status === filter;
-  });
+  const filteredTasks = useMemo(() => {
+    return tasks.filter((t) => {
+      if (filter === "ALL") return true;
+      return t.status === filter;
+    });
+  }, [tasks, filter]);
 
   return (
     <div className="space-y-4">
       {/* Header & Controls */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-xl bg-indigo-50 text-[#4361EE] flex items-center justify-center">
+          <div className="w-8 h-8 rounded-xl bg-indigo-50 text-primary flex items-center justify-center">
             <ListTodo size={16} />
           </div>
           <div>
@@ -79,7 +82,7 @@ export const ProjectTaskList = ({
           {onAddTask && (
             <button
               onClick={onAddTask}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#4361EE] hover:bg-[#3451DE] text-white text-xs font-bold transition-all shadow-xs"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-primary hover:bg-primary-hover text-white text-xs font-bold transition-all shadow-xs"
             >
               <Plus size={14} />
               <span>Add Task</span>
@@ -105,7 +108,7 @@ export const ProjectTaskList = ({
                   <Badge variant={getPriorityBadgeVariant(task.priority)}>
                     {task.priority}
                   </Badge>
-                  <h4 className="text-xs font-bold text-slate-800 group-hover:text-[#4361EE] transition-colors truncate">
+                  <h4 className="text-xs font-bold text-slate-800 group-hover:text-primary transition-colors truncate">
                     {task.title}
                   </h4>
                 </div>
@@ -150,20 +153,13 @@ export const ProjectTaskList = ({
           ))}
         </div>
       ) : (
-        <div className="p-8 text-center bg-slate-50/70 rounded-2xl border border-dashed border-slate-200 space-y-2">
-          <p className="text-xs font-medium text-slate-500">
-            No tasks found in this project matching the selected filter.
-          </p>
-          {onAddTask && (
-            <button
-              onClick={onAddTask}
-              className="inline-flex items-center gap-1.5 text-xs font-bold text-[#4361EE] hover:underline"
-            >
-              <Plus size={13} />
-              <span>Create the first task for this project</span>
-            </button>
-          )}
-        </div>
+        <EmptyState
+          icon={ListTodo}
+          title="No tasks found"
+          description="No tasks found in this project matching the selected filter."
+          actionText={onAddTask ? "Create the first task" : undefined}
+          onAction={onAddTask}
+        />
       )}
     </div>
   );

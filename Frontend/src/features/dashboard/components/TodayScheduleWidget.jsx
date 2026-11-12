@@ -11,10 +11,16 @@ import { formatDate } from "../../../shared/utils/formatDate.js";
 export const TodayScheduleWidget = () => {
   const { tasks = [] } = useTasks();
 
-  // Find nearest upcoming task with a due date
-  const upcomingTask = tasks.find(
-    (t) => (t.status !== "COMPLETED" && t.status !== "Done") && t.dueDate
-  );
+  // Find nearest upcoming task sorted chronologically by due date
+  const upcomingTask = tasks
+    .filter(
+      (t) =>
+        t.status !== "COMPLETED" &&
+        t.status !== "Done" &&
+        t.dueDate &&
+        !isNaN(new Date(t.dueDate).getTime())
+    )
+    .sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate))[0];
 
   return (
     <div className="space-y-3">
@@ -33,10 +39,10 @@ export const TodayScheduleWidget = () => {
       {upcomingTask ? (
         <>
           <div className="flex items-center justify-between text-xs font-semibold">
-            <span className="text-[#00C2FF] truncate max-w-[200px]">
+            <span className="text-sky-700 font-bold truncate max-w-[200px]">
               {upcomingTask.projectName || "Upcoming Milestone"}
             </span>
-            <span className="text-slate-400 text-[11px]">
+            <span className="text-slate-500 font-medium text-[11px]">
               Due {formatDate(upcomingTask.dueDate)}
             </span>
           </div>
@@ -46,13 +52,13 @@ export const TodayScheduleWidget = () => {
           </h4>
 
           {/* Blue Call/Milestone Card */}
-          <div className="p-4 rounded-3xl bg-[#4361EE] text-white flex items-center justify-between shadow-md shadow-indigo-200">
+          <div className="p-4 rounded-3xl bg-primary text-white flex items-center justify-between shadow-md shadow-indigo-200">
             {/* Avatar Stack of Assignees */}
             <div className="flex items-center -space-x-2">
               {Array.isArray(upcomingTask.assignees) && upcomingTask.assignees.length > 0 ? (
                 upcomingTask.assignees.slice(0, 3).map((a, i) => (
                   <img
-                    key={a.id || a._id || i}
+                    key={a.id || a._id || a.email || `assignee-${a.name || i}`}
                     src={
                       a.avatar ||
                       `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(
@@ -61,11 +67,11 @@ export const TodayScheduleWidget = () => {
                     }
                     alt={a.name}
                     title={a.name}
-                    className="w-8 h-8 rounded-full border-2 border-[#4361EE] object-cover"
+                    className="w-8 h-8 rounded-full border-2 border-primary object-cover"
                   />
                 ))
               ) : (
-                <div className="w-8 h-8 rounded-full bg-white text-[#4361EE] font-bold text-xs flex items-center justify-center border-2 border-[#4361EE]">
+                <div className="w-8 h-8 rounded-full bg-white text-primary font-bold text-xs flex items-center justify-center border-2 border-primary">
                   TS
                 </div>
               )}

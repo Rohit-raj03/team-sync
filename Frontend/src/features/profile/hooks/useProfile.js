@@ -49,6 +49,40 @@ export function useProfile() {
     };
   }, []);
 
+  /**
+   * Deterministic shallow comparison of tracked primitive profile fields
+   */
+  const isProfileFormModified = (current, saved) => {
+    if (!current || !saved) return false;
+    const trackedKeys = [
+      'fullName',
+      'username',
+      'email',
+      'phoneNumber',
+      'jobTitle',
+      'bio',
+      'location',
+      'timeZone',
+      'twoFactorEnabled',
+    ];
+    return trackedKeys.some(
+      (k) => (current[k] ?? '') !== (saved[k] ?? '')
+    );
+  };
+
+  // Check if form has unsaved modifications
+  const isDirty = useMemo(() => {
+    const isFormModified = isProfileFormModified(formData, savedData);
+    const hasPendingFile = Boolean(pendingAvatarFile);
+    const hasAvatarRemoval = isAvatarRemoved && Boolean(savedData.avatar);
+    return isFormModified || hasPendingFile || hasAvatarRemoval;
+  }, [formData, savedData, pendingAvatarFile, isAvatarRemoved]);
+
+  const isDirtyRef = useRef(false);
+  useEffect(() => {
+    isDirtyRef.current = isDirty;
+  }, [isDirty]);
+
   // Sync profile data from server on mount
   useEffect(() => {
     let isMounted = true;
@@ -74,24 +108,16 @@ export function useProfile() {
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [updateProfile]);
 
   // Sync when user prop in Redux changes if form is not dirty
   useEffect(() => {
-    if (user && JSON.stringify(formData) === JSON.stringify(savedData) && !pendingAvatarFile && !isAvatarRemoved) {
+    if (user && !isDirtyRef.current) {
       const mapped = mapUserToProfile(user);
       setFormData(mapped);
       setSavedData(mapped);
     }
   }, [user]);
-
-  // Check if form has unsaved modifications
-  const isDirty = useMemo(() => {
-    const isFormModified = JSON.stringify(formData) !== JSON.stringify(savedData);
-    const hasPendingFile = Boolean(pendingAvatarFile);
-    const hasAvatarRemoval = isAvatarRemoved && Boolean(savedData.avatar);
-    return isFormModified || hasPendingFile || hasAvatarRemoval;
-  }, [formData, savedData, pendingAvatarFile, isAvatarRemoved]);
 
   const handleChange = (field, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }));

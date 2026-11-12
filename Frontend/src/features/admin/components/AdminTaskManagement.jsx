@@ -1,25 +1,21 @@
 import React, { useState, useMemo } from 'react';
 import {
-  ListTodo,
+
   Search,
   Plus,
   Trash2,
-  Calendar,
-  AlertTriangle,
-  Check,
-  CheckCircle2,
-  Clock,
-  ChevronDown,
+
+
+
+
+
+
   Eye,
-  Filter,
+
 } from 'lucide-react';
-import { Badge } from '../../../shared/components/ui/Badge.jsx';
-import { formatDate } from '../../../shared/utils/formatDate.js';
-import {
-  getPriorityBadgeVariant,
-  getStatusBadgeVariant,
-} from '../../tasks/utils/taskHelpers.js';
-import { TASK_STATUS, TASK_PRIORITY } from '../../../shared/constants/taskStatus.js';
+
+import { formatDate, formatDateForInput } from '../../../shared/utils/formatDate.js';
+
 import { AdminConfirmationModal } from './AdminConfirmationModal.jsx';
 
 /**
@@ -47,7 +43,7 @@ export const AdminTaskManagement = ({
     onConfirm: () => {},
   });
 
-  const todayStr = new Date().toISOString().split('T')[0];
+  const todayStr = formatDateForInput(new Date());
 
   const filteredTasks = useMemo(() => {
     return tasks.filter((t) => {
@@ -108,7 +104,7 @@ export const AdminTaskManagement = ({
         {onOpenCreateTask && (
           <button
             onClick={onOpenCreateTask}
-            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-[#4361EE] hover:bg-[#3451DE] active:scale-98 text-white text-xs font-bold shadow-md shadow-indigo-100 transition-all self-start sm:self-auto"
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-primary hover:bg-primary-hover active:scale-98 text-white text-xs font-bold shadow-md shadow-indigo-100 transition-all self-start sm:self-auto"
           >
             <Plus size={15} />
             <span>Create Task</span>
@@ -129,7 +125,7 @@ export const AdminTaskManagement = ({
               placeholder="Search tasks by title, assignee, or project..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-4 py-2 rounded-xl border border-slate-200 text-xs bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#4361EE]"
+              className="w-full pl-9 pr-4 py-2 rounded-xl border border-slate-200 text-xs bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-primary"
             />
           </div>
 
@@ -137,7 +133,7 @@ export const AdminTaskManagement = ({
             <select
               value={priorityFilter}
               onChange={(e) => setPriorityFilter(e.target.value)}
-              className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs bg-white text-slate-700 font-medium focus:ring-2 focus:ring-[#4361EE]"
+              className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs bg-white text-slate-700 font-medium focus:ring-2 focus:ring-primary"
             >
               <option value="ALL">All Priorities</option>
               <option value="LOW">Low</option>
@@ -166,7 +162,7 @@ export const AdminTaskManagement = ({
                   statusFilter === tab.id
                     ? tab.isDanger
                       ? 'bg-rose-600 text-white shadow-xs'
-                      : 'bg-[#4361EE] text-white shadow-xs'
+                      : 'bg-primary text-white shadow-xs'
                     : tab.isDanger
                     ? 'bg-rose-50 text-rose-700 hover:bg-rose-100'
                     : 'bg-slate-100 hover:bg-slate-200 text-slate-600'
@@ -225,7 +221,7 @@ export const AdminTaskManagement = ({
                         <select
                           value={task.status}
                           onChange={(e) => handleQuickStatus(task, e.target.value)}
-                          className="px-2.5 py-1 rounded-xl border border-slate-200 text-[11px] font-semibold bg-white text-slate-700 cursor-pointer focus:ring-1 focus:ring-[#4361EE]"
+                          className="px-2.5 py-1 rounded-xl border border-slate-200 text-[11px] font-semibold bg-white text-slate-700 cursor-pointer focus:ring-1 focus:ring-primary"
                         >
                           <option value="TODO">To Do</option>
                           <option value="IN_PROGRESS">In Progress</option>
@@ -239,7 +235,7 @@ export const AdminTaskManagement = ({
                         <select
                           value={task.priority}
                           onChange={(e) => handleQuickPriority(task, e.target.value)}
-                          className="px-2.5 py-1 rounded-xl border border-slate-200 text-[11px] font-semibold bg-white text-slate-700 cursor-pointer focus:ring-1 focus:ring-[#4361EE]"
+                          className="px-2.5 py-1 rounded-xl border border-slate-200 text-[11px] font-semibold bg-white text-slate-700 cursor-pointer focus:ring-1 focus:ring-primary"
                         >
                           <option value="LOW">Low</option>
                           <option value="MEDIUM">Medium</option>
@@ -294,7 +290,7 @@ export const AdminTaskManagement = ({
                             type="button"
                             onClick={() => onOpenTaskDetails?.(task)}
                             title="Inspect Task Overview"
-                            className="p-1.5 rounded-lg text-slate-400 hover:text-[#4361EE] hover:bg-indigo-50 transition-colors"
+                            className="p-1.5 rounded-lg text-slate-400 hover:text-primary hover:bg-indigo-50 transition-colors"
                           >
                             <Eye size={14} />
                           </button>

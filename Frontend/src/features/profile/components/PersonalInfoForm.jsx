@@ -139,7 +139,7 @@ export const PersonalInfoForm = ({ formData, errors, onChange }) => {
               type="tel"
               value={formData.phoneNumber}
               onChange={(e) => onChange("phoneNumber", e.target.value)}
-              placeholder="+1 (555) 000-0000"
+              placeholder="+91 00000 00000"
               className="w-full pl-10 pr-4 py-2.5 bg-[#F8FAFC] text-xs font-semibold text-slate-900 rounded-2xl border border-slate-200/80 focus:border-indigo-400 focus:bg-white focus:outline-none focus:ring-4 focus:ring-indigo-50 transition-all"
             />
           </div>

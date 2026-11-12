@@ -14,6 +14,14 @@ const notifyNotificationListeners = () => {
   );
 };
 
+export const clearNotificationsCache = () => {
+  sharedNotificationsList = [];
+  sharedUnreadCount = 0;
+  lastNotificationsFetchTimestamp = 0;
+  inFlightNotificationsPromise = null;
+  notifyNotificationListeners();
+};
+
 /**
  * Feature Hook: useNotifications
  * Connects directly to backend /api/notifications with deduplication and caching. Zero dummy data.

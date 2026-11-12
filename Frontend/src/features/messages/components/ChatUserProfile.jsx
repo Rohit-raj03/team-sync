@@ -1,6 +1,6 @@
 import React from 'react';
 import { Avatar } from '../../../shared/components/ui/Avatar.jsx';
-import { Mail, Clock, MapPin, FileText, Image as ImageIcon, Bell } from 'lucide-react';
+import { Mail, Clock, FileText, Bell, X } from 'lucide-react';
 
 /**
  * Feature Component: ChatUserProfile
@@ -23,7 +23,17 @@ export const ChatUserProfile = ({ user, onClose }) => {
   ];
 
   return (
-    <div className="w-80 bg-white rounded-3xl border border-slate-100 flex flex-col h-full overflow-y-auto p-6 shadow-2xs">
+    <div className="w-80 bg-white rounded-3xl border border-slate-100 flex flex-col h-full overflow-y-auto p-6 shadow-2xs relative">
+      {onClose && (
+        <button
+          type="button"
+          onClick={onClose}
+          className="absolute top-5 right-5 p-1.5 text-slate-400 hover:text-slate-600 rounded-xl hover:bg-slate-100 transition-colors cursor-pointer"
+          aria-label="Close user profile"
+        >
+          <X size={16} />
+        </button>
+      )}
       {/* Profile Header */}
       <div className="text-center pb-6 border-b border-slate-100">
         <div className="relative inline-block mb-3">
@@ -55,7 +65,7 @@ export const ChatUserProfile = ({ user, onClose }) => {
         <div className="space-y-2">
           {sharedFiles.map((f, idx) => (
             <div
-              key={idx}
+              key={f.id || f._id || f.name || idx}
               className="p-2.5 rounded-2xl bg-[#F8FAFC] hover:bg-slate-100/60 border border-slate-100 flex items-center justify-between text-xs transition-colors cursor-pointer"
             >
               <div className="flex items-center gap-2 truncate">

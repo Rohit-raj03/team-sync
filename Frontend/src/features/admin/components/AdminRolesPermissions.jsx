@@ -87,7 +87,7 @@ export const AdminRolesPermissions = ({ permissions, onUpdatePermission }) => {
 
         <div className="p-4 rounded-2xl bg-blue-50/60 border border-blue-100 space-y-1">
           <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-xl bg-blue-100 text-[#4361EE] flex items-center justify-center font-bold">
+            <div className="w-7 h-7 rounded-xl bg-blue-100 text-primary flex items-center justify-center font-bold">
               <FolderKanban size={16} />
             </div>
             <h3 className="text-xs font-bold text-blue-950">Project Manager</h3>

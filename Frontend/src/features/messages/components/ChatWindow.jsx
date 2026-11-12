@@ -8,15 +8,18 @@ import {
   MoreVertical,
   FileText,
   ExternalLink,
+  ArrowLeft,
 } from "lucide-react";
 import { Avatar } from "../../../shared/components/ui/Avatar.jsx";
+import { useAuth } from "../../auth/hooks/useAuth.js";
 
 /**
  * Feature Component: ChatWindow
  * Layer: features/messages/components/
  * Responsibility: Active conversation stream with message bubbles, image/file previews, and input controls matching Figma Screen 6.
  */
-export const ChatWindow = ({ activeChat, onToggleProfile }) => {
+export const ChatWindow = ({ activeChat, onToggleProfile, onBack }) => {
+  const { user: currentUser } = useAuth();
   const [inputText, setInputText] = useState("");
   const [messages, setMessages] = useState([
     {
@@ -40,7 +43,7 @@ export const ChatWindow = ({ activeChat, onToggleProfile }) => {
     },
     {
       id: "3",
-      sender: "Alex Johnson",
+      sender: currentUser?.name || "You",
       text: "This looks fantastic Sarah! The dual-spline area chart and status pills match the design perfectly. I will integrate them now.",
       time: "12:42 pm",
       isMe: true,
@@ -55,7 +58,7 @@ export const ChatWindow = ({ activeChat, onToggleProfile }) => {
       ...prev,
       {
         id: `msg-${Date.now()}`,
-        sender: "Alex Johnson",
+        sender: currentUser?.name || currentUser?.username || "You",
         text: inputText,
         time: "Just now",
         isMe: true,
@@ -72,8 +75,19 @@ export const ChatWindow = ({ activeChat, onToggleProfile }) => {
   return (
     <div className="flex-1 bg-white rounded-3xl border border-slate-100 flex flex-col h-full overflow-hidden shadow-2xs">
       {/* Chat Top Header */}
-      <div className="h-18 px-6 border-b border-slate-100 flex items-center justify-between shrink-0">
-        <div className="flex items-center gap-3.5">
+      <div className="h-18 px-4 sm:px-6 border-b border-slate-100 flex items-center justify-between shrink-0">
+        <div className="flex items-center gap-2.5 sm:gap-3.5">
+          {onBack && (
+            <button
+              type="button"
+              onClick={onBack}
+              className="md:hidden p-1.5 -ml-1 text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-xl transition-colors cursor-pointer"
+              title="Back to conversations"
+              aria-label="Back to conversations"
+            >
+              <ArrowLeft size={18} />
+            </button>
+          )}
           <Avatar name={title} size="md" />
           <div>
             <h4 className="font-bold text-sm text-slate-900 leading-tight">

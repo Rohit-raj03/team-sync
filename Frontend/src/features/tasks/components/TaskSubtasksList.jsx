@@ -88,7 +88,7 @@ export const TaskSubtasksList = ({ subtasks = [], onChange }) => {
       {/* Subtasks Section Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <ListChecks size={16} className="text-[#4361EE]" />
+          <ListChecks size={16} className="text-primary" />
           <div>
             <label className="text-xs font-bold uppercase tracking-wider text-slate-700 block">
               Subtasks & Breakdown
@@ -115,7 +115,7 @@ export const TaskSubtasksList = ({ subtasks = [], onChange }) => {
       {subtasks.length > 0 && (
         <div className="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
           <div
-            className="bg-[#4361EE] h-1.5 rounded-full transition-all duration-300"
+            className="bg-primary h-1.5 rounded-full transition-all duration-300"
             style={{ width: `${progressPercent}%` }}
           />
         </div>
@@ -152,7 +152,7 @@ export const TaskSubtasksList = ({ subtasks = [], onChange }) => {
                           if (e.key === "Escape") handleCancelEdit(e);
                         }}
                         autoFocus
-                        className="flex-1 px-2.5 py-1 text-xs rounded-lg border border-indigo-300 focus:outline-none focus:ring-2 focus:ring-[#4361EE] bg-white text-slate-800"
+                        className="flex-1 px-2.5 py-1 text-xs rounded-lg border border-indigo-300 focus:outline-none focus:ring-2 focus:ring-primary bg-white text-slate-800"
                       />
                       <button
                         type="button"
@@ -181,7 +181,7 @@ export const TaskSubtasksList = ({ subtasks = [], onChange }) => {
                           className={`w-3.5 h-3.5 rounded border flex items-center justify-center transition-colors shrink-0 ${
                             item.completed
                               ? "bg-emerald-500 border-emerald-500 text-white"
-                              : "border-slate-300 group-hover:border-[#4361EE] bg-white"
+                              : "border-slate-300 group-hover:border-primary bg-white"
                           }`}
                         >
                           {item.completed && (
@@ -244,14 +244,14 @@ export const TaskSubtasksList = ({ subtasks = [], onChange }) => {
               onKeyDown={(e) => {
                 if (e.key === "Enter") handleAdd(e);
               }}
-              className="w-full pl-8 pr-3 py-1.5 rounded-xl border border-slate-200 text-xs bg-white placeholder-slate-400 text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#4361EE]"
+              className="w-full pl-8 pr-3 py-1.5 rounded-xl border border-slate-200 text-xs bg-white placeholder-slate-400 text-slate-800 focus:outline-none focus:ring-2 focus:ring-primary"
             />
           </div>
           <button
             type="button"
             onClick={handleAdd}
             disabled={!newSubtaskTitle.trim()}
-            className="px-3 py-1.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-[#4361EE] border border-indigo-200/80 text-xs font-bold transition-colors disabled:opacity-40 disabled:pointer-events-none flex items-center gap-1 cursor-pointer"
+            className="px-3 py-1.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-primary border border-indigo-200/80 text-xs font-bold transition-colors disabled:opacity-40 disabled:pointer-events-none flex items-center gap-1 cursor-pointer"
           >
             <Plus size={13} />
             <span>Add Step</span>

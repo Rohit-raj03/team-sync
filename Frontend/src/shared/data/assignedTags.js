@@ -15,7 +15,7 @@ export const ASSIGNED_TAGS = {
 };
 
 // Project Theme Tag styling (Unified theme instead of rainbow multi-colors)
-export const PROJECT_THEME_TAG_STYLE = "bg-indigo-50 text-[#4361EE] border-indigo-100/90";
+export const PROJECT_THEME_TAG_STYLE = "bg-indigo-50 text-primary border-indigo-100/90";
 
 export const TAG_COLORS = {
   Frontend: PROJECT_THEME_TAG_STYLE,

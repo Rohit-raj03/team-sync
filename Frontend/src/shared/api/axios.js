@@ -1,10 +1,44 @@
 import axios from 'axios';
 import { env } from '../../config/env.js';
 import { storage } from '../utils/localStorage.js';
+import { store } from '../../app/store.js';
+import { logout } from '../../features/auth/store/authSlice.js';
+import { clearTeamCache } from '../../features/team/hooks/useTeam.js';
+import { clearNotificationsCache } from '../../features/notifications/hooks/useNotifications.js';
 
 const axiosInstance = axios.create({
   baseURL: env.API_BASE_URL,
 });
+
+let isRefreshing = false;
+let failedQueue = [];
+
+const processQueue = (error, token = null) => {
+  failedQueue.forEach((prom) => {
+    if (error) {
+      prom.reject(error);
+    } else {
+      prom.resolve(token);
+    }
+  });
+  failedQueue = [];
+};
+
+const handleSessionTermination = () => {
+  storage.remove('auth_token');
+  storage.remove('auth_user');
+  storage.remove('auth_refresh_token');
+  try {
+    store.dispatch(logout());
+    clearTeamCache();
+    clearNotificationsCache();
+  } catch (e) {
+    console.error('Failed to dispatch logout on 401:', e);
+  }
+  if (typeof window !== 'undefined' && window.location.pathname !== '/login') {
+    window.location.replace('/login');
+  }
+};
 
 axiosInstance.interceptors.request.use(
   (config) => {
@@ -31,11 +65,65 @@ axiosInstance.interceptors.request.use(
 
 axiosInstance.interceptors.response.use(
   (response) => response.data,
-  (error) => {
-    const isLoginRequest = error.config?.url?.includes('/auth/login');
-    if (error.response?.status === 401 && !isLoginRequest) {
-      storage.remove('auth_token');
-      storage.remove('auth_user');
+  async (error) => {
+    const originalRequest = error.config;
+    const isAuthAttempt =
+      originalRequest?.url?.includes('/auth/login') ||
+      originalRequest?.url?.includes('/auth/google') ||
+      originalRequest?.url?.includes('/auth/register') ||
+      originalRequest?.url?.includes('/auth/refresh-token') ||
+      originalRequest?.url?.includes('/auth/refresh');
+
+    const refreshToken = storage.get('auth_refresh_token');
+
+    // Silent token refresh interceptor with queueing and session rotation
+    if (
+      error.response?.status === 401 &&
+      !isAuthAttempt &&
+      !originalRequest?._retry &&
+      refreshToken
+    ) {
+      if (isRefreshing) {
+        return new Promise((resolve, reject) => {
+          failedQueue.push({ resolve, reject });
+        })
+          .then((token) => {
+            originalRequest.headers = originalRequest.headers || {};
+            originalRequest.headers.Authorization = `Bearer ${token}`;
+            return axiosInstance(originalRequest);
+          })
+          .catch((err) => Promise.reject(err));
+      }
+
+      originalRequest._retry = true;
+      isRefreshing = true;
+
+      try {
+        const res = await axios.post(
+          `${env.API_BASE_URL}/auth/refresh-token`,
+          { refreshToken },
+          { withCredentials: true }
+        );
+        const data = res.data?.data || res.data;
+        const newAccessToken = data?.accessToken || data?.token;
+        if (newAccessToken) {
+          storage.set('auth_token', newAccessToken);
+          if (data?.refreshToken) {
+            storage.set('auth_refresh_token', data.refreshToken);
+          }
+          originalRequest.headers = originalRequest.headers || {};
+          originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
+          processQueue(null, newAccessToken);
+          return axiosInstance(originalRequest);
+        }
+      } catch (refreshErr) {
+        processQueue(refreshErr, null);
+        handleSessionTermination();
+      } finally {
+        isRefreshing = false;
+      }
+    } else if (error.response?.status === 401 && !isAuthAttempt) {
+      handleSessionTermination();
     }
 
     const message =

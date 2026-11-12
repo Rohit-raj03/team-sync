@@ -302,7 +302,7 @@ export const ProjectMemberTagSelector = ({
         <label className="block text-xs font-bold uppercase tracking-wider text-slate-700">
           Team Members
           {taggedMembers.length > 0 && (
-            <span className="ml-1.5 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-indigo-50 text-[#4361EE]">
+            <span className="ml-1.5 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-indigo-50 text-primary">
               {taggedMembers.length} added
             </span>
           )}
@@ -325,7 +325,7 @@ export const ProjectMemberTagSelector = ({
             }}
             onFocus={() => setIsSearchOpen(true)}
             placeholder="Search team members by name, email, or role to add..."
-            className="w-full pl-9 pr-8 py-2 rounded-xl border border-slate-200 text-xs bg-white placeholder-slate-400 text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#4361EE] shadow-2xs"
+            className="w-full pl-9 pr-8 py-2 rounded-xl border border-slate-200 text-xs bg-white placeholder-slate-400 text-slate-800 focus:outline-none focus:ring-2 focus:ring-primary shadow-2xs"
           />
           {searchQuery && (
             <button
@@ -387,7 +387,7 @@ export const ProjectMemberTagSelector = ({
                         <span>Added</span>
                       </span>
                     ) : (
-                      <span className="text-[11px] font-bold text-[#4361EE] flex items-center gap-1 hover:underline shrink-0">
+                      <span className="text-[11px] font-bold text-primary flex items-center gap-1 hover:underline shrink-0">
                         <Plus size={12} strokeWidth={2.5} />
                         <span>Add</span>
                       </span>
@@ -485,7 +485,7 @@ export const ProjectMemberTagSelector = ({
                       onClick={(e) => handleOpenPopover(e, mId)}
                       className={`inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-semibold border transition-all cursor-pointer ${
                         isPopoverOpen
-                          ? "bg-[#4361EE] text-white border-[#4361EE] shadow-xs"
+                          ? "bg-primary text-white border-primary shadow-xs"
                           : "bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200/90 hover:border-slate-300"
                       }`}
                       title="Add or toggle roles"
@@ -547,7 +547,7 @@ export const ProjectMemberTagSelector = ({
             {/* Popover Header */}
             <div className="flex items-center justify-between pb-1.5 border-b border-slate-100 text-[11px] font-bold text-slate-700">
               <span className="flex items-center gap-1">
-                <Tag size={12} className="text-[#4361EE]" />
+                <Tag size={12} className="text-primary" />
                 <span>Select Roles</span>
               </span>
               <button
@@ -575,13 +575,13 @@ export const ProjectMemberTagSelector = ({
                   }
                 }}
                 placeholder="Custom role..."
-                className="flex-1 px-2 py-1 text-xs rounded-lg border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#4361EE] text-slate-800 placeholder-slate-400"
+                className="flex-1 px-2 py-1 text-xs rounded-lg border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:ring-1 focus:ring-primary text-slate-800 placeholder-slate-400"
               />
               <button
                 type="button"
                 onClick={() => handleAddCustomTag(openPopoverMemberId)}
                 disabled={!customTagInput.trim()}
-                className="p-1.5 rounded-lg bg-[#4361EE] hover:bg-[#3451DE] text-white disabled:opacity-40 transition-colors cursor-pointer shrink-0"
+                className="p-1.5 rounded-lg bg-primary hover:bg-primary-hover text-white disabled:opacity-40 transition-colors cursor-pointer shrink-0"
                 title="Add custom role"
               >
                 <Plus size={11} strokeWidth={2.5} />
@@ -612,7 +612,7 @@ export const ProjectMemberTagSelector = ({
                     <span
                       className={`text-[11px] ${
                         isChecked
-                          ? "text-[#4361EE] font-bold"
+                          ? "text-primary font-bold"
                           : "text-slate-700 font-medium"
                       }`}
                     >
@@ -621,7 +621,7 @@ export const ProjectMemberTagSelector = ({
                     <div
                       className={`w-3.5 h-3.5 rounded border flex items-center justify-center transition-all ${
                         isChecked
-                          ? "bg-[#4361EE] border-[#4361EE] text-white"
+                          ? "bg-primary border-primary text-white"
                           : "border-slate-300 bg-white"
                       }`}
                     >

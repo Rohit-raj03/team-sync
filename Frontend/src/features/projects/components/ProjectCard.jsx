@@ -82,12 +82,12 @@ export const ProjectCard = ({ project, onClick }) => {
 
           <ChevronRight
             size={18}
-            className="text-slate-300 group-hover:text-[#4361EE] group-hover:translate-x-1 transition-all"
+            className="text-slate-300 group-hover:text-primary group-hover:translate-x-1 transition-all"
           />
         </div>
 
         {/* Title & Description */}
-        <h3 className="text-base font-bold text-slate-800 group-hover:text-[#4361EE] transition-colors line-clamp-1">
+        <h3 className="text-base font-bold text-slate-800 group-hover:text-primary transition-colors line-clamp-1">
           {project.name}
         </h3>
         <p className="text-xs text-slate-500 mt-1.5 line-clamp-2 leading-relaxed">
@@ -102,7 +102,7 @@ export const ProjectCard = ({ project, onClick }) => {
             </span>
             <span className="font-bold text-slate-700">
               {project.completedTasksCount || 0}/{project.tasksCount || 0}{" "}
-              <span className="text-[#4361EE]">({progress}%)</span>
+              <span className="text-primary">({progress}%)</span>
             </span>
           </div>
           <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden">

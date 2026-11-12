@@ -5,13 +5,13 @@ import {
   Search,
   Plus,
   Trash2,
-  Archive,
+
   ExternalLink,
-  Users,
-  CheckCircle2,
-  Calendar,
-  AlertCircle,
-  Eye,
+
+
+
+
+
 } from 'lucide-react';
 import { Badge } from '../../../shared/components/ui/Badge.jsx';
 import { ROUTES } from '../../../shared/constants/routes.js';
@@ -79,7 +79,7 @@ export const AdminProjectManagement = ({
         {onOpenCreateProject && (
           <button
             onClick={onOpenCreateProject}
-            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-[#4361EE] hover:bg-[#3451DE] active:scale-98 text-white text-xs font-bold shadow-md shadow-indigo-100 transition-all self-start sm:self-auto"
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-primary hover:bg-primary-hover active:scale-98 text-white text-xs font-bold shadow-md shadow-indigo-100 transition-all self-start sm:self-auto"
           >
             <Plus size={15} />
             <span>Create Project</span>
@@ -99,7 +99,7 @@ export const AdminProjectManagement = ({
             placeholder="Search projects by name, category, or scope..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-9 pr-4 py-2 rounded-xl border border-slate-200 text-xs bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#4361EE]"
+            className="w-full pl-9 pr-4 py-2 rounded-xl border border-slate-200 text-xs bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-primary"
           />
         </div>
 
@@ -110,7 +110,7 @@ export const AdminProjectManagement = ({
               onClick={() => setStatusFilter(st)}
               className={`px-3 py-1.5 rounded-xl transition-colors whitespace-nowrap ${
                 statusFilter === st
-                  ? 'bg-[#4361EE] text-white shadow-xs'
+                  ? 'bg-primary text-white shadow-xs'
                   : 'bg-slate-100 hover:bg-slate-200 text-slate-600'
               }`}
             >
@@ -249,7 +249,7 @@ export const AdminProjectManagement = ({
                             type="button"
                             onClick={() => navigate(ROUTES.PROJECT_DETAILS(project.id))}
                             title="Open Project Workspace"
-                            className="p-1.5 rounded-lg text-slate-400 hover:text-[#4361EE] hover:bg-indigo-50 transition-colors"
+                            className="p-1.5 rounded-lg text-slate-400 hover:text-primary hover:bg-indigo-50 transition-colors"
                           >
                             <ExternalLink size={14} />
                           </button>

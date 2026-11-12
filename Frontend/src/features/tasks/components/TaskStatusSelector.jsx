@@ -15,7 +15,7 @@ const STATUSES = [
     value: TASK_STATUS.IN_PROGRESS,
     label: "In Progress",
     icon: Clock,
-    activeClass: "bg-[#4361EE] text-white border-[#4361EE] shadow-xs",
+    activeClass: "bg-primary text-white border-primary shadow-xs",
     idleClass: "bg-white text-slate-600 border-slate-200 hover:bg-indigo-50/50",
     dotColor: "bg-indigo-500",
   },
