@@ -21,6 +21,11 @@ let inFlightProjectsPromise = null;
 let lastProjectsFetchTimestamp = 0;
 const PROJECTS_CACHE_TTL_MS = 15000;
 
+export const clearProjectsCache = () => {
+  inFlightProjectsPromise = null;
+  lastProjectsFetchTimestamp = 0;
+};
+
 /**
  * Feature Hook: useProjects
  * Connects frontend project state to backend REST APIs with live task metrics & member management.

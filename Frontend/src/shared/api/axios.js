@@ -2,9 +2,11 @@ import axios from 'axios';
 import { env } from '../../config/env.js';
 import { storage } from '../utils/localStorage.js';
 import { store } from '../../app/store.js';
-import { logout } from '../../features/auth/store/authSlice.js';
+import { logout, setCredentials } from '../../features/auth/store/authSlice.js';
 import { clearTeamCache } from '../../features/team/hooks/useTeam.js';
 import { clearNotificationsCache } from '../../features/notifications/hooks/useNotifications.js';
+import { clearTasksCache } from '../../features/tasks/hooks/useTasks.js';
+import { clearProjectsCache } from '../../features/projects/hooks/useProjects.js';
 
 const axiosInstance = axios.create({
   baseURL: env.API_BASE_URL,
@@ -28,10 +30,13 @@ const handleSessionTermination = () => {
   storage.remove('auth_token');
   storage.remove('auth_user');
   storage.remove('auth_refresh_token');
+  storage.remove('agentrateam');
   try {
     store.dispatch(logout());
     clearTeamCache();
     clearNotificationsCache();
+    clearTasksCache();
+    clearProjectsCache();
   } catch (e) {
     console.error('Failed to dispatch logout on 401:', e);
   }
@@ -106,19 +111,33 @@ axiosInstance.interceptors.response.use(
         );
         const data = res.data?.data || res.data;
         const newAccessToken = data?.accessToken || data?.token;
-        if (newAccessToken) {
-          storage.set('auth_token', newAccessToken);
-          if (data?.refreshToken) {
-            storage.set('auth_refresh_token', data.refreshToken);
-          }
-          originalRequest.headers = originalRequest.headers || {};
-          originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
-          processQueue(null, newAccessToken);
-          return axiosInstance(originalRequest);
+        if (!newAccessToken) {
+          throw new Error('Missing access token in refresh response');
         }
+
+        storage.set('auth_token', newAccessToken);
+        if (data?.refreshToken) {
+          storage.set('auth_refresh_token', data.refreshToken);
+        }
+
+        // Sync Redux state and Axios default headers
+        store.dispatch(
+          setCredentials({
+            accessToken: newAccessToken,
+            refreshToken: data?.refreshToken,
+            user: data?.user,
+          })
+        );
+        axiosInstance.defaults.headers.common.Authorization = `Bearer ${newAccessToken}`;
+
+        originalRequest.headers = originalRequest.headers || {};
+        originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
+        processQueue(null, newAccessToken);
+        return axiosInstance(originalRequest);
       } catch (refreshErr) {
         processQueue(refreshErr, null);
         handleSessionTermination();
+        return Promise.reject(refreshErr);
       } finally {
         isRefreshing = false;
       }

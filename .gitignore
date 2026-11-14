@@ -48,3 +48,5 @@ Thumbs.db
 START_TASK.md
 TASK_PROGRESS.md
 .agents
+tests
+Frontend\tests

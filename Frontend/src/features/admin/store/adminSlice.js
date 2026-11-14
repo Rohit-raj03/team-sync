@@ -1,4 +1,5 @@
 import { createSlice } from '@reduxjs/toolkit';
+import { logout } from '../../auth/store/authSlice.js';
 
 const INITIAL_ROLE_PERMISSIONS = {
   Admin: {
@@ -85,6 +86,16 @@ const adminSlice = createSlice({
         ...action.payload,
       });
     },
+  },
+  extraReducers: (builder) => {
+    builder.addCase(logout, () => ({
+      users: [],
+      stats: null,
+      permissions: INITIAL_ROLE_PERMISSIONS,
+      activityLogs: [],
+      loading: false,
+      error: null,
+    }));
   },
 });
 

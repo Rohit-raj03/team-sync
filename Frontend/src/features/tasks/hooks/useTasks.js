@@ -19,6 +19,11 @@ let inFlightTasksPromise = null;
 let lastTasksFetchTimestamp = 0;
 const CACHE_TTL_MS = 15000; // 15 seconds cache window
 
+export const clearTasksCache = () => {
+  inFlightTasksPromise = null;
+  lastTasksFetchTimestamp = 0;
+};
+
 export function useTasks(options = {}) {
   const { autoFetch = true } = options;
   const dispatch = useDispatch();

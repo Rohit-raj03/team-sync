@@ -13,6 +13,8 @@ import { authService } from '../services/auth.service.js';
 import { showToast } from '../../../shared/utils/toast.js';
 import { clearTeamCache } from '../../team/hooks/useTeam.js';
 import { clearNotificationsCache } from '../../notifications/hooks/useNotifications.js';
+import { clearTasksCache } from '../../tasks/hooks/useTasks.js';
+import { clearProjectsCache } from '../../projects/hooks/useProjects.js';
 
 export function useAuth() {
   const dispatch = useDispatch();
@@ -89,11 +91,19 @@ export function useAuth() {
     dispatch(clearError());
   }, [dispatch]);
 
-  const logout = useCallback(() => {
-    dispatch(logoutAction());
-    clearTeamCache();
-    clearNotificationsCache();
-    showToast.auth.logoutSuccess();
+  const logout = useCallback(async () => {
+    try {
+      await authService.logout();
+    } catch {
+      // Best-effort logout; continue client teardown
+    } finally {
+      dispatch(logoutAction());
+      clearTeamCache();
+      clearNotificationsCache();
+      clearTasksCache();
+      clearProjectsCache();
+      showToast.auth.logoutSuccess();
+    }
   }, [dispatch]);
 
   return {

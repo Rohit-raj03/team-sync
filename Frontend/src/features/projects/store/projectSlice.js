@@ -1,5 +1,6 @@
 import { createSlice } from "@reduxjs/toolkit";
 import { storage } from "../../../shared/utils/localStorage.js";
+import { logout } from "../../auth/store/authSlice.js";
 
 const initialProjects = storage.get("agentrateam", []);
 
@@ -166,6 +167,18 @@ const projectSlice = createSlice({
     setProjectSearch(state, action) {
       state.search = action.payload;
     },
+  },
+  extraReducers: (builder) => {
+    builder.addCase(logout, () => {
+      storage.remove("agentrateam");
+      return {
+        projects: [],
+        filter: "ALL",
+        search: "",
+        loading: false,
+        error: null,
+      };
+    });
   },
 });
 

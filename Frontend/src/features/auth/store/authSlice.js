@@ -63,6 +63,22 @@ const authSlice = createSlice({
     clearError(state) {
       state.error = null;
     },
+    setCredentials(state, action) {
+      const accessToken = action.payload?.token || action.payload?.accessToken;
+      if (accessToken) {
+        state.token = accessToken;
+        storage.set('auth_token', accessToken);
+      }
+      if (action.payload?.refreshToken) {
+        storage.set('auth_refresh_token', action.payload.refreshToken);
+      }
+      if (action.payload?.user) {
+        const rawUser = action.payload.user;
+        state.user = { ...rawUser, id: rawUser.id || rawUser._id };
+        storage.set('auth_user', state.user);
+      }
+      state.isAuthenticated = Boolean(state.token && state.user);
+    },
     logout(state) {
       state.token = null;
       state.user = null;
@@ -82,6 +98,7 @@ export const {
   registerSuccess,
   updateUserProfile,
   clearError,
+  setCredentials,
   logout,
 } = authSlice.actions;
 

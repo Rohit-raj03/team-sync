@@ -3,6 +3,7 @@ import {
   TASK_STATUS,
   TASK_PRIORITY,
 } from "../../../shared/constants/taskStatus.js";
+import { logout } from "../../auth/store/authSlice.js";
 
 const taskSlice = createSlice({
   name: "tasks",
@@ -77,6 +78,15 @@ const taskSlice = createSlice({
         }
       }
     },
+  },
+  extraReducers: (builder) => {
+    builder.addCase(logout, () => ({
+      tasks: [],
+      filter: "ALL",
+      search: "",
+      loading: false,
+      error: null,
+    }));
   },
 });
 

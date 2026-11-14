@@ -67,6 +67,16 @@ export const authService = {
       return null;
     }
   },
+
+  logout: async () => {
+    try {
+      const response = await apiClient.post("/auth/logout", {}, { withCredentials: true });
+      return response;
+    } catch {
+      // Best effort: allow logout even if network/server is unavailable
+      return null;
+    }
+  },
 };
 
 export default authService;
